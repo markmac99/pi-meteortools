@@ -1,0 +1,8 @@
+# sample crontab
+# this runs the check at 09:00 each day and then processes the data at 10:00
+#
+# to use login to the pi, type "crontab -e", copy and paste the below lines
+# at the end of the file, then save and exit the editor. 
+
+0 9 * * * /home/pi/checkForMeteors.sh > /tmp/chkForMeteors.log 2>&1
+0 10 * * * /home/pi/postProcess.sh > /tmp/postProcess.log 2>&1

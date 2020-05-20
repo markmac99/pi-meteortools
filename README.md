@@ -23,3 +23,8 @@ sendToYoutube.py
 Uses the Google APIs to send the all-night timelapse to your youtube channel, if 
 you have one and configure it correctly. An explanation of how to configure this
 is covered in the Google API docs. 
+
+sample-crontab.txt
+------------------
+example showing the lines you might want to add to crontab to execute the scripts
+on a daily basis. 
