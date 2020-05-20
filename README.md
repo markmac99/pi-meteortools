@@ -1,6 +1,6 @@
 PI Scripts
 =========
-This folder contains scripts for use onti Pi to monitor, maintain and analyse the
+This folder contains scripts for use on the Pi to monitor, maintain and analyse the
 data from the RMS processes.
 
 checkForMeteors.sh
