@@ -29,7 +29,7 @@ def main():
     api_service_name = "youtube"
     api_version = "v3"
 
-    local_path =os.path.dirname(__file__)
+    local_path =os.path.dirname(os.path.abspath(__file__))
 
     # When you authenticate as explained in the API docs, you will be given a 
     # token in JSON form. Store the token in this file in the same folder as
