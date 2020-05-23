@@ -6,7 +6,7 @@
 # REQUIRES ssmtp - a simple mailer which can be installed with apt-get
 #
 # set this to the address to recieve notifications
-MAILRECIP=mark.jm.mcintyre@cesmail.net
+MAILRECIP=youremail@here
 
 if [ ! -f /usr/sbin/ssmtp ] ; then
    echo ssmtp not installed, cannot continue

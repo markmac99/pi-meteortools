@@ -3,12 +3,12 @@
 # Simple script to create a stack of the last ten FF files and push it to 
 # a website of your choice using SCP
 # Requires: you must supply values for USER, SERVER, TARGET folder and SSHKEY
-# the SSH key must be USER@SERVER's standard SSH private key. 
+# the SSHKEY must be USER@SERVER's standard SSH private key. 
 #
-USER=someuser
-SERVER=someserver
-TARGET=somefolder
-SSHKEY=/home/pi/.ssh/somekey
+USER=targetuser
+SERVER=targetserver
+TARGET=targetfolder
+SSHKEY=usersshkey
 
 cd /home/pi/source/RMS
 DISPLAY=:0.0
