@@ -8,18 +8,19 @@
 # set this to the address to recieve notifications
 MAILRECIP=youremail@here
 
+tod=`date -d '1 day ago' +%Y-%m-%d`
 if [ ! -f /usr/sbin/ssmtp ] ; then
    echo ssmtp not installed, cannot continue
    exit
 fi
 rm -f /tmp/metcheck.txt
-find /home/pi/RMS_data/logs/ -mtime -1 -type f -name log* -exec ls -1 {} \; | while read i; do grep meteors: $i | egrep -v ": 0" >> /tmp/metcheck.txt ; done
+find /home/pi/RMS_data/logs/ -mtime -1 -type f -name "log*" -exec ls -1 {} \; | while read i; do grep meteors: $i | egrep -v ": 0" >> /tmp/metcheck.txt ; done
 mcount=`wc -l /tmp/metcheck.txt | awk '{print $1}'`
 echo From: meteorpi@home > /tmp/message.txt
 echo To: $MAILRECIP >> /tmp/message.txt
 if [ ${mcount} -gt 0 ] ; then
-   echo Subject: $mcount meteors found >> /tmp/message.txt
-   echo $mcount meteors found >> /tmp/message.txt
+   echo Subject: $tod: $mcount meteors found >> /tmp/message.txt
+   echo $tod there were $mcount meteors found >> /tmp/message.txt
 else
    echo Subject: No meteors found >> /tmp/message.txt
    echo nothing to report today >> /tmp/message.txt
