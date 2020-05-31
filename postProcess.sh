@@ -15,7 +15,7 @@ pushd /home/pi/source/RMS
 export PATH=$PATH:/usr/local/bin
 
 # Create a stack and convert the FITS files to a JPGs
-python -m Utils.StackFFs -x $arcdir jpg
+python -m Utils.StackFFs -x -b $arcdir jpg
 python -m Utils.BatchFFtoImage $arcdir jpg
 # optionally generate an MP4 video of each capture.  
 # the latter requires an extension to RMS that I have written but which is
