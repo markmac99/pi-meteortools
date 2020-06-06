@@ -2,14 +2,14 @@
 #
 # Run this every 10 mins from crontab to be alerted in near realtime to events
 # 
-# REQUIRES ssmtp - a simple mailer which can be installed with apt-get
+# REQUIRES msmtp - a simple mailer which can be installed with 
+#  sudo apt-get install msmtp msmtp-mta
 #
 # set this to the address to recieve notifications
 MAILRECIP=youremail@here
 
-if [ ! -f /usr/sbin/ssmtp ] ; then
-   echo ssmtp not installed, cannot continue
-   exit
+if [ ! -f /usr/bin/msmtp ] ; then
+   echo msmtp not installed, cannot send mails
 fi
 
 here=`dirname $0`
@@ -22,17 +22,22 @@ else
   dt=`date +%Y%m%d`
 fi
 fnam=${dt}.txt
+hn=`hostname`
 
 grep meteors: /home/pi/RMS_data/logs/*$dt*.log | awk -F ' ' '{printf("%s %s %s \n", $4, $6, $7) }' | grep -v ": 0" > latest.txt
-diff $fnam latest.txt
-if [[ -f $fnam && $? -ne 0 ]] ; then
-  echo From: meteorpi@home > message.txt
+len1=`wc -l latest.txt | awk '{print $1}'`
+newl=`diff latest.txt $fnam | grep -v ">"`
+isline=`echo $newl | awk '{print $1}' | cut -b1`
+#dl=`echo $newl | wc -l`
+if [[ $len1 -ne 0  && $isline -ne 0 ]] ; then
+  echo From: meteorpi@themcintyres.dnsalias.net > message.txt
   echo To: $MAILRECIP >> message.txt
-  echo Subject: $dt: new meteors found >> message.txt
-  diff $fnam latest.txt >> message.txt
-  /usr/sbin/ssmtp -t  < message.txt
+  echo Subject: $hn - $dt: new meteors found >> message.txt
+  evt=`echo $newl | awk '{printf("%s %s %s\n", $3, $4, $5)}'`
+  echo $evt >> message.txt
+  /usr/bin/msmtp -t  < message.txt
   #rm -f message.txt
-  cp latest.txt $fnam
+  echo $evt >> $fnam
 else 
   touch $fnam
 fi
