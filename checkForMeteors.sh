@@ -33,7 +33,7 @@ else
 fi 
 echo From: pi@${hn} > /tmp/message.txt
 echo To: $MAILRECIP >> /tmp/message.txt
-echo Subject: $hn: $tod: $mcount meteors found >> /tmp/message.txt
+echo Subject: $hn: $dt: $mcount meteors found >> /tmp/message.txt
 echo $tod there were $mcount meteors found by $hn >> /tmp/message.txt
 
 /usr/bin/msmtp -t  < /tmp/message.txt
