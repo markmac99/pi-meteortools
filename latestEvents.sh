@@ -26,19 +26,23 @@ hn=`hostname`
 
 grep meteors: /home/pi/RMS_data/logs/*$dt*.log | awk -F ' ' '{printf("%s %s %s \n", $4, $6, $7) }' | grep -v ": 0" > latest.txt
 len1=`wc -l latest.txt | awk '{print $1}'`
-newl=`diff latest.txt $fnam | grep -v ">"`
-isline=`echo $newl | awk '{print $1}' | cut -b1`
-#dl=`echo $newl | wc -l`
+diff latest.txt $fnam | grep -v ">" > tmpnew
+isline=`head -1 tmpnew | awk '{print $1}' | cut -b1`
+
 if [[ $len1 -ne 0  && $isline -ne 0 ]] ; then
   echo From: meteorpi@themcintyres.dnsalias.net > message.txt
   echo To: $MAILRECIP >> message.txt
   echo Subject: $hn - $dt: new meteors found >> message.txt
-  evt=`echo $newl | awk '{printf("%s %s %s\n", $3, $4, $5)}'`
-  echo $evt >> message.txt
+  echo '' >> message.txt
+  cat tmpnew | awk '{printf("%s %s %s %s\n", $2, $3, $4, $5)}'| awk 'NF' >> message.txt
+  echo '' >> message.txt
   /usr/bin/msmtp -t  < message.txt
-  #rm -f message.txt
-  echo $evt >> $fnam
-else 
+  cat tmpnew | awk '{printf("%s %s %s %s\n", $2, $3, $4, $5)}' >> $fnam
+  awk 'NF' $fnam | sort | uniq | awk 'NF' > tmpnew
+  cp tmpnew $fnam
+else
   touch $fnam
+  echo 'do nothing'
 fi
+
 
