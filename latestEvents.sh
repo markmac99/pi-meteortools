@@ -5,14 +5,12 @@
 # REQUIRES msmtp - a simple mailer which can be installed with 
 #  sudo apt-get install msmtp msmtp-mta
 #
-# set this to the address to recieve notifications
-MAILRECIP=youremail@here
-
 if [ ! -f /usr/bin/msmtp ] ; then
    echo msmtp not installed, cannot send mails
 fi
 
 here=`dirname $0`
+source $here/config.ini
 cd ${here}/eventlog
 
 hr=`date +%H`

@@ -6,7 +6,8 @@
 #
 source ~/vRMS/bin/activate
 export DISPLAY=:0.0
-srcdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+srcdir=`dirname $0`
+source $srcdir/config.ini
 
 curdir=`ls -1 ~/RMS_data/CapturedFiles/ | tail -1`
 capdir=/home/pi/RMS_data/CapturedFiles/${curdir}
@@ -37,3 +38,17 @@ tod=`basename $arcdir | cut -c8-15`
 if [ -f ${srcdir}/sendToYoutube.py ] ; then 
     /home/pi/vRMS/bin/python ${srcdir}/sendToYoutube.py "Meteorcam1 timelapse for $tod" $fn
 fi
+
+# keep a record of how many FF files were created each night
+# this is to monitor for lost data
+
+curdt=`basename $capdir | cut -d "_" -f 2`
+
+logf=`ls -1tr ~/RMS_data/logs/log_${curdt}* | tail -1`
+
+noffs=`ls -1 $capdir | wc -l | awk '{print $1}'`
+ffhrs=`awk -v var1=$noffs 'BEGIN {print ( var1 / 351.56 ) }'`
+hours=`grep Waiting $logf | grep recording| awk '{print $10}'`
+
+echo $logf
+echo $curdt $hours $noffs $ffhrs >> /home/pi/mjmm/eventlog/ffcounts.txt
