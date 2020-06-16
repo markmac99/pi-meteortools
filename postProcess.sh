@@ -44,11 +44,8 @@ fi
 
 curdt=`basename $capdir | cut -d "_" -f 2`
 
-logf=`ls -1tr ~/RMS_data/logs/log_${curdt}* | tail -1`
-
 noffs=`ls -1 $capdir | wc -l | awk '{print $1}'`
 ffhrs=`awk -v var1=$noffs 'BEGIN {print ( var1 / 351.56 ) }'`
-hours=`grep Waiting $logf | grep recording| awk '{print $10}'`
+hours=`ls -1tr ~/RMS_data/logs/log_${curdt}* | while read i ; do grep Waiting $i| grep record ; done | awk '{print $10}' | uniq`
 
-echo $logf
-echo $curdt $hours $noffs $ffhrs >> /home/pi/mjmm/eventlog/ffcounts.txt
+echo $curdt $hours $noffs $ffhrs >> /home/pi/RMS_data/logs/ffcounts.txt
