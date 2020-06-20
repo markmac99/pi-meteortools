@@ -44,7 +44,7 @@ fi
 
 curdt=`basename $capdir | cut -d "_" -f 2`
 
-noffs=`ls -1 $capdir | wc -l | awk '{print $1}'`
+noffs=`ls -1 $capdir/FF*.fits | wc -l | awk '{print $1}'`
 ffhrs=`awk -v var1=$noffs 'BEGIN {print ( var1 / 351.56 ) }'`
 hours=`ls -1tr ~/RMS_data/logs/log_${curdt}* | while read i ; do grep Waiting $i| grep record ; done | awk '{print $10}' | uniq`
 
