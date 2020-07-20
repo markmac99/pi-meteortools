@@ -4,7 +4,7 @@
 # Schedule this to run from a crontab during the day when the pi is
 # otherwise idle, as it will conflict with RMS otherwise
 #
-# note: if you have mmsmtp installed this script will also email you 
+# note: if you have msmtp installed this script will also email you 
 # a daily summary of any detections
 #
 source ~/vRMS/bin/activate
@@ -47,10 +47,10 @@ fi
 if [ -f /usr/bin/msmtp ] ; then 
     echo From: pi@`hostname` > /tmp/message.txt
     echo To: $MAILRECIP >> /tmp/message.txt
-    mc=`grep meteors: ~/RMS_data/logs/log*${curdt}*.log* | grep -v ": 0" | wc -l | awk '{print $1}'`
+    mc=`grep "meteors\." ~/RMS_data/logs/log*${curdt}*.log* | grep detected |  awk '{print $5}'`
     if [ $mc -gt 0 ] ; then
         echo Subject: `hostname`: $curdt: $mc meteors found >> /tmp/message.txt    
-        grep meteors: ~/RMS_data/logs/log*${curdt}*.log* | grep -v ": 0" | awk '{printf("%s %s %s %s\n", $4, $5,$6,$7)}' >> /tmp/message.txt
+        grep "meteors\." ~/RMS_data/logs/log*${curdt}*.log* | grep detected | awk '{printf("%s %s %s %s\n", $4, $5,$6,$7)}' >> /tmp/message.txt
     else
         echo Subject: `hostname`: $curdt: No meteors found >> /tmp/message.txt    
     fi
