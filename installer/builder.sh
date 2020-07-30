@@ -1,10 +1,10 @@
 #!/bin/bash
 
-curdir=`pwd`
+curdir=`dirname $0`
 
 if [ "$1" == "" ] ; then
   echo "usage: ./builder.sh {live|arch}"
-  exit 0
+  exit 1
 fi
 if [ "$1" == "arch" ] ; then
   PKG=ARCHIVE
@@ -12,7 +12,7 @@ else
   PKG=LIVE
 fi
 
-cd $1
+cd $curdir/$1
 echo "compressing the files"
 tar cvfz payload.tgz  * .ukmondec
 mv payload.tgz ..
@@ -23,4 +23,5 @@ cat payload.tgz >> installUkMon$1.sh
 chmod 0755 installUkMon$1.sh
 rm -f payload.tgz
 echo "done"
+exit 0
 
