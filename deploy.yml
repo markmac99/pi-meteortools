@@ -1,0 +1,13 @@
+---
+- hosts: meteorpi, meteorpi2, meteorpi3
+  vars:
+    srcdir: /mnt/c/Users/mark/Documents/Projects/meteorhunting/UKMON-shared/Pi_Cameras
+    destdir: ~/mjmm
+  tasks:
+  - name: Copy files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    with_items:
+    - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}', mode: '644', backup: no }
+    - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}', mode: '755', backup: no }
+    - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}', mode: '755', backup: no }
+    
