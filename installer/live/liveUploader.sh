@@ -4,15 +4,18 @@ source ~/vRMS/bin/activate
 
 mkdir -p ~/ukmon/tmp > /dev/null 2>&1
 \rm -f ~/ukmon/tmp/*
+echo "processing " $1
 
-curdir=`dirname $1`
-ff=`basename $1`
-cp $curdir/$ff ~/ukmon/tmp
+cp $1 ~/ukmon/tmp
+if [ $? -ne 0 ] ; then
+  echo file missing
+  exit 0
+fi 
 
-pushd ~/source/RMS
+cd ~/source/RMS
 python -m Utils.BatchFFtoImage ~/ukmon/tmp jpg
-popd
-pushd ~/ukmon/tmp
+
+cd ~/ukmon/tmp
 # get date and time stamps here
 dn=`ls -1tr *.jpg | tail -1`
 cam=`echo $dn | cut -d "_" -f2`
@@ -25,6 +28,8 @@ dy=`echo $dt | cut -c7-8`
 hr=`echo $tm | cut -c1-2`
 mi=`echo $tm | cut -c3-4`
 se=`echo $tm | cut -c5-6`
+
+echo $dn
 
 newf=M${dt}_${tm}_${loc}_${cam}
 mv $dn ${newf}P.jpg
