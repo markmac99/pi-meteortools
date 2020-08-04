@@ -43,7 +43,11 @@ def main():
     pickle_file=local_path +'/token.pickle'
     if os.path.exists(pickle_file):
         with open(pickle_file, 'rb') as token:
+          if sys.version_info.major < 3:
             credentials = pickle.load(token)
+          else:
+            credentials = pickle.load(token, encoding='latin1')
+
     # If there are no (valid) credentials available, let the user log in.
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:

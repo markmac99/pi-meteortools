@@ -40,7 +40,7 @@ mv $capdir/UK*.mp4 $arcdir
 fn=`ls -1 $arcdir/UK*.mp4`
 tod=`basename $arcdir | cut -c8-15`
 if [[ -f ${srcdir}/sendToYoutube.py && -f ${srcdir}/token.pickle ]] ; then 
-    /home/pi/vRMS/bin/python ${srcdir}/sendToYoutube.py "Meteorcam timelapse for $tod" $fn
+    /home/pi/vRMS/bin/python ${srcdir}/sendToYoutube.py "`hostname` timelapse for $tod" $fn
 fi
 
 # if msmtp is installed, try to send an email summary of the night
