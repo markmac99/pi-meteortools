@@ -77,3 +77,8 @@ if [ `date +%d` -eq 1 ]; then
     cp /home/pi/source/RMS/platepar_cmn2010.cal $srcdir/bkp/platepar_cmn2010.cal.`date +%Y%m`
     cp /home/pi/source/RMS/mask.bmp $srcdir/bkp/mask.bmp.`date +%Y%m`
 fi
+# reboot the camera. Recommended to avoid freezes and lockups
+pushd /home/pi/source/RMS
+echo "Rebooting the camera"
+python3 -m Utils.CameraControl reboot
+popd
