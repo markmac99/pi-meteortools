@@ -36,4 +36,3 @@ echo $tod there were $mcount meteors found by $hn >> /tmp/message.txt
 
 /usr/bin/msmtp -t  < /tmp/message.txt
 rm -f /tmp/message.txt
-
