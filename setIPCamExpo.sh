@@ -6,7 +6,12 @@ if [ "$1" == "" ] ; then
   echo "usage setIPCamExpo.sh DAY|NIGHT"
   exit 1
 fi
-IPCAMADDR=` grep device .config | grep -v '#' | awk '{print $6}' | cut -d '/' -f3 | cut -d: -f1`
+PAR3=`grep device .config | grep -v '#' | awk '{print $3}'`
+if [ "$PAR3" == "protocols=tcp" ] ; then 
+  IPCAMADDR=` grep device .config | grep -v '#' | awk '{print $6}' | cut -d '/' -f3 | cut -d: -f1`
+else
+  IPCAMADDR=` grep device .config | grep -v '#' | awk '{print $3}' | cut -d '/' -f3 | cut -d: -f1`
+fi 
 python3 /home/pi/mjmm/SetExpo.py $IPCAMADDR $1
 
 # if running at dusk, add tomorrow's AT jobs
