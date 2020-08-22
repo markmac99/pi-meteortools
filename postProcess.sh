@@ -82,3 +82,6 @@ pushd /home/pi/source/RMS
 echo "Rebooting the camera"
 python3 -m Utils.CameraControl reboot
 popd
+
+# clear the archive dir down of anything older than 20 days
+$srcdir/clearArchive.sh
