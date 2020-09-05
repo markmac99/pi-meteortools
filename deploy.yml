@@ -1,5 +1,5 @@
 ---
-- hosts: meteorpi
+- hosts: meteorpi, meteorpi2, meteorpi3
   vars:
     srcdir: /mnt/c/Users/mark/Documents/Projects/meteorhunting/UKMON-shared/Pi_Cameras
     destdir: ~/mjmm
@@ -16,9 +16,29 @@
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}', mode: '644', backup: no }
 
-  - name: update config
+  - name: update mail recip
     lineinfile: 
       path: ~/mjmm/config.ini
       regexp: 'MAILRECIP='
       line: 'MAILRECIP=markmcintyre99@googlemail.com'
-    
+  - name: update id file
+    lineinfile:
+      path: ~/mjmm/config.ini
+      regexp: 'IDFILE='
+      line: 'IDFILE=~/.ssh/markskey.pem'
+  - name: update AWS host
+    lineinfile:
+      path: ~/mjmm/config.ini
+      regexp: 'HOST='
+      line: 'HOST=ec2-3-9-128-14.eu-west-2.compute.amazonaws.com'
+  - name: update AWS user
+    lineinfile:
+      path: ~/mjmm/config.ini
+      regexp: 'USER='
+      line: 'USER=bitnami'
+  - name: update target folder
+    lineinfile:
+      path: ~/mjmm/config.ini
+      regexp: 'MP4DIR='
+      line: 'MP4DIR=/mnt/mjmm-data/'
+       
