@@ -7,6 +7,10 @@
 # note: if you have msmtp installed this script will also email you 
 # a daily summary of any detections
 #
+export PATH=$PATH:/usr/local/bin
+# required for SSL with python3
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib:/usr/local/openssl/lib
+
 source ~/vRMS/bin/activate
 export DISPLAY=:0.0
 srcdir=`dirname $0`
@@ -17,7 +21,6 @@ capdir=/home/pi/RMS_data/CapturedFiles/${curdir}
 arcdir=/home/pi/RMS_data/ArchivedFiles/${curdir}
 curdt=`echo $curdir |  sed 's/_/ /g' | awk '{ print $2 }'`
 pushd /home/pi/source/RMS
-export PATH=$PATH:/usr/local/bin
 
 # Create a stack and convert the FITS files to a JPGs
 python -m Utils.StackFFs -x -b $arcdir jpg
@@ -33,6 +36,8 @@ python -m Utils.GenerateTimelapse $capdir
 popd
 mv $capdir/UK*.mp4 $arcdir
 
+#curdt=`basename $capdir | cut -d "_" -f 2`
+
 # optionally, send the timelapse to your youtube channel
 # Configuring a channel is explained in the Youtube API docs 
 # and so i won't explain here
@@ -41,6 +46,14 @@ fn=`ls -1 $arcdir/UK*.mp4`
 tod=`basename $arcdir | cut -c8-15`
 if [[ -f ${srcdir}/sendToYoutube.py && -f ${srcdir}/token.pickle ]] ; then 
     /home/pi/vRMS/bin/python ${srcdir}/sendToYoutube.py "`hostname` timelapse for $tod" $fn
+fi
+
+# upload to a website of your choice
+if [ $UPLOAD -eq 1 ]; then
+    YYMM=${curdt:0:6}
+    STN=${curdir:0:6}
+    ssh -i $IDFILE $USER@$HOST mkdir $MP4DIR/$STN/$YYMM > /dev/null 2>&1
+    scp -i $IDFILE $fn $USER@$HOST:$MP4DIR/$STN/$YYMM
 fi
 
 # if msmtp is installed, try to send an email summary of the night
@@ -61,11 +74,9 @@ fi
 # keep a record of how many FF files were created each night
 # this is to monitor for lost data
 
-curdt=`basename $capdir | cut -d "_" -f 2`
-
 noffs=`ls -1 $capdir/FF*.fits | wc -l | awk '{print $1}'`
 ffhrs=`awk -v var1=$noffs 'BEGIN {print ( var1 / 351.56 ) }'`
-hours=`ls -1tr ~/RMS_data/logs/log_${curdt}* | while read i ; do grep Waiting $i| grep record ; done | awk '{print $10}' | uniq`
+hours=`ls -1tr ~/RMS_data/logs/log_${curdt}* | while read i ; do grep Waiting $i| grep record ; done | awk '{print $11}' | uniq`
 grabs=`ls -1tr ~/RMS_data/logs/log_${curdt}* | while read i ; do grep Grabbing $i ; done | wc -l`
 
 echo $curdt $hours $noffs $ffhrs $grabs >> /home/pi/RMS_data/logs/ffcounts.txt
