@@ -1,7 +1,7 @@
 ---
 - hosts: meteorpi, meteorpi2, meteorpi3
   vars:
-    srcdir: /mnt/c/Users/mark/Documents/Projects/meteorhunting/UKMON-shared/Pi_Cameras
+    srcdir: /mnt/e/dev/meteorhunting/UKMON-shared/Pi_Cameras
     destdir: ~/mjmm
   tasks:
   - name: Copy files
