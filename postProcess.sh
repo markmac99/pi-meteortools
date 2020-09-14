@@ -49,11 +49,22 @@ if [[ -f ${srcdir}/sendToYoutube.py && -f ${srcdir}/token.pickle ]] ; then
 fi
 
 # upload to a website of your choice
+# note that if the target host name begins with s3: then its expected to be an AWS
+# S3 bucket, and the idfile is expected to contain the exported credentials.
+# Otherwise its treated as a linux server to which the file can be copied 
+
 if [ $UPLOAD -eq 1 ]; then
+    ISS3=${HOST:0:3}
     YYMM=${curdt:0:6}
     STN=${curdir:0:6}
-    ssh -i $IDFILE $USER@$HOST mkdir $MP4DIR/$STN/$YYMM > /dev/null 2>&1
-    scp -i $IDFILE $fn $USER@$HOST:$MP4DIR/$STN/$YYMM
+    if [ "$ISS3" == "s3:" ] ; then
+        bfn=`basename $fn`
+        source $IDFILE
+        aws s3 cp $fn $HOST/$STN/$YYMM/$bfn --verbose
+    else 
+        ssh -i $IDFILE $USER@$HOST mkdir $MP4DIR/$STN/$YYMM > /dev/null 2>&1
+        scp -i $IDFILE $fn $USER@$HOST:$MP4DIR/$STN/$YYMM
+    fi
 fi
 
 # if msmtp is installed, try to send an email summary of the night

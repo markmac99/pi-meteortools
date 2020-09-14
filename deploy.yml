@@ -25,12 +25,14 @@
     lineinfile:
       path: ~/mjmm/config.ini
       regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/markskey.pem'
+      #line: 'IDFILE=~/.ssh/markskey.pem'
+      line: 'IDFILE=~/.ssh/mjmm-data.key'
   - name: update AWS host
     lineinfile:
       path: ~/mjmm/config.ini
       regexp: 'HOST='
-      line: 'HOST=ec2-3-9-128-14.eu-west-2.compute.amazonaws.com'
+      #line: 'HOST=ec2-3-9-128-14.eu-west-2.compute.amazonaws.com'
+      line: 'HOST=s3://mjmm-data'
   - name: update AWS user
     lineinfile:
       path: ~/mjmm/config.ini
@@ -41,4 +43,4 @@
       path: ~/mjmm/config.ini
       regexp: 'MP4DIR='
       line: 'MP4DIR=/mnt/mjmm-data/'
-       
+    
