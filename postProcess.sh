@@ -60,7 +60,7 @@ if [ $UPLOAD -eq 1 ]; then
     if [ "$ISS3" == "s3:" ] ; then
         bfn=`basename $fn`
         source $IDFILE
-        aws s3 cp $fn $HOST/$STN/$YYMM/$bfn --verbose
+        aws s3 cp $fn $HOST/$STN/$YYMM/$bfn
     else 
         ssh -i $IDFILE $USER@$HOST mkdir $MP4DIR/$STN/$YYMM > /dev/null 2>&1
         scp -i $IDFILE $fn $USER@$HOST:$MP4DIR/$STN/$YYMM
