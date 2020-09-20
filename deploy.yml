@@ -11,6 +11,7 @@
     - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/postProcess.sh', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}', mode: '755', backup: no }
+    - {src: '{{srcdir}}/RMS_Pi4Monitor.sh', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}', mode: '644', backup: no }

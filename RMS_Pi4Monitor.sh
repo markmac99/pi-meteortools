@@ -4,44 +4,59 @@
 logger 'RMS pi4 watchdog process starting'
 export DISPLAY=:0.0
 
-# need to wait in case RMS is still starting up and the logfile is not
-# yet available
-#sleep 180
-echo starting checks
+# Run this at boot time with cron but wait for RMS to start up
+#
+# @reboot sleep 600 && /home/pi/mjmm/RMS_Pi4Monitor.sh > /dev/null 2>&1
+#
+logger 'RMS_Pi4Watchdog: starting checks'
 
 cd /home/pi/RMS_data/logs
 dead="no"
 while [ "$dead" != "yes" ]
 do
+  # find most recent logfile then check when it last updated
   fn=`ls -1tr log* | tail -1`
-  logf=`find . -name $fn -mmin +10 -ls`
-  dayt=`wc -l $fn | awk '{print $1}'`
-  if [[ "$logf" !=  "" && $dayt -gt 30 ]] ; then
-    finished=`grep thumbnails $fn`
-    if [ "$finished" != "" ] ; then
-        logger 'RMS Pi4 watchdog process finished cleanly'
-        exit 0
+  sts=`find . -name $fn -mmin +10 -ls | wc -l`
+
+  if [ $sts -ne 0 ] ; then  
+    # log file is more than ten minutes old
+    # check that we're not still waiting for capture to start
+    grep Starting $fn
+    if [ $? -eq 0 ] ; then 
+      # capture has started but may also have finished
+      # we need to check this as some postprocessing actions can take many minutes
+      grep Stopping $fn
+      if [ $? -eq 1 ] ; then
+        # ok capture started but has not completed and has probably stalled
+        logger 'RMS_Pi4Watchdog: RMS stopped acquisition'
+        echo killall python
+        logger 'RMS_Pi4Watchdog: killed python'
+        sleep 5
+        rmspid=`ps -ef | grep RMS_StartCapture.sh | grep -v grep | awk '{print $2}'`
+        logger 'RMS_Pi4Watchdog: rms pid is $rmspid'
+        echo kill -9 $rmspid
+        logger 'RMS_Pi4Watchdog: killed rms bash script'
+        sleep 5
+        cd ~/source/RMS
+        echo lxterminal -e Scripts/RMS_StartCapture.sh -r  & 
+        logger 'RMS_Pi4Watchdog: restarted RMS...'
+        cd ~ukmon
+        echo killall liveMonitor.sh
+        sleep 5
+        echo lxterminal -e liveMonitor.sh  
+        logger 'RMS_Pi4Watchdog: restarted liveMonitor...'
+        cd /home/pi/RMS_data/logs
+        logger 'RMS_Pi4Watchdog: continuing...'
+      else
+        echo Capture stopped so no need to restart script
+      fi
+    else
+      echo Capture not started yet so no need to restart script
     fi
-    logger 'RMS Pi4 watchdog RMS stopped acquisition'
-    killall python
-    logger 'killed python'
-    sleep 5
-    rmspid=`ps -ef | grep RMS_StartCapture.sh | grep -v grep | awk '{print $2}'`
-    logger 'rms pid is $rmspid'
-    kill -9 $rmspid
-    logger 'killed rms bash script'
-    sleep 5
-    cd ~/source/RMS
-    lxterminal -e Scripts/RMS_StartCapture.sh -r  & 
-    logger 'RMS Pi4 watchdog restarted RMS...'
-    cd ~ukmon
-    killall liveMonitor.sh
-    sleep 5
-    lxterminal -e liveMonitor.sh  
-    logger 'RMS Pi4 watchdog restarted liveMonitor...'
-    cd /home/pi/RMS_data/logs
-    logger 'RMS Pi4 watchdog continuing...'
+  else
+      echo Capture running ok so no need to intervene
   fi
+
   sleepint=20
   sleep $sleepint
 done
