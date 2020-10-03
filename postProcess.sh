@@ -43,8 +43,19 @@ mv $capdir/UK*.mp4 $arcdir
 # and so i won't explain here
 #
 fn=`ls -1 $arcdir/UK*.mp4`
+bn=`basename $fn`
+
+# first check you've not already done it otherwise you will exceed your quota on youtube
+grep "uploading $bn" /home/pi/RMS_data/logs/postProcess*.log > /dev/null
+if [ $? -eq 0 ] ; then
+    echo already uploaded $bn
+    ytdone=1
+else
+    ytdone=0
+fi 
 tod=`basename $arcdir | cut -c8-15`
-if [[ -f ${srcdir}/sendToYoutube.py && -f ${srcdir}/token.pickle ]] ; then 
+if [[ $ytdone -eq 0 && -f ${srcdir}/sendToYoutube.py && -f ${srcdir}/token.pickle ]] ; then 
+    echo uploading $bn
     /home/pi/vRMS/bin/python ${srcdir}/sendToYoutube.py "`hostname` timelapse for $tod" $fn
 fi
 
