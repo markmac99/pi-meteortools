@@ -2,7 +2,7 @@
 # YAML file to install the build scripts on my pi
 - hosts: meteorpi
   vars:
-    srcdir: /mnt/c/Users/mark/Documents/Projects/meteorhunting/UKMON-shared/Pi_Cameras/installer/
+    srcdir: /mnt/e/dev/meteorhunting/UKMON-shared/Pi_Cameras/installer
     destdir: ~/installer
   tasks:
   - name: create livedir
@@ -16,9 +16,11 @@
     - {src: '{{srcdir}}/inst.template', dest: '{{destdir}}', mode: '644', backup: no }
     - {src: '{{srcdir}}/live/liveMonitor.sh', dest: '{{destdir}}/live', mode: '755', backup: no }
     - {src: '{{srcdir}}/live/liveUploader.sh', dest: '{{destdir}}/live', mode: '755', backup: no }
+    - {src: '{{srcdir}}/live/updateKeys.sh', dest: '{{destdir}}/live', mode: '755', backup: no }
     - {src: '{{srcdir}}/live/template.xml', dest: '{{destdir}}/live', mode: '644', backup: no }
     - {src: '{{srcdir}}/live/.ukmondec', dest: '{{destdir}}/live', mode: '755', backup: no }
     - {src: '{{srcdir}}/arch/archToUkMon.sh', dest: '{{destdir}}/arch', mode: '755', backup: no }
+    - {src: '{{srcdir}}/live/updateKeys.sh', dest: '{{destdir}}/arch', mode: '755', backup: no }
     - {src: '{{srcdir}}/arch/.ukmondec', dest: '{{destdir}}/arch', mode: '755', backup: no }
 
   - name: build the live installer after deployment
@@ -27,7 +29,7 @@
 
   - name: build the arch installer after deployment
     shell: 
-      cmd='{{destdir}}/builder.sh arch'
+      cmd: '{{destdir}}/builder.sh arch'
 
   - name: fetch built files
     fetch: src={{ item.src }} dest={{ item.dest }} flat=yes

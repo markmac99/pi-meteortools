@@ -1,5 +1,5 @@
 ---
-- hosts: meteorpi, meteorpi2, meteorpi3
+- hosts: meteorpi, meteorpi2
   vars:
     srcdir: /mnt/e/dev/meteorhunting/UKMON-shared/Pi_Cameras
     destdir: ~/mjmm
