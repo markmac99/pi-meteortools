@@ -13,7 +13,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib:/usr/local/openss
 
 source ~/vRMS/bin/activate
 export DISPLAY=:0.0
-srcdir=`dirname $0`
+srcdir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
 source $srcdir/config.ini
 
 curdir=`ls -1 ~/RMS_data/CapturedFiles/ | tail -1`
