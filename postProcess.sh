@@ -87,11 +87,11 @@ if [ -f /usr/bin/msmtp ] ; then
     fi 
     echo From: pi@`hostname` > /tmp/message.txt
     echo To: $MAILRECIP >> /tmp/message.txt
-    mc1=`grep "meteors\." ~/RMS_data/logs/log*${curdt}*.log* | grep detected |  awk '{print $5}'`
+    mc1=`grep "meteors\." ~/RMS_data/logs/log*${curdt}*.log* | grep TOTAL |  awk '{print $5}'`
     mc=`echo $mc1 | sed 's/ /+/g' |  bc`
     if [ $mc -gt 0 ] ; then
         echo Subject: `hostname`: $curdt: $mc meteors found >> /tmp/message.txt    
-        grep "meteors\." ~/RMS_data/logs/log*${curdt}*.log* | grep detected | awk '{printf("%s %s %s %s\n", $4, $5,$6,$7)}' >> /tmp/message.txt
+        grep "meteors\." ~/RMS_data/logs/log*${curdt}*.log* | grep TOTAL | awk '{printf("%s %s %s %s\n", $4, $5,$6,$7)}' >> /tmp/message.txt
     else
         echo Subject: `hostname`: $curdt: No meteors found >> /tmp/message.txt    
     fi
