@@ -109,18 +109,9 @@ grabs=`ls -1tr ~/RMS_data/logs/log_${curdt}* | while read i ; do grep Grabbing $
 
 echo $curdt $hours $noffs $ffhrs $grabs >> /home/pi/RMS_data/logs/ffcounts.txt
 
-# backup configuration each month
-mkdir $srcdir/bkp > /dev/null 2>&1
-if [ `date +%d` -eq 1 ]; then 
-    cp /home/pi/source/RMS/.config $srcdir/bkp/.config.`date +%Y%m`
-    cp /home/pi/source/RMS/platepar_cmn2010.cal $srcdir/bkp/platepar_cmn2010.cal.`date +%Y%m`
-    cp /home/pi/source/RMS/mask.bmp $srcdir/bkp/mask.bmp.`date +%Y%m`
-fi
 # reboot the camera. Recommended to avoid freezes and lockups
 pushd /home/pi/source/RMS
 echo "Rebooting the camera"
 python3 -m Utils.CameraControl reboot
 popd
 
-# clear the archive dir down of anything older than 20 days
-$srcdir/clearArchive.sh

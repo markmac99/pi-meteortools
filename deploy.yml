@@ -13,8 +13,10 @@
     - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/RMS_Pi4Monitor.sh', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}', mode: '755', backup: no }
+    - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}', mode: '755', backup: no }
     - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}', mode: '644', backup: no }
+    - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}', mode: '644', backup: no }
 
   - name: update mail recip
@@ -44,4 +46,9 @@
       path: ~/mjmm/config.ini
       regexp: 'MP4DIR='
       line: 'MP4DIR=/mnt/mjmm-data/'
-    
+  - name: update scripts folder
+    lineinfile:
+      path: ~/mjmm/config.ini
+      regexp: 'SCRIPTDIR='
+      line: 'SCRIPTDIR=/home/pi/mjmm'
+  
