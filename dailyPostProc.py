@@ -13,6 +13,7 @@ import Utils.BatchFFtoImage as bff2i
 import Utils.GenerateMP4s as gmp4
 import Utils.GenerateTimelapse as gti
 import RMS.ConfigReader as cr
+import Utils.CameraControl as cc
 
 import boto3
 
@@ -151,7 +152,7 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     # reboot the camera
     print('rebooting camera')
-    os.system('python3 -m Utils.CameraControl reboot')
+    cc.cameraControlV2(config, 'reboot','')
 
     os.remove(rebootlockfile)
     return
@@ -159,12 +160,16 @@ def rmsExternal(cap_dir, arch_dir, config):
 
 if __name__ == '__main__':
     hname = os.uname()[1]
-    if hname == 'meteorpi':
-        cap_dir = '/home/pi/RMS_data/CapturedFiles/UK0006_20210128_172254_208437'
-        arch_dir = '/home/pi/RMS_data/ArchivedFiles/UK0006_20210128_172254_208437'
+    if len(sys.argv) < 1:
+        if hname == 'meteorpi':
+            cap_dir = '/home/pi/RMS_data/CapturedFiles/UK0006_20210130_172616_214463'
+            arch_dir = '/home/pi/RMS_data/ArchivedFiles/UK0006_20210130_172616_214463'
+        else:
+            cap_dir = '/home/pi/RMS_data/CapturedFiles/UK000F_20210128_172253_791467'
+            arch_dir = '/home/pi/RMS_data/ArchivedFiles/UK000F_20210128_172253_791467'
     else:
-        cap_dir = '/home/pi/RMS_data/CapturedFiles/UK000F_20210128_172253_791467'
-        arch_dir = '/home/pi/RMS_data/ArchivedFiles/UK000F_20210128_172253_791467'
+        cap_dir = os.path.join('/home/pi/RMS_data/CapturedFiles/', sys.argv[1])
+        arch_dir = os.path.join('/home/pi/RMS_data/ArchivedFiles/', sys.argv[1])
 
     config = cr.parse(".config")
 
