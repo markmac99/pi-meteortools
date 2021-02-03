@@ -9,7 +9,8 @@
 #    To test this code, you must run it locally using your own API credentials.
 #    See: https://developers.google.com/explorer-help/guides/code_samples#python
 
-import os, sys
+import os
+import sys
 import pickle
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
@@ -21,12 +22,8 @@ from googleapiclient.errors import HttpError
 
 scopes = ["https://www.googleapis.com/auth/youtube.upload"]
 
-def main():
 
-    # Parameters: title to use and the file to upload
-    title=sys.argv[1]
-    fname=sys.argv[2]
-
+def main(title, fname):
     api_service_name = "youtube"
     api_version = "v3"
 
@@ -44,22 +41,22 @@ def main():
     pickle_file=local_path +'/token.pickle'
     if os.path.exists(pickle_file):
         with open(pickle_file, 'rb') as token:
-          if sys.version_info.major < 3:
-            credentials = pickle.load(token)
-          else:
-            credentials = pickle.load(token, encoding='latin1')
+            if sys.version_info.major < 3:
+                credentials = pickle.load(token)
+            else:
+                credentials = pickle.load(token, encoding='latin1')
 
     # If there are no (valid) credentials available, let the user log in.
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:# Get credentials and create an API client
-          flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secrets_file, scopes)
-          credentials = flow.run_console()
+            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                client_secrets_file, scopes)
+            credentials = flow.run_console()
         # Save the credentials for the next run
         with open(pickle_file, 'wb') as token:
-          pickle.dump(credentials, token)
+            pickle.dump(credentials, token)
 
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, credentials=credentials)
@@ -67,30 +64,33 @@ def main():
     request = youtube.videos().insert(
         part="snippet,status",
         body={
-          "snippet": {
-            "categoryId": "22",
-            "description": title,
-            "title": title
-          },
-          "status": {
-            "privacyStatus": "public"
-          }
+            "snippet": {
+                "categoryId": "22",
+                "description": title,
+                "title": title
+            },
+            "status": {
+                "privacyStatus": "public"
+            }
         },
         
-        media_body=MediaFileUpload(fname,  chunksize=-1, resumable=True)
+        media_body=MediaFileUpload(fname, chunksize=-1, resumable=True)
     )
     try: 
-      status, response = request.next_chunk() # request.execute()
-      print(status, response)
-      if response is not None:
-        if 'id' in response:
-          print("Video id '%s' was successfully uploaded." % response['id'])
-        else:
-          exit("The upload failed with an unexpected response: %s" % response)
+        status, response = request.next_chunk() # request.execute()
+        print(status, response)
+        if response is not None:
+            if 'id' in response:
+                print("Video id '%s' was successfully uploaded." % response['id'])
+            else:
+                exit("The upload failed with an unexpected response: %s" % response)
     except HttpError as e:
-       error='HTTP error %d arose with status: \'%s\' ' % (e.resp.status, e.content)
-       print(error)
+        error='HTTP error %d arose with status: \'%s\' ' % (e.resp.status, e.content)
+        print(error)
+
 
 if __name__ == "__main__":
-    main()
-
+    # Parameters: title to use and the file to upload
+    title=sys.argv[1]
+    fname=sys.argv[2]
+    main(title, fname)
