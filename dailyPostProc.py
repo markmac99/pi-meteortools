@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+# 
 # python script thats called when the nightly run completes
 #
 
@@ -51,63 +51,66 @@ def rmsExternal(cap_dir, arch_dir, config):
     gmp4.generateMP4s(arch_dir, ftpfile_name)
 
     # generate an all-night timelapse and move it to arch_dir
-    print('generating a timelapse')
-    gti.fps = 25
-    gti.generateTimelapse(cap_dir, False)
-    mp4name = os.path.basename(cap_dir) + '.mp4'
-    shutil.move(os.path.join(cap_dir, mp4name), os.path.join(arch_dir, mp4name))
-    
-    # upload timelapse to Youtube
-    if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
-        with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-            f.write('dummy\n')
+    try: 
+        print('generating a timelapse')
+        gti.fps = 25
+        gti.generateTimelapse(cap_dir, False)
+        mp4name = os.path.basename(cap_dir) + '.mp4'
+        shutil.move(os.path.join(cap_dir, mp4name), os.path.join(arch_dir, mp4name))
+        
+        # upload timelapse to Youtube
+        if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
+            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
+                f.write('dummy\n')
 
-    with open(os.path.join(srcdir, '.ytdone'), 'r') as f:
-        line = f.readline().rstrip()
-        if line != mp4name:
-            tod = mp4name.split('_')[1]
-            tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
-            msg = '{:s} timelapse for {:s}'.format(hname, tod)
-            print('uploading {:s} to youtube'.format(mp4name))
-            stu.main(msg, os.path.join(arch_dir, mp4name))
-        else:
-            print('already uploaded {:s}'.format(mp4name))
-            
-        with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-            f.write(mp4name)
+        with open(os.path.join(srcdir, '.ytdone'), 'r') as f:
+            line = f.readline().rstrip()
+            if line != mp4name:
+                tod = mp4name.split('_')[1]
+                tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
+                msg = '{:s} timelapse for {:s}'.format(hname, tod)
+                print('uploading {:s} to youtube'.format(mp4name))
+                stu.main(msg, os.path.join(arch_dir, mp4name))
+            else:
+                print('already uploaded {:s}'.format(mp4name))
+                
+            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
+                f.write(mp4name)
 
-    # upload the MP4 to S3 or a website
-    if int(localcfg['postprocess']['upload']) == 1:
-        hn = localcfg['postprocess']['host']
-        fn = os.path.join(arch_dir, mp4name)
-        splits = mp4name.split('_')
-        stn = splits[0]
-        yymm = splits[1]
-        yymm = yymm[:6]
-        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
-        if hn[:3] == 's3:':
-            print('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
+        # upload the MP4 to S3 or a website
+        if int(localcfg['postprocess']['upload']) == 1:
+            hn = localcfg['postprocess']['host']
+            fn = os.path.join(arch_dir, mp4name)
+            splits = mp4name.split('_')
+            stn = splits[0]
+            yymm = splits[1]
+            yymm = yymm[:6]
+            idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+            if hn[:3] == 's3:':
+                print('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
 
-            with open(idfile, 'r') as f:
-                li = f.readline()
-                key = li.split('=')[1].rstrip().strip('"')
-                li = f.readline()
-                secret = li.split('=')[1].rstrip().strip('"')
+                with open(idfile, 'r') as f:
+                    li = f.readline()
+                    key = li.split('=')[1].rstrip().strip('"')
+                    li = f.readline()
+                    secret = li.split('=')[1].rstrip().strip('"')
 
-            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
-                region_name='eu-west-2')
-            target=hn[5:]
-            outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
-            s3.meta.client.upload_file(fn, target, outf)
-        else:
-            print('uploading to website')
-            user = localcfg['postprocess']['user']
-            mp4dir = localcfg['postprocess']['mp4dir']
-            cmdline = 'ssh -i {:s}  {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, user, hn, mp4dir, stn, yymm)
-            os.system(cmdline)
-            cmdline = 'scp -i {:s} {:s} {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, fn, user, hn, mp4dir, stn, yymm)
-            os.system(cmdline)
-
+                s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
+                    region_name='eu-west-2')
+                target=hn[5:]
+                outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
+                s3.meta.client.upload_file(fn, target, outf)
+            else:
+                print('uploading to website')
+                user = localcfg['postprocess']['user']
+                mp4dir = localcfg['postprocess']['mp4dir']
+                cmdline = 'ssh -i {:s}  {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, user, hn, mp4dir, stn, yymm)
+                os.system(cmdline)
+                cmdline = 'scp -i {:s} {:s} {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, fn, user, hn, mp4dir, stn, yymm)
+                os.system(cmdline)
+    except:
+        print('unable to create timelapse - maybe capture folder removed already')
+        
     # email a summary to the mailrecip
     mailrecip = localcfg['postprocess']['mailrecip'].rstrip()
     smtphost = localcfg['postprocess']['mailhost'].rstrip()
@@ -130,7 +133,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
     splits = os.path.basename(arch_dir).split('_')
     curdt = splits[1]
-    logname=os.path.join(logdir, 'log_' + splits[1] + '_' + '*.log')
+    logname=os.path.join(logdir, 'log_' + splits[1] + '_' + '*.log*')
     logfs = glob.glob(logname)
     total = 0
     for f in logfs:
