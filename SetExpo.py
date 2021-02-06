@@ -1,16 +1,23 @@
 # SetExpo.py
 # sets the exposure on the IPCamera using Python_DVRIP
 #
-import os, sys
+import sys
 sys.path.append('/home/pi/source/RMS/python-dvr')
 from dvrip import DVRIPCam
 
 host_ip = sys.argv[1]
+
+# my camera 2 is a bit broken in colour mode
+if '30' in host_ip:
+    daycmode = '0x00000002'
+else:
+    daycmode = '0x00000001'
+
 daynight=sys.argv[2]
 if daynight == 'DAY':
     expo=30
     gain=30
-    cmode='0x00000001'
+    cmode=daycmode
     minexp='0x00000064'
     maxexp='0x00009C40'
 else:
@@ -22,9 +29,9 @@ else:
 
 cam = DVRIPCam(host_ip, "admin", "")
 if cam.login():
-        print("Success! Connected to " + host_ip)
+    print("Success! Connected to " + host_ip)
 else:
-        print("Failure. Could not connect.")
+    print("Failure. Could not connect.")
 
 params = cam.get_info("Camera")
 print(params['Param'])
