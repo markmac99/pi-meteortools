@@ -50,6 +50,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     ftpfile_name="FTPdetectinfo_"+ftpdate+'.txt'
     gmp4.generateMP4s(arch_dir, ftpfile_name)
 
+    extramsg = 'Notes:\n'
     # generate an all-night timelapse and move it to arch_dir
     try: 
         print('generating a timelapse')
@@ -109,8 +110,19 @@ def rmsExternal(cap_dir, arch_dir, config):
                 cmdline = 'scp -i {:s} {:s} {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, fn, user, hn, mp4dir, stn, yymm)
                 os.system(cmdline)
     except:
-        print('unable to create timelapse - maybe capture folder removed already')
+        errmsg = 'unable to create timelapse - maybe capture folder removed already'
+        print(errmsg)
+        extramsg = extramsg + errmsg + '\n'
         
+    # reboot the camera
+    print('rebooting camera')
+    try:
+        cc.cameraControlV2(config, 'reboot','')
+    except Exception:
+        camerr = 'unable to reboot the camera - please check its alive'
+        print(camerr)
+        extramsg = extramsg + camerr + '\n'
+
     # email a summary to the mailrecip
     mailrecip = localcfg['postprocess']['mailrecip'].rstrip()
     smtphost = localcfg['postprocess']['mailhost'].rstrip()
@@ -146,16 +158,10 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     msg['Subject']='{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total)
     message = '{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total)
+    message = message + '\n' + extramsg
     msg.attach(MIMEText(message, 'plain'))
-    #if sys.version_info[0] < 3:
     s.sendmail(msg['From'], mailrecip, msg.as_string())
-    #else:
-    #    s.send_message(msg)
     s.close()
-
-    # reboot the camera
-    print('rebooting camera')
-    cc.cameraControlV2(config, 'reboot','')
 
     os.remove(rebootlockfile)
     return
