@@ -66,9 +66,5 @@
       path: ~/mjmm/config.ini
       regexp: 'MP4DIR='
       line: 'MP4DIR=/mnt/mjmm-data/'
-  - name: update scripts folder
-    lineinfile:
-      path: ~/mjmm/config.ini
-      regexp: 'SCRIPTDIR='
-      line: 'SCRIPTDIR=/home/pi/mjmm'
+
   

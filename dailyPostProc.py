@@ -4,16 +4,10 @@
 
 import os
 import sys
-import shutil
 import glob
 import configparser
 
-import Utils.StackFFs as sff
-import Utils.BatchFFtoImage as bff2i
-import Utils.GenerateMP4s as gmp4
-import Utils.GenerateTimelapse as gti
 import RMS.ConfigReader as cr
-import Utils.CameraControl as cc
 
 import boto3
 
@@ -28,38 +22,18 @@ def rmsExternal(cap_dir, arch_dir, config):
         f.write('1')
 
     print('reading local config')
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
-    localcfg.read('/home/pi/mjmm/config.ini')
-    srcdir = localcfg['postprocess']['scriptdir']
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
     hname = os.uname()[1]
     import sendToYoutube as stu
 
-    # stack and create jpgs from the potential detections
-    print('stacking the FF files')
-    sff.stackFFs(arch_dir, 'jpg', filter_bright=True)
-    bff2i.batchFFtoImage(arch_dir, 'jpg')
-
-    # generate MP4s of detections
-    print('generating MP4s')
-    ftpdate=''
-    if os.path.split(arch_dir)[1] == '':
-        ftpdate=os.path.split(os.path.split(arch_dir)[0])[1]
-    else:
-        ftpdate=os.path.split(arch_dir)[1]
-    ftpfile_name="FTPdetectinfo_"+ftpdate+'.txt'
-    gmp4.generateMP4s(arch_dir, ftpfile_name)
-
     extramsg = 'Notes:\n'
-    # generate an all-night timelapse and move it to arch_dir
+    # upload mp4 to youtube
     try: 
-        print('generating a timelapse')
-        gti.fps = 25
-        gti.generateTimelapse(cap_dir, False)
         mp4name = os.path.basename(cap_dir) + '.mp4'
-        shutil.move(os.path.join(cap_dir, mp4name), os.path.join(arch_dir, mp4name))
-        
-        # upload timelapse to Youtube
+
         if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
             with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
                 f.write('dummy\n')
@@ -110,18 +84,9 @@ def rmsExternal(cap_dir, arch_dir, config):
                 cmdline = 'scp -i {:s} {:s} {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, fn, user, hn, mp4dir, stn, yymm)
                 os.system(cmdline)
     except:
-        errmsg = 'unable to create timelapse - maybe capture folder removed already'
+        errmsg = 'unable to upload timelapse'
         print(errmsg)
         extramsg = extramsg + errmsg + '\n'
-        
-    # reboot the camera
-    print('rebooting camera')
-    try:
-        cc.cameraControlV2(config, 'reboot','')
-    except Exception:
-        camerr = 'unable to reboot the camera - please check its alive'
-        print(camerr)
-        extramsg = extramsg + camerr + '\n'
 
     # email a summary to the mailrecip
     mailrecip = localcfg['postprocess']['mailrecip'].rstrip()
