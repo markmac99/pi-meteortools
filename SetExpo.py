@@ -22,7 +22,7 @@ if daynight == 'DAY':
     maxexp='0x00009C40'
 else:
     expo=100
-    gain=70
+    gain=60
     cmode='0x00000002'
     minexp='0x00009C40'
     maxexp='0x00009C40'

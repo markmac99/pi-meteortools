@@ -33,7 +33,7 @@ else
       tms=`$here/sunwait list 51.88N 1.31W`
       dawn=`echo $tms | cut -d, -f1`
       dusk=`echo $tms | cut -d, -f2`
-      echo "$here/setIPCamExpo.sh DAY" | at $dawn tomorrow
-      echo "$here/setIPCamExpo.sh NIGHT" | at $dusk tomorrow
+      echo "$here/setIPCamExpo.sh DAY" | at $dawn tomorrow -M 
+      echo "$here/setIPCamExpo.sh NIGHT" | at $dusk tomorrow -M 
   fi
 fi
