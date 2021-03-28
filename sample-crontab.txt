@@ -1,8 +1,0 @@
-#
-# m h  dom mon dow   command
-#
-0 11 * * * find /home/pi/RMS_data/logs -mtime +10 -exec rm -f {} \; > /dev/null 2>&1
-@reboot sleep 60 && /home/pi/mjmm/checkForMeteors.sh > /tmp/chkForMeteors.log 2>&1
-@reboot sleep 600 && /home/pi/mjmm/postProcess.sh > /tmp/postProcess.log 2>&1
-*/10 * * * * /home/pi/mjmm/latestEvents.sh > /dev/null 2>&1
-*/6 * * * * /home/pi/mjmm/logTemperature.sh > /dev/null 2>&1
