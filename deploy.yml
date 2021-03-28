@@ -1,5 +1,5 @@
 ---
-- hosts: meteorpi, meteorpi2
+- hosts: meteorpi, meteorpi2, meteorpi4
   vars:
     srcdir: /mnt/e/dev/meteorhunting/UKMON-shared/Pi_Cameras
     destdir: ~/mjmm
@@ -7,17 +7,17 @@
   - name: Copy files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
-    - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/RMS_Pi4Monitor.sh', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/trackFFs.sh', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}', mode: '755', backup: no }
-    - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}', mode: '644', backup: no }
-    - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}', mode: '644', backup: no }
-    - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}', mode: '644', backup: no }
-    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}', mode: '644', backup: no }
+    - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/RMS_Pi4Monitor.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/trackFFs.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
 
   - name: update mail recip
     lineinfile: 
