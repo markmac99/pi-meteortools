@@ -1,0 +1,8 @@
+RedoAllRMS.ps1
+RedoOneRMS.ps1
+redoPlatepar.ps1
+
+AnalyseUFOwithRMS.py
+findFireballs.py
+readUSBCamera.py
+Testing.py
