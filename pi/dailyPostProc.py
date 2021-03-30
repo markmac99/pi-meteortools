@@ -125,10 +125,19 @@ def rmsExternal(cap_dir, arch_dir, config):
     message = '{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total)
     message = message + '\n' + extramsg
     msg.attach(MIMEText(message, 'plain'))
-    s.sendmail(msg['From'], mailrecip, msg.as_string())
+    try:
+        s.sendmail(msg['From'], mailrecip, msg.as_string())
+    except:
+        print('unable to send mail')
+
     s.close()
 
     os.remove(rebootlockfile)
+
+    sys.path.append('/home/pi/source/RMS/iStream')
+    import iStream as istr
+    istr.rmsExternal(cap_dir, arch_dir, config)
+
     return
 
 
