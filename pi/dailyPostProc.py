@@ -1,5 +1,10 @@
 # 
 # python script thats called when the nightly run completes
+# requires
+# ~/.ssh/gmailpass - plaintext file containing gmail password
+# ~/.ssh/keyfile - plaintext file containing S3 keys or SSH private key for 
+# upload to S3 or website. filename configurable in config file
+#
 #
 
 import os
