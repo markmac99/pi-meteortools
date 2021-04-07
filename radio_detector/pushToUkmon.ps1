@@ -19,8 +19,8 @@ if((test-path $inifname) -eq $false){
 $logf=$datadir+'/logs/ukmon-'+(get-date -uformat '%Y%m%d')+'.log'
 $ukmonkey=$ini['ukmon']['ukmon_keyfile']
 $keys=((Get-Content $ukmonkey)[1]).split(',')
-$Env:AWS_ACCESS_KEY_ID = $keys[0]
-$env:AWS_SECRET_ACCESS_KEY = $keys[1]
+$Env:AWS_ACCESS_KEY_ID = $keys[2]
+$env:AWS_SECRET_ACCESS_KEY = $keys[3]
 
 $station=$ini['ukmon']['ukmon_station']
 $srcloc=$datadir+'\csv\'

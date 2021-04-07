@@ -16,8 +16,8 @@ $oldkey = $Env:AWS_ACCESS_KEY_ID
 $oldsec = $env:AWS_SECRET_ACCESS_KEY
 
 $keys=((Get-Content $keyfile)[1]).split(',')
-$Env:AWS_ACCESS_KEY_ID = $keys[0]
-$env:AWS_SECRET_ACCESS_KEY = $keys[1]
+$Env:AWS_ACCESS_KEY_ID = $keys[2]
+$env:AWS_SECRET_ACCESS_KEY = $keys[3]
 
 set-location $fbfolder
 set-location .\mp4s
