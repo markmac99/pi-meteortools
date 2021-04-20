@@ -6,6 +6,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib:/usr/local/openss
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 source ~/vRMS/bin/activate
+source $here/config.ini
 cd ~/source/RMS
 if [ "$1" == "" ] ; then
   echo "usage setIPCamExpo.sh DAY|NIGHT|REBOOT"
@@ -22,10 +23,10 @@ LOGF=/home/pi/RMS_data/logs/setExpo-`date +%Y%m%d`.log
 if [ "$1" == "REBOOT" ] ; then
     DON=`$here/sunwait poll 51.88N 1.31W`
     logger "Setting exposure for $DON. Camera is $IPCAMADDR"
-    python3 $here/SetExpo.py $IPCAMADDR $DON > $LOGF 2>&1
+    python3 $here/SetExpo.py $IPCAMADDR $DON $NIGHTGAIN > $LOGF 2>&1
 else
-  logger "Setting exposure for $1. Camera is $IPCAMADDR" 
-  python3 $here/SetExpo.py $IPCAMADDR $1 > $LOGF 2>&1
+  logger "Setting exposure for $1. Camera is $IPCAMADDR, gain is $NIGHTGAIN" 
+  python3 $here/SetExpo.py $IPCAMADDR $1 $NIGHTGAIN > $LOGF 2>&1
 
   # if running at dusk, add tomorrow's AT jobs
   hr=`date +%H`

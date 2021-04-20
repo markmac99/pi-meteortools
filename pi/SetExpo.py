@@ -2,7 +2,6 @@
 # sets the exposure on the IPCamera using Python_DVRIP
 #
 import sys
-sys.path.append('/home/pi/source/RMS/python-dvr')
 from dvrip import DVRIPCam
 
 host_ip = sys.argv[1]
@@ -13,19 +12,24 @@ host_ip = sys.argv[1]
 #else:
 daycmode = '0x00000001'
 
+if len(sys.argv) > 3:
+    nightgain = sys.argv[3]
+else:
+    nightgain = 60
+
 daynight=sys.argv[2]
 if daynight == 'DAY':
-    expo=30
-    gain=30
-    cmode=daycmode
-    minexp='0x00000064'
-    maxexp='0x00009C40'
+    expo = 30
+    gain = 30
+    cmode = daycmode
+    minexp = '0x00000064'
+    maxexp = '0x00009C40'
 else:
-    expo=100
-    gain=60
-    cmode='0x00000002'
-    minexp='0x00009C40'
-    maxexp='0x00009C40'
+    expo = 100
+    gain = nightgain
+    cmode = '0x00000002'
+    minexp = '0x00009C40'
+    maxexp = '0x00009C40'
 
 cam = DVRIPCam(host_ip, "admin", "")
 if cam.login():

@@ -66,5 +66,9 @@
       path: ~/mjmm/config.ini
       regexp: 'MP4DIR='
       line: 'MP4DIR=/mnt/mjmm-data/'
-
+  - name: update night gain
+    lineinfile:
+      path: ~/mjmm/config.ini
+      regexp: 'NIGHTGAIN='
+      line: 'NIGHTGAIN={{nightgain}}'
   
