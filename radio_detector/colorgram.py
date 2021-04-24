@@ -18,7 +18,7 @@ interval = 100  # millisecs between loops in Colorlab
 def ConvertToCsv(yr, mt, dy, srcpath, targpath):
     print('convering to CSV for ' + yr + mt + dy)
     # dt = "{:4d}{:02d}{:02d}".format(yr,mt,dy)
-    dt = yr + mt + dy
+    dt = yr + mt # + dy
 
     config = cfg.ConfigParser()
     config.read('./station.ini')
@@ -28,12 +28,9 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
     alt = float(config['observer']['altitude'])
     tz = int(config['observer']['tz'])
 
-    srcfile = srcpath + 'event_log' + dt + '.txt'
+    srcfile = os.path.join(srcpath, 'event_log_' + dt + '.csv')
     targfile = targpath + yr + '/' + yr + mt + '/R' + yr + mt + dy + '_' + id + '.csv'
-    try:
-        os.makedirs(targpath + yr + '/' + yr + mt)
-    except:
-        print('dir exists')
+    os.makedirs(targpath + yr + '/' + yr + mt, exist_ok=True)
 
     outf = open(targfile, 'w+')
 
@@ -41,17 +38,20 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
         outf.write('Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz\n')
         mydata = csv.reader(inf, delimiter=',')
         for row in mydata:
-            tstamp = row[0]
-            hr = tstamp[0:2]
-            mi = tstamp[3:5]
-            se = tstamp[6:9]
-            bri = round(float(row[2]) - float(row[3]), 2)
-            freq = row[4]
-            dur = int(row[5]) * interval
-            s = "RMOB,{:s},{:s},{:s},{:s},{:s},{:s},".format(yr, mt, dy, hr, mi, se)
-            s = s + "{:f},{:d},{:s},".format(bri, dur, freq)
-            s = s + "{:s},{:f},{:f},{:f},{:d}\n".format(id, lng, lat, alt, tz)
-            outf.write(s)
+            dstamp=row[0]
+            fdy = dstamp[:2]
+            if fdy == dy: 
+                tstamp = row[1]
+                hr = tstamp[0:2]
+                mi = tstamp[3:5]
+                se = tstamp[6:9]
+                bri = round(float(row[2]) - float(row[3]), 2)
+                freq = row[6]
+                dur = float(row[7]) * interval
+                s = "RMOB,{:s},{:s},{:s},{:s},{:s},{:s},".format(yr, mt, dy, hr, mi, se)
+                s = s + "{:f},{:f},{:s},".format(bri, dur, freq)
+                s = s + "{:s},{:f},{:f},{:f},{:d}\n".format(id, lng, lat, alt, tz)
+                outf.write(s)
     inf.close
     outf.close
     return 0
@@ -188,17 +188,20 @@ def main(srcpath, targpath, tod):
     except:
         print('dir exists')
 
+    rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
+    print(' src is {}, targ is {}'.format(rmobfile, targpath))
     # create heatmap for this month
     # named yyyymm.jpg eg 200206.jpg
     mthdays = calendar.monthrange(int(tod[:4]), int(tod[4:6]))[1]
 
     # read the RMOB file
     myarray = np.zeros((24, mthdays), dtype=int)
-    rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
     with open(rmobfile) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
         for row in mydata:
+            if len(row) <1:
+                continue
             yr = row[0]
             yyyy = yr[0:6]
             dy = int(yr[6:8])
@@ -444,7 +447,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         targpath = sys.argv[2]
     else:
-        targpath = srcpath + 'rmob/'
+        targpath = os.path.join(srcpath,'rmob')
     if len(sys.argv) > 3:
         tod = str(sys.argv[3])
     else:

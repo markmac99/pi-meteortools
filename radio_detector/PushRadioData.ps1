@@ -18,7 +18,9 @@ if((test-path $inifname) -eq $false){
 $logf=$datadir+'/logs/process-'+(get-date -uformat '%Y%m%d')+'.log'
 write-output 'updating colorgrammes' | tee-object $logf
 Set-Location $PSScriptRoot
-python .\colorgram.py | tee-object $logf -append
+$srcdir=$datadir+'/logs'
+$targdir=$datadir+'/rmob'
+python .\colorgram.py $srcdir $targdir | tee-object $logf -append
 
 write-output "Copying to website..." | tee-object $logf -append
 
@@ -37,7 +39,7 @@ $ssloc=$datadir+'\screenshots'
 set-location $ssloc
 
 $curdt=(get-date -uformat '%y%m%d')
-$fnam=(get-childitem  event$curdt*.jpg | sort-object lastwritetime).name | select-object -last 1
+$fnam=(get-childitem  event_$curdt*.jpg | sort-object lastwritetime).name | select-object -last 1
 if($fnam){
     Write-Output 'copying last capture' | tee-object $logf -append
     copy-item $fnam  -destination latestcapture.jpg
