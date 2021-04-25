@@ -31,7 +31,7 @@ else:
     minexp = '0x00009C40'
     maxexp = '0x00009C40'
 
-cam = DVRIPCam(host_ip, "admin", "")
+cam = DVRIPCam(host_ip)
 if cam.login():
     print("Success! Connected to " + host_ip)
 else:
