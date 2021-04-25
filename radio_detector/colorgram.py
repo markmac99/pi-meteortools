@@ -16,7 +16,7 @@ interval = 100  # millisecs between loops in Colorlab
 
 
 def ConvertToCsv(yr, mt, dy, srcpath, targpath):
-    print('convering to CSV for ' + yr + mt + dy)
+    print('converting to CSV for ' + yr + mt + dy)
     # dt = "{:4d}{:02d}{:02d}".format(yr,mt,dy)
     dt = yr + mt # + dy
 

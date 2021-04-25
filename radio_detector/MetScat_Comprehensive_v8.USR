@@ -1,7 +1,7 @@
 [ABOUT]
 FormatVersion=2
 Info1=Configuration file for Spectrum Lab
-Info2=Compilation date Jan 16 2019
+Info2=Compilation date Mar  6 2021
 MenuText=Default settings
 InfoText=
 
@@ -14,18 +14,18 @@ DebugFlags=0
 UseOutputDebugString=0
 PrefRxAudioCenterFreq=-1
 PrefTxAudioCenterFreq=-1
-FrequencyListFile=frequencies\default.txt, frequencies\Eu_NDB_list.txt
-PlainFreqInputFields=0
+FrequencyListFile=frequencies\Meteor_freqlist.txt
+PlainFreqInputFields=1
 FreqInputFieldsMinMax=0
 FreqInputFieldsNumDecimalPlaces=0
 RigControlFlags=0
 CATMonitorFlags=0
 
 [MAIN_WINDOW]
-Left=8
-Top=71
-Width=1279
-Height=736
+Left=-8
+Top=-8
+Width=1384
+Height=744
 Visible=-9999
 FormStyle=-9999
 ShowWindowsInTaskBar=0
@@ -56,10 +56,10 @@ FSliderMin=0
 FSliderMax=5512
 
 [FilterControlForm]
-Left=330
-Top=105
+Left=284
+Top=133
 Width=640
-Height=432
+Height=433
 Visible=0
 FormStyle=0
 FFP_VSplit=32
@@ -127,12 +127,21 @@ TxTextFilename=test.txt
 RxTextFilename=rcvd.txt
 
 [CONFIG_WINDOW]
-Left=150
-Top=150
+Left=52
+Top=52
 Width=550
 Height=470
 Visible=-9999
 FormStyle=0
+
+[HTTP_SRV_WINDOW]
+Left=-9999
+Top=-9999
+Width=-9999
+Height=-9999
+Visible=0
+FormStyle=-9999
+ActivePage=0
 
 [PaletteEditorForm]
 Left=-9999
@@ -143,19 +152,19 @@ Visible=-9999
 FormStyle=-9999
 
 [DebugForm]
-Left=15
-Top=248
+Left=14
+Top=330
 Width=668
-Height=316
+Height=317
 Visible=0
 FormStyle=3
 ActivePage=3
 
 [PeriodicActionForm]
-Left=4
-Top=1
-Width=996
-Height=408
+Left=171
+Top=107
+Width=1025
+Height=553
 Visible=0
 FormStyle=0
 
@@ -168,11 +177,11 @@ Visible=-9999
 FormStyle=-9999
 
 [SecondSpectrogram]
-Left=193
-Top=133
+Left=801
+Top=13
 Width=561
 Height=368
-Visible=0
+Visible=1
 FormStyle=-9999
 ControlsVisible=1
 
@@ -221,13 +230,13 @@ PlaylistName=
 AnalysedFileName=
 
 [SOUNDCARD]
-SampleRate=192000
-UseDifferentOutputSR=0
-ResampleToNominalOutputSR=0
+SampleRate=2400000
+UseDifferentOutputSR=1
+ResampleToNominalOutputSR=1
 TEST_JitterFreeTimestamps=0
-NominalOutputSampleRate=11025
+NominalOutputSampleRate=44100
 BitsPerSample=16
-SampleRateDivisor=1
+SampleRateDivisor=64
 InputPreprocFlags=0
 InputPreprocNCOFreq=0
 ResampleQuality1=1
@@ -270,10 +279,12 @@ OutputAudioLog=logfiles\stream_log_out.ogg
 AudioStreamServerPort=0
 AudioStreamServerProtocol=0
 AudioStreamServerFormatAndCompression=0
+DataTypeFlags=0
+SizeOfDataType=2
 
 [SDR]
-NcoFreqHz=143048000
-Options=0
+NcoFreqHz=143048017
+Options=2
 TestToneFreq=0
 Left=-1
 Top=-1
@@ -354,10 +365,10 @@ InfoInHeader=1
 WriteAuxFile=0
 TimestampsMandatory=0
 MaxFileSize=1400
-Flags=4
+Flags=5
 Source=3
 FileIndex=0
-TrigRecorderFile=RecordedAudio_nnnn.WAV
+TrigRecorderFile=c:\sounds\event20210319_153243_448.wav
 TrigRecorderFileMode=0
 PreTrigSeconds=5
 PostTrigSeconds=5
@@ -384,7 +395,7 @@ MinimizeLatency=0
 AudioInputLatency_ms=0
 AudioOutputLatency_ms=0
 ChainBothChannels=0
-DAC_Switches=9
+DAC_Switches=1
 DAC_Channels=1
 IQInputSwapChannels=0
 IQInputAdjustEnable=0
@@ -725,32 +736,7 @@ MaxSpectrumBufferFftBins=2048
 PeriodicUpdateOvw=0
 
 [FFT_INPUT]
-ConnectSpectrumTo=1
-ConnectSpectrumTo_Q=0
-ConnectSpectrumCh2To=0
-ConnectSpectrumCh2To_Q=0
-Same4AllChnls=1
-RateDivisor=1
-AntiAlias=1
-ApplyFOCalib=0
-TrigOptions=0
-TriggeredAverages=0
-NrOfSamples=16384
-Average=0
-BinSmoothing=0
-WindowFunc=2
-ComplexFFT=0
-CenterFrequency=0
-LoSweepRate=0
-LoSweepMode=0
-
-[FFT_OUTPUT]
-PhysicalUnit=dBfs
-NeedPhaseInfo=0
-UserDbOffset=0.0
-
-[FFT_INPUT2]
-ConnectSpectrumTo=2
+ConnectSpectrumTo=9
 ConnectSpectrumTo_Q=0
 ConnectSpectrumCh2To=0
 ConnectSpectrumCh2To_Q=0
@@ -769,34 +755,59 @@ CenterFrequency=0
 LoSweepRate=0
 LoSweepMode=0
 
+[FFT_OUTPUT]
+PhysicalUnit=dBfs
+NeedPhaseInfo=2
+UserDbOffset=0.0
+
+[FFT_INPUT2]
+ConnectSpectrumTo=1
+ConnectSpectrumTo_Q=0
+ConnectSpectrumCh2To=0
+ConnectSpectrumCh2To_Q=0
+Same4AllChnls=1
+RateDivisor=2
+AntiAlias=1
+ApplyFOCalib=0
+TrigOptions=0
+TriggeredAverages=0
+NrOfSamples=8192
+Average=0
+BinSmoothing=0
+WindowFunc=2
+ComplexFFT=0
+CenterFrequency=0
+LoSweepRate=0
+LoSweepMode=0
+
 [FFT_OUTPUT2]
-PhysicalUnit=dB
+PhysicalUnit=dBfs
 NeedPhaseInfo=0
 UserDbOffset=0.0
 
 [DISPLAY]
 ReadCursorMode=1
-ReadCursorOpts=8
+ReadCursorOpts=40
 PeakDetCursor=1
 UserCursorExpr1=str("hh:mm:ss.s",cursor.spectrum.time.local)
 SpectrumSource=0
-FreqMin=1000
-FreqMax=3000
+FreqMin=1500
+FreqMax=2500
 SpectrumSource2=0
 FreqMin2=600
 FreqMax2=800
 FreqOffset=0
 EditFWithoutOffset=0
-AmplMin=-60
-AmplMax=-10
-AmplMin2=-60
-AmplMax2=-10
+AmplMin=-120
+AmplMax=-60
+AmplMin2=-120
+AmplMax2=-60
 CorrelAmplMin=-1
 CorrelAmplMax=10
 SpectrumActive=1
 SpectrumOrient=1
-SpecGraphArea=100
-DrawingOptions=0
+SpecGraphArea=80
+DrawingOptions=42
 LongTermAvrgOptions=0
 OnePixelPerBin1=0
 OnePixelPerBin2=0
@@ -809,8 +820,8 @@ CorrelogramOptions=0
 CorrelFmin=0
 CorrelFmax=0
 CorrelogramWidthPercent=33
-CorrelatorLagMin=-0.0213333333333
-CorrelatorLagMax=0.0213333333333
+CorrelatorLagMin=-0.000853333333333
+CorrelatorLagMax=0.000853333333333
 CorrelatorAmplMin=-1
 CorrelatorAmplMax=10
 AmplitudeBar=0
@@ -826,20 +837,20 @@ ScaleFontSize=8
 SpectrumGridFontName=Arial
 SpectrumGridFontSize=8
 SpectrumGridFontStyle=0
-FreqScaleOptions=1
+FreqScaleOptions=33
 FreqScaleFixedSize=0
-SpectrumStyleNPos=0
+SpectrumStyleNPos=2
 SpectrumMathOptions=0
 SpecialDisplayMode=0
 ReassignmentFlags=0
 WaterLineWidth=1
 WaterScrollEnabled=1
-AutoScrollSpeed=0
-AutoScrollOverlap=2
-SmoothScroll=0
+AutoScrollSpeed=1
+AutoScrollOverlap=3
+SmoothScroll=1
 AmplitudeGrid=0
 FrequencyGrid=1
-FreqGridStyle=1
+FreqGridStyle=0
 TDDisplayOptions=1
 TDFontName=Arial
 TDFontSize=9
@@ -862,22 +873,22 @@ WaterGridColor=16777215
 WaterLabelTextColor=16777215
 WaterLabelBkgndColor=0
 WaterLabelTransparent=1
-CursorTextColor=65535
+CursorTextColor=8355839
 CursorBkgndColor=0
 WaterFreqGrid=0
-WaterTimeGrid=1
-WaterTimeLabel=3
+WaterTimeGrid=3
+WaterTimeLabel=4
 TDTimeLabel=1
 UserTimeLabel=YYYY-MM-DD hh:mm:ss
 TimeGridSeconds=15
 TimeGridSource=
-TimeGridStyle=1
+TimeGridStyle=2
 ChnIndividualContrast=0
 WaterColorPalette=palettes\sunrise.pal
 VisualAGCMode=0
 VisualAGCRef=-100
-ColorPalContrast=140
-ColorPalBrightness=120
+ColorPalContrast=82
+ColorPalBrightness=127
 ColorPalSaturation=128
 WaterColorPalette2=palettes\sunrise.pal
 VisualAGCMode2=0
@@ -891,34 +902,34 @@ VisualAGCRef3=-100
 ColorPalContrast3=100
 ColorPalBrightness3=128
 ColorPalSaturation3=128
-WaterScrollInterval=0.15
+WaterScrollInterval=0.0273066666667
 WaterfallAveraging=1
-PeakInterval=5
-LTAvrgHalfLife=0
+PeakInterval=7
+LTAvrgHalfLife=0.2
 
 [DISPLAY2]
 ReadCursorMode=1
-ReadCursorOpts=8
+ReadCursorOpts=40
 PeakDetCursor=1
 UserCursorExpr1=str("hh:mm:ss.s",cursor.spectrum.time.local)
 SpectrumSource=0
 FreqMin=0
-FreqMax=5000
+FreqMax=4000
 SpectrumSource2=0
 FreqMin2=600
 FreqMax2=800
 FreqOffset=0
 EditFWithoutOffset=0
 AmplMin=-120
-AmplMax=0
+AmplMax=-60
 AmplMin2=-120
-AmplMax2=0
+AmplMax2=-60
 CorrelAmplMin=-1
 CorrelAmplMax=10
-SpectrumActive=0
-SpectrumOrient=0
-SpecGraphArea=100
-DrawingOptions=0
+SpectrumActive=1
+SpectrumOrient=1
+SpecGraphArea=80
+DrawingOptions=42
 LongTermAvrgOptions=0
 OnePixelPerBin1=0
 OnePixelPerBin2=0
@@ -948,18 +959,18 @@ ScaleFontSize=8
 SpectrumGridFontName=Arial
 SpectrumGridFontSize=8
 SpectrumGridFontStyle=0
-FreqScaleOptions=257
+FreqScaleOptions=33
 FreqScaleFixedSize=0
-SpectrumStyleNPos=2
+SpectrumStyleNPos=1
 SpectrumMathOptions=0
 SpecialDisplayMode=0
-ReassignmentFlags=0
+ReassignmentFlags=3
 WaterLineWidth=1
 WaterScrollEnabled=1
 AutoScrollSpeed=1
-AutoScrollOverlap=2
-SmoothScroll=0
-AmplitudeGrid=1
+AutoScrollOverlap=3
+SmoothScroll=1
+AmplitudeGrid=0
 FrequencyGrid=1
 FreqGridStyle=1
 TDDisplayOptions=1
@@ -986,20 +997,20 @@ WaterLabelBkgndColor=0
 WaterLabelTransparent=1
 CursorTextColor=8355839
 CursorBkgndColor=0
-WaterFreqGrid=0
+WaterFreqGrid=1
 WaterTimeGrid=3
-WaterTimeLabel=3
+WaterTimeLabel=4
 TDTimeLabel=1
 UserTimeLabel=YYYY-MM-DD hh:mm:ss
-TimeGridSeconds=60
+TimeGridSeconds=15
 TimeGridSource=
-TimeGridStyle=1
+TimeGridStyle=2
 ChnIndividualContrast=0
 WaterColorPalette=palettes\sunrise.pal
 VisualAGCMode=0
 VisualAGCRef=-100
-ColorPalContrast=100
-ColorPalBrightness=128
+ColorPalContrast=90
+ColorPalBrightness=135
 ColorPalSaturation=128
 WaterColorPalette2=palettes\sunrise.pal
 VisualAGCMode2=0
@@ -1013,10 +1024,10 @@ VisualAGCRef3=-100
 ColorPalContrast3=100
 ColorPalBrightness3=128
 ColorPalSaturation3=128
-WaterScrollInterval=0.3
+WaterScrollInterval=0.054
 WaterfallAveraging=1
-PeakInterval=5
-LTAvrgHalfLife=0
+PeakInterval=7
+LTAvrgHalfLife=1
 
 [ColorDF]
 AntennaSetup=0
@@ -1065,8 +1076,10 @@ TriggerLevel=0
 TriggerSyncTime=0.07499
 DispPhaseRange=360
 BkgndColor=0
-GridColor=13619151
+ScaleColor=13619151
 LabelColor=13619151
+GridColor=13619151
+GridVisible=0
 
 [TDScope_Chn0]
 ShowWhat=4
@@ -1084,7 +1097,7 @@ PhzColor=65280
 [TDScope_Chn1]
 ShowWhat=4
 DisplayStyle=2
-ConnectTo=2
+ConnectTo=1
 RefFrequency=800
 AmplMin=-1
 AmplMax=1
@@ -1096,7 +1109,7 @@ PhzColor=16711935
 SameLoForPhaseMeters=0
 
 [FREQ_MARKERS]
-Hidden=1
+Hidden=0
 ShowInScreenshot=0
 Name0=decoder
 Type0=
@@ -1274,7 +1287,7 @@ Subtract=0
 [CAPTURE]
 Time_From=0
 Time_To=86399
-TimeInterval=60
+TimeInterval=50
 TimerActive=1
 PeriodicAction=capture ("C:\\spectrum\\latest2d.jpg")
 PeriodicAction2=
@@ -1297,12 +1310,12 @@ PeriodicAction18=
 PeriodicAction19=
 PeriodicAction20=
 ScheduleActive=0
-Options=0
+Options=2
 InfoOvl=1
 InfoPos=0
 InfoStk=1
-InfoDef0="Date="+str("YYYY-MM-DD hh:mm:ss",now)
-InfoDef1="Freq= 143028 kHz"
+InfoDef0="Screen Capture Time: " + str("YYYY-MM-DD hh:mm:ss", now) + " UTC"
+InfoDef1=sdr.freq + " Hz"
 InfoDef2="Tackley Meteor Detection Station"
 InfoDef3=
 InfoDef4=
@@ -1311,10 +1324,10 @@ InfoDef6=
 InfoDef7=
 InfoDef8=
 InfoDef9=
-SequenceNr=9
-SequenceName=..\..\..\..\..\spectrum\capt
-UseJpegFormat=2
-JpegQuality=90
+SequenceNr=0
+SequenceName=screenshots\capt
+UseJpegFormat=1
+JpegQuality=100
 Macro0=
 Macro1=
 Macro2=
@@ -1410,246 +1423,246 @@ ActionCmd=
 [CONDITIONAL_ACTIONS]
 Active=2
 EvalIntv=100
-IF0=initialising
-THEN0=A=0:Sig=0:C=0:E=0:t2=0:Z=0:low=1000:high=3000:MName="Meteor":Mtime=0:MSig=0:MFreq=0:Freq=0:MNoise=0
-IF1=always
-THEN1=A=noise(low,high):Sig=peak_a(low,high):Freq=peak_f(low,high)
-IF2=always
-THEN2=q2=str("YYYYMMDD",now):h1=str("mmss",now):h2=str("hh:mm:ss",now)
-IF3=(Sig>(A+12)) && (Freq > 1400)
-THEN3=C=C+1:D=D+1:timer0.restart(2)
-IF4=C=1
-THEN4=Mtime=h2:MName="Meteor"+h1:MSig=Sig:MFreq=Freq:MNoise=A
-IF5=C=3
-THEN5=timer1.start(30)
-IF6=C>Z
-THEN6=Z=C
-IF7=timer0.expired(1)
-THEN7=E=E+1:sp.print("                 Meteor ",E," Dur",C):fopen2("c:\\spectrum\\"+"event_log"+str("YYYYMMDD",now)+".txt",a):fp2(Mtime+","+str(E)+","+str(MSig)+","+str(MNoise)+","+str(MFreq)+","+str(C)):fclose2:C=0
-IF8=timer1.expired(1)
-THEN8=capture("c:\\spectrum\\screenshots\\"+"event"+str("YYMMDDhhmmss",now)+".jpg",75)
-IF9=val(h1,"####")>5955
-THEN9=t2=t2+1
-IF10=t2=1
-THEN10=fopen2("c:\\spectrum\\"+"RMOB-"+str("YYYYMM",now)+".DAT",a):fp2(str("YYYYMMDDhh", now) + "," + str("hh", now) + "," + str(E)):fclose2 : C=0:E=0:Z=0
-IF11=val(h1,"####")<0005
-THEN11=t2=0
-IF12=
-THEN12=
-IF13=
-THEN13=
-IF14=
-THEN14=
-IF15=
-THEN15=
-IF16=
-THEN16=
-IF17=
-THEN17=
-IF18=
-THEN18=
-IF19=
-THEN19=
-IF20=
-THEN20=
-IF21=
-THEN21=
-IF22=
-THEN22=
-IF23=
-THEN23=
-IF24=
-THEN24=
-IF25=
-THEN25=
-IF26=
-THEN26=
-IF27=
-THEN27=
-IF28=
-THEN28=
-IF29=
-THEN29=
-IF30=
-THEN30=
-IF31=
-THEN31=
-IF32=
-THEN32=
-IF33=
-THEN33=
-IF34=
-THEN34=
-IF35=
-THEN35=
-IF36=
-THEN36=
-IF37=
-THEN37=
-IF38=
-THEN38=
-IF39=
-THEN39=
-IF40=
-THEN40=
-IF41=
-THEN41=
-IF42=
-THEN42=
-IF43=
-THEN43=
-IF44=
-THEN44=
-IF45=
-THEN45=
-IF46=
-THEN46=
-IF47=
-THEN47=
-IF48=
-THEN48=
-IF49=
-THEN49=
-IF50=
-THEN50=
-IF51=
-THEN51=
-IF52=
-THEN52=
-IF53=
-THEN53=
-IF54=
-THEN54=
-IF55=
-THEN55=
-IF56=
-THEN56=
-IF57=
-THEN57=
-IF58=
-THEN58=
-IF59=
-THEN59=
-IF60=
-THEN60=
-IF61=
-THEN61=
-IF62=
-THEN62=
-IF63=
-THEN63=
-IF64=
-THEN64=
-IF65=
-THEN65=
-IF66=
-THEN66=
-IF67=
-THEN67=
-IF68=
-THEN68=
-IF69=
-THEN69=
-IF70=
-THEN70=
-IF71=
-THEN71=
-IF72=
-THEN72=
-IF73=
-THEN73=
-IF74=
-THEN74=
-IF75=
-THEN75=
-IF76=
-THEN76=
-IF77=
-THEN77=
-IF78=
-THEN78=
-IF79=
-THEN79=
-IF80=
-THEN80=
-IF81=
-THEN81=
-IF82=
-THEN82=
-IF83=
-THEN83=
-IF84=
-THEN84=
+IF0=never
+THEN0=##### DEFINITIONS #####################################################################################################################################
+IF1=never
+THEN1=# ====== User definable options for meteor logging and capture ======
+IF2=never
+THEN2=# SNR_Threshold - Minimum SNR in dB to trigger an event, increase if noise is being interpreted as meteors, reduce if meteors are not being logged
+IF3=never
+THEN3=# Meteor_Gap - the period that the signal has to drop below the threshold to be considered the end of a meteor event (in seconds)
+IF4=never
+THEN4=# Log_Threshold - the minimum duration of a meteor event that will be logged in seconds, logs everything if less than FFT window time (length)
+IF5=never
+THEN5=# Waterfall_Length - the width of the waterfall display in seconds, subtract 20% to be sure of screenshot containing start and end of events
+IF6=never
+THEN6=# Sound_Capture - set to 1 to capture meteor sounds, 0 to disable sound capture
+IF7=initialising
+THEN7=SNR_Threshold = 17 : Meteor_Gap = 2 : Log_Threshold = 0.05 : Waterfall_Length = 25 : Sound_Capture = 1
+IF8=never
+THEN8=# Log_Path - the location to log files for meteor events (remember to double escape backslashes, including trailing backslash)
+IF9=never
+THEN9=# Capture_Path - the location to save screen captures of meteor events (format as above)
+IF10=never
+THEN10=# Sound_Path - the location to save .WAV sound capture of meteor events (format as above)
+IF11=never
+THEN11=# SpecLab_Path - the location where you have installed Spectrum Lab (format as above)
+IF12=initialising
+THEN12=Log_Path = "c:\\spectrum\\logs\\" : Capture_Path = "c:\\spectrum\\screenshots\\" : Sound_Path = "c:\\spectrum\\sounds\\" : SpecLab_Path = "c:\\Spectrum\\"
+IF13=never
+THEN13=# ====== User definable options for file upload, all methods ======
+IF14=never
+THEN14=# Upload_Capture - set to 1 to upload image captures
+IF15=never
+THEN15=# Upload_Log - set to 1 to upload log files
+IF16=never
+THEN16=# Upload_Threshold - minimum SNR in dB to trigger uploading an 'interesting' screen capture. Increase or decrease as per SNR_Threshold
+IF17=never
+THEN17=# Upload_Limit - number of "interesting" screen captures to rotate through, e.g. set to 9 to keep and upload interesting_1.jpg ... interesting_9.jpg.
+IF18=never
+THEN18=# Upload_Method - set to ftp or sftp or s3  Important: Copy the upload_ftp.bat, upload_sftp.bat or upload_s3.bat file in to the Spectrum Lab folder!
+IF19=never
+THEN19=# Upload_Directory - the location to upload to, either a directory or an S3 folder, include leading and trailing slashes, e.g. /var/www/html/uploads/ or /meteorfolder/
+IF20=never
+THEN20=# Hostname_Bucket - the host name or S3 bucket to upload your files to e.g. ftp.example.com or meteorbucket
+IF21=initialising
+THEN21=Upload_Capture = 0 : Upload_Log = 0 : Upload_Threshold = 30 : Upload_Limit = 9 : Upload_Method = "s3" : Upload_Directory = "/meteordata/" : Hostname_Bucket = "meteorbucket"
+IF22=never
+THEN22=# ====== User definable options for FTP and SFTP upload - see comments in upload_ftp.bat and upload_sftp.bat files! ======
+IF23=never
+THEN23=# FTP_Username - the user name for your FTP server e.g. ftpuploaduser
+IF24=never
+THEN24=# FTP_Password - the password for your FTP server e.g. ftpuploadpassword (unfortunately non-encrypted!) (not required if using SFTP certificate authentication)
+IF25=initialising
+THEN25=FTP_Username = "ftpuploaduser" : FTP_Password = "ftpuploadpassword"
+IF26=never
+THEN26=# ====== User definable options for SFTP upload - see comments in upload_sftp.bat file! ======
+IF27=never
+THEN27=# SFTP_Hostkey - the identifier of the key to use to athenticate, e.g. ssh-ed25519 255 ZtOO/gesm31OpRu2S9A9jtrbD4bO9LcGobxhvzLyUBE= (Example is for WinSCP)
+IF28=never
+THEN28=# SFTP_PrivateKey - path and filename of the private keypair file, c:\\Users\\ExampleUser\\Example-Keypair.ppk (Example is for WinSCP)
+IF29=initialising
+THEN29=SFTP_Hostkey = "ssh-ed25519 255 ZtOO/gesm31OpRu2S9A9jtrbD4bO9LcGobxhvzLyUBE=" : SFTP_PrivateKey = "c:\\Users\\ExampleUser\\Example-Keypair.ppk"
+IF30=never
+THEN30=# ====== User definable options for S3 upload - see comments in upload_s3.bat file! ======
+IF31=never
+THEN31=# S3_ACL - set to public-read to make files accessible via https or private to limit access to authorised S3 users
+IF32=initialising
+THEN32=S3_ACL = "public-read"
+IF33=never
+THEN33=# ====== End Of User definable options ======
+IF34=never
+THEN34=##### INITIALISATION ##################################################################################################################################
+IF35=never
+THEN35=# Initialise Variables
+IF36=initialising
+THEN36=Current_Noise = noise(cfg.SpecFreqMin, cfg.SpecFreqMax) * 6 : Current_Signal = peak_a(cfg.SpecFreqMin, cfg.SpecFreqMax): Current_Signal = 0 : Current_SNR = 0 : Current_Peak_Frequency = 0 : Current_Time = GetSystemTime()
+IF37=initialising
+THEN37=Meteor_Start_Time = 0 : Meteor_End_Time = 0 : Daily_Meteor_Count = 0 : Midnight_Flag = 0 : Hourly_Meteor_Count = 0 : Hourly_Meteor_Duration = 0 : Hourly_Meteor_Longest = 0 : Hourly_Flag = 0 : Logging = 1 : Capture_Time = 0
+IF38=initialising
+THEN38=Meteor_Max_Signal = 0 : Meteor_Max_Noise = 0 : Meteor_Max_SNR = 0: Meteor_Max_Peak = 0 : Meteor_Count = 0
+IF39=initialising
+THEN39=Intermediate_Capture = Waterfall_Length : State = "Waiting" : Queued = 0
+IF40=initialising
+THEN40=Current_Upload = 1 : Queued_Interesting_Capture = 0 : Do_Interesting_Capture = 0 : Do_Log_Upload = 0
+IF41=initialising
+THEN41=Upload_Command = SpecLab_Path + "upload_" + Upload_Method + ".bat " : Capture_Name = ""
+IF42=initialising
+THEN42=Upload_Parameters = " \"" + Hostname_Bucket + "\" \"" + Upload_Directory + "\" \"" + FTP_Username + "\" \"" + FTP_Password + "\" \"" + SFTP_Hostkey + "\" \"" + SFTP_PrivateKey + "\" \"" + S3_ACL + "\""
+IF43=never
+THEN43=##### STATE: WAITING ##################################################################################################################################
+IF44=never
+THEN44=# Measure current signal, exponential weighted average of noise and peak frequency after each FFT calculation
+IF45=new_spectrum
+THEN45=Current_Noise = (Current_Noise / 6) * 5 + noise(cfg.SpecFreqMin, cfg.SpecFreqMax) : Current_Signal = peak_a(cfg.SpecFreqMin, cfg.SpecFreqMax) : Current_Peak_Frequency = peak_f(cfg.SpecFreqMin, cfg.SpecFreqMax) : Current_SNR = Current_Signal - (Current_Noise / 6) : Current_Time = GetSystemTime()
+IF46=never
+THEN46=# Signal above threshold, no meteor in progress so start of new meteor event
+IF47=State="Waiting" & Current_SNR>=SNR_Threshold
+THEN47=State = "Meteor" : Meteor_Start_Time = Current_Time : rec.filename = Sound_Path + "event" + str("YYYYMMDD", now) + "_" + str("hhmmss", now) + "_" + str(Daily_Meteor_Count + 1) + ".wav"
+IF48=never
+THEN48=##### STATE: METEOR ###################################################################################################################################
+IF49=never
+THEN49=# SNR is higher than previous max SNR, record new max (subtraction gives SNR in dB)
+IF50=State="Meteor" & Current_SNR>=Meteor_Max_SNR
+THEN50=Meteor_Max_Signal = Current_Signal : Meteor_Max_Noise = (Current_Noise / 6) : Meteor_Max_Peak = Current_Peak_Frequency : Meteor_Max_SNR = Current_SNR : rec.trigger = Sound_Capture
+IF51=never
+THEN51=# Meteor in progress, signal below threshold so start timing gap in case of short break in meteor signal
+IF52=State="Meteor" & Current_SNR<SNR_Threshold
+THEN52=State = "Gap" : Meteor_End_Time = Current_Time
+IF53=never
+THEN53=##### STATE: GAP ######################################################################################################################################
+IF54=never
+THEN54=# Timing gap, signal back above threshold so resume current meteor event
+IF55=State="Gap" & Current_SNR>=SNR_Threshold
+THEN55=State = "Meteor"
+IF56=never
+THEN56=# Meteor hasn't finished, but start or middle of event needs to be captured before it scrolls off
+IF57=(State="Gap" | State="Meteor") & (Current_Time - Meteor_Start_Time)>=Intermediate_Capture & Logging
+THEN57=Intermediate_Capture = Intermediate_Capture + Waterfall_Length : capture(Capture_Path + "event" + str("YYYYMMDD", now) + "_" + str("hhmmss", now) + "_" + str(Daily_Meteor_Count + 1) + ".jpg", 100)
+IF58=never
+THEN58=# Timing gap, signal below threshold and gap duration exceeded so log meteor event
+IF59=State="Gap" & Current_SNR<SNR_Threshold & (time - Meteor_End_Time)>=Meteor_Gap
+THEN59=State = "Log" : rec.trigger = 0
+IF60=never
+THEN60=##### STATE: LOG ######################################################################################################################################
+IF61=never
+THEN61=# Log last meteor event
+IF62=State="Log" & (Meteor_End_Time - Meteor_Start_Time)>=Log_Threshold & Logging
+THEN62=Daily_Meteor_Count = Daily_Meteor_Count + 1 : Hourly_Meteor_Count = Hourly_Meteor_Count + 1 : Hourly_Meteor_Duration = Hourly_Meteor_Duration + (Meteor_End_Time - Meteor_Start_Time)
+IF63=continuation
+THEN63=sp.print(t=sp.time, fn="Courier New", fs=14, fc=0xFFFFFF, fa=0, "                         Event: " + str(Daily_Meteor_Count) + "  Start: " + str("hh : mm : ss", Meteor_Start_Time) + " UTC  Dur: " + str(Meteor_End_Time - Meteor_Start_Time) + "s  Peak SNR: " + Meteor_Max_SNR + "dB")
+IF64=continuation
+THEN64=Queued = Queued + 1 : queue_event(now + max(1, (Waterfall_Length - (Meteor_End_Time - Meteor_Start_Time))), 0)
+IF65=continuation
+THEN65=fopen(Log_Path + "event_log_" + str("YYYYMM", Meteor_Start_Time) + ".csv",a,r)
+IF66=continuation
+THEN66=fp(str("YYYY/MM/DD",Meteor_Start_Time) + "," + str("hh:mm:ss",Meteor_Start_Time) + "," + str(Daily_Meteor_Count) + "," + str(Meteor_Max_Signal) + "," + str(Meteor_Max_Noise) + "," + str(Meteor_Max_SNR) + "," + str(Meteor_Max_Peak) + "," + str(Meteor_End_Time - Meteor_Start_Time))
+IF67=continuation
+THEN67=fclose
+IF68=never
+THEN68=# Last meteor event is "interesting" so flag for an extra capture (only works for first event if multiple are queued)
+IF69=State="Log" & Meteor_Max_SNR>=Upload_Threshold & Logging & Upload_Capture
+THEN69=Queued_Interesting_Capture = 1
+IF70=never
+THEN70=# Reset and wait for next meteor event
+IF71=State="Log" & Hourly_Meteor_Longest<(Meteor_End_Time - Meteor_Start_Time)
+THEN71=Hourly_Meteor_Longest = (Meteor_End_Time - Meteor_Start_Time)
+IF72=State="Log"
+THEN72=Intermediate_Capture = Waterfall_Length : Meteor_Max_Signal = 0 : Meteor_Max_Noise = 0 : Meteor_Max_SNR = 0: Meteor_Max_Peak = 0
+IF73=continuation
+THEN73=State = "Waiting"
+IF74=never
+THEN74=##### QUEUED ACTION TRIGGERED #########################################################################################################################
+IF75=never
+THEN75=# Capture a screenshot of the display at end of event (see also Screen Capture tab)
+IF76=queued_event
+THEN76=capture(Capture_Path + "event" + str("YYYYMMDD", now) + "_" + str("hhmmss", now) + "_" + str(Daily_Meteor_Count - Queued + 1) + ".jpg", 100) : Do_Interesting_Capture = Queued_Interesting_Capture
+IF77=continuation
+THEN77=Queued = Queued - 1
+IF78=never
+THEN78=# Capture a second screenshot of the display for upload
+IF79=never
+THEN79=# Upload command format: upload_<Upload_Method>.bat <upload path> <upload filename> <Hostname_Bucket> <Upload_Directory> <FTP_Username> <FTP_Password> <SFTP_Hostkey> <SFTP_PrivateKey> <S3_ACL>
+IF80=Do_Interesting_Capture=1
+THEN80=Capture_Name="interesting_" + str(Current_Upload) + ".jpg" : capture(Capture_Path + Capture_Name, 100) : Do_Interesting_Capture = 0 : Queued_Interesting_Capture = 0
+IF81=continuation
+THEN81=exec(Upload_Command + "\"" + Capture_Path + "\" \"" + Capture_Name + "\"" + Upload_Parameters) : Current_Upload = Current_Upload + 1
+IF82=never
+THEN82=# Roll over to overwrite the first interesting capture file
+IF83=Current_Upload>Upload_Limit
+THEN83=Current_Upload = 1
+IF84=never
+THEN84=##### TIMED ACTION TRIGGERED: HOURLY ##################################################################################################################
 IF85=
-THEN85=
-IF86=
-THEN86=
-IF87=
-THEN87=
-IF88=
-THEN88=
-IF89=
-THEN89=
-IF90=
-THEN90=
-IF91=
-THEN91=
-IF92=
-THEN92=
-IF93=
-THEN93=
-IF94=
-THEN94=
-IF95=
-THEN95=
-IF96=
-THEN96=
-IF97=
-THEN97=
-IF98=
-THEN98=
-IF99=
-THEN99=
-IF100=
-THEN100=
-IF101=
-THEN101=
-IF102=
-THEN102=
-IF103=
-THEN103=
-IF104=
-THEN104=
-IF105=
-THEN105=
-IF106=
-THEN106=
-IF107=
-THEN107=
-IF108=
-THEN108=
-IF109=
-THEN109=
-IF110=
-THEN110=
-IF111=
-THEN111=
-IF112=
-THEN112=
-IF113=
-THEN113=
-IF114=
-THEN114=
-IF115=
-THEN115=
-IF116=
-THEN116=
-IF117=
-THEN117=
-IF118=
-THEN118=
-IF119=
-THEN119=
+THEN85=# Increment the hourly flag (this will happen multiple times during the last five seconds of the hour)
+IF86=str("mmss", Current_Time)="5955"
+THEN86=Hourly_Flag = Hourly_Flag + 1
+IF87=never
+THEN87=# If the hourly flag has just been triggered, log and then reset the meteor count to zero for the new hour, if the hourly flag has been triggered already, do nothing
+IF88=Hourly_Flag=1
+THEN88=fopen2(Log_Path + "hourly_log_" + str("YYYYMM", Current_Time) + ".csv",a,r)
+IF89=continuation
+THEN89=fp2(str("YYYY/MM/DD", Current_Time) + "," + str("hh", Current_Time) + "," + str(Hourly_Meteor_Count))
+IF90=continuation
+THEN90=fclose2
+IF91=continuation
+THEN91=fopen4(Log_Path + "RMOB-" + str("YYYYMM", Current_Time) + ".dat",a,r)
+IF92=continuation
+THEN92=fp4(str("YYYYMMDDhh", Current_Time) + "," + str("hh", Current_Time) + "," + str(Hourly_Meteor_Count))
+IF93=continuation
+THEN93=fclose4
+IF94=continuation
+THEN94=fopen5(Log_Path + "RMOB_Dur-" + str("YYYYMM", Current_Time) + ".dat",a,r)
+IF95=continuation
+THEN95=fp5(str("YYYYMMDDhh", Current_Time) + "," + str("hh", Current_Time) + "," + str(Hourly_Meteor_Count) + "," + str(Hourly_Meteor_Duration) + "," + str(Hourly_Meteor_Longest) + "," + str(Current_Noise))
+IF96=continuation
+THEN96=fclose5
+IF97=continuation
+THEN97=Hourly_Meteor_Count = 0 : Hourly_Meteor_Duration = 0 : Hourly_Meteor_Longest = 0
+IF98=never
+THEN98=# If the current time is on the hour, reset the hourly flag ready to trigger again at the end of the next hour
+IF99=str("mmss", Current_Time)="0000"
+THEN99=Hourly_Flag = 0
+IF100=never
+THEN100=##### TIMED ACTION TRIGGERED: DAILY ###################################################################################################################
+IF101=never
+THEN101=# Increment the midnight flag (this will happen multiple times during the last five seconds of the day)
+IF102=str("hhmmss", Current_Time)="235955"
+THEN102=Midnight_Flag = Midnight_Flag + 1
+IF103=never
+THEN103=# If the midnight flag has just been triggered, log and then reset the meteor count to zero for the new day, if the midnight flag has been triggered already, do nothing
+IF104=Midnight_Flag=1
+THEN104=fopen3(Log_Path + "daily_log_" + str("YYYYMM", Current_Time) + ".csv",a,r)
+IF105=continuation
+THEN105=fp3(str("YYYY/MM/DD", Current_Time) + "," + str(Daily_Meteor_Count))
+IF106=continuation
+THEN106=fclose3
+IF107=continuation
+THEN107=Daily_Meteor_Count = 0 : Do_Log_Upload = Current_Time
+IF108=never
+THEN108=# We have a set of logs to upload (by reference to their date in Do_Log_Upload) and upload logs is true, upload them and then reset flag
+IF109=Do_Log_Upload<>0 && Upload_Log=1
+THEN109=exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+IF110=continuation
+THEN110=exec(Upload_Command + "\"" + Log_Path + "\" \"hourly_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+IF111=continuation
+THEN111=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
+IF112=continuation
+THEN112=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB_Dur-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
+IF113=continuation
+THEN113=exec(Upload_Command + "\"" + Log_Path + "\" \"daily_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+IF114=continuation
+THEN114=Do_Log_Upload=0
+IF115=never
+THEN115=# We have a set of logs to upload but upload logs is false so reset flag only
+IF116=Do_Log_Upload<>0 && Upload_Log=0
+THEN116=Do_Log_Upload=0
+IF117=never
+THEN117=# If the current time is midnight, reset the midnight flag ready to trigger again at the end of the next day
+IF118=str("hhmmss", Current_Time)="000000"
+THEN118=Midnight_Flag = 0
+IF119=never
+THEN119=#######################################################################################################################################################
 IF120=
 THEN120=
 IF121=
@@ -1810,13 +1823,13 @@ IF198=
 THEN198=
 IF199=
 THEN199=
-WatchExpression=
+WatchExpression=str("mmss", Current_Time)
 
 [CIRCUIT]
-ConnectGeneratorToInput=3
+ConnectGeneratorToInput=1
 ConnectGeneratorToOutput=0
 InputMonitorSource=1
-OutputMonitorSource=3
+OutputMonitorSource=13
 TrigMode=0
 TrigSource=0
 TrigPolarity=1
@@ -1829,7 +1842,7 @@ FreqCvtSameLO=0
 FreqCvtQuadLO=0
 ConnectSlider1=5
 ConnectInfoText=-1
-Gain0=0.11220184543
+Gain0=63.095734448
 Gain1=1
 Gain2=1
 Gain3=1
@@ -1867,7 +1880,7 @@ DisplayOptions=3
 CoeffFile=
 IIR2DesignFile=
 FIR2DesignFile=
-FilterFftSize=32768
+FilterFftSize=8192
 FftSame4All=0
 FftANotchSpeed=0.1
 FftANotchWidth=5
@@ -1900,7 +1913,7 @@ GraphMaxLevel=0
 FftFilterType=3
 FftFilterOptions=32768
 FftFilterFC=2000
-FftFilterBW=3800
+FftFilterBW=980
 FftFilterSW=50
 FftFreqShift=0
 FftInvertFrom=0
@@ -2092,18 +2105,18 @@ FmDutyCyclePcnt=50
 ArbitraryWaveformFile=
 ArbitraryWaveformFormula=sin(2*pi*x)
 LoadAWFromFile=0
-Enabled0=0
+Enabled0=1
 AmMod0=0
 FmMod0=0
 Wave0=0
-SinFreq0=2000
-SinAmpl0=0.281838293126
-Enabled1=1
+SinFreq0=1991
+SinAmpl0=0.001
+Enabled1=0
 AmMod1=0
 FmMod1=0
 Wave1=0
-SinFreq1=1500
-SinAmpl1=0.199526231497
+SinFreq1=1000
+SinAmpl1=0.1
 Enabled2=0
 AmMod2=0
 FmMod2=0
@@ -2370,67 +2383,67 @@ WriteIntervalSec=1
 PwrFailSafe=0
 
 [MACRO_BUTTONS]
-Exprs0="Capture now"
-Commands0=capture("c:\\spectrum\\screenshots\\event"+str("YYMMDDhhmmss",now)+".jpg")
+Exprs0="Capture Now"
+Commands0=capture("capt"+str("YYMMDDhhmm",now)+".jpg")
 Options0=2
 Hotkey0=0
-Exprs1="Time:  "+str("hh:mm:ss.s",now)
-Commands1=
+Exprs1=((sp.pause)?"Continue":"Pause")
+Commands1=sp.pause=!sp.pause
 Options1=2
 Hotkey1=0
-Exprs2="peak at "+str("###0.00 Hz",peak_f(200,2500))
-Commands2=
+Exprs2="Tune to GRAVES"
+Commands2=sdr.freq=143048017 : exec(SpecLab_Path + "Retune.exe"):Logging=LoggingState
 Options2=2
 Hotkey2=0
-Exprs3="Pause"
-Commands3=sp.pause=1 // spectrum analyser pause
+Exprs3="Tune to Test Beacon"
+Commands3=LoggingState=Logging : Logging=0 : sdr.freq=144428000 : exec(SpecLab_Path + "Retune.exe")
 Options3=2
 Hotkey3=0
-Exprs4="Continue"
-Commands4=sp.pause=0 // spectrum analyser resume
+Exprs4="Logging="+((Logging)?"ON":"OFF")
+Commands4=Logging=!Logging:LoggingState=Logging
 Options4=2
 Hotkey4=0
 Exprs5="Signal Gen="+((generator.on)?"ON":"OFF")
 Commands5=generator.on=!generator.on
 Options5=2
 Hotkey5=0
-Exprs6="Button #7"
-Commands6=
+Exprs6="Display Up"
+Commands6=cfg.SpecFreqMin:=cfg.SpecFreqMin+1 : cfg.SpecFreqMax:=cfg.SpecFreqMax+1 : filter[0].fft.fc:=(cfg.SpecFreqMin + cfg.SpecFreqMax)/2 : filter[0].fft.bw:=cfg.SpecFreqMax - cfg.SpecFreqMin - 20
 Options6=2
 Hotkey6=0
-Exprs7="Button #8"
-Commands7=
+Exprs7="Display Down"
+Commands7=cfg.SpecFreqMin:=cfg.SpecFreqMin-1 : cfg.SpecFreqMax:=cfg.SpecFreqMax-1 : filter[0].fft.fc:=(cfg.SpecFreqMin + cfg.SpecFreqMax)/2 : filter[0].fft.bw:=cfg.SpecFreqMax - cfg.SpecFreqMin - 20
 Options7=2
 Hotkey7=0
-Exprs8="Button #9"
-Commands8=
+Exprs8="Offset Up (Off: " + cfg.SpecFreqOffs + " Hz)"
+Commands8=cfg.SpecFreqOffs:=cfg.SpecFreqOffs+1 : filter[0].fft.fc:=(cfg.SpecFreqMin + cfg.SpecFreqMax)/2 : filter[0].fft.bw:=cfg.SpecFreqMax - cfg.SpecFreqMin - 20
 Options8=2
 Hotkey8=0
-Exprs9="Button #10"
-Commands9=
+Exprs9="Offset Down"
+Commands9=cfg.SpecFreqOffs:=cfg.SpecFreqOffs-1 : filter[0].fft.fc:=(cfg.SpecFreqMin + cfg.SpecFreqMax)/2 : filter[0].fft.bw:=cfg.SpecFreqMax - cfg.SpecFreqMin - 20
 Options9=2
 Hotkey9=0
-Exprs10="Button #11"
-Commands10=
+Exprs10="Zoom + (Rng: " + cfg.SpecFreqMin + "-" + cfg.SpecFreqMax +"Hz)"
+Commands10=Zoom=((cfg.SpecFreqMax-cfg.SpecFreqMin)>200?100:0):cfg.SpecFreqMin=cfg.SpecFreqMin+Zoom:cfg.SpecFreqMax=cfg.SpecFreqMax-Zoom:filter[0].fft.fc:=(cfg.SpecFreqMin+cfg.SpecFreqMax)/2:filter[0].fft.bw:=(cfg.SpecFreqMax-cfg.SpecFreqMin)*0.98
 Options10=2
 Hotkey10=0
-Exprs11="Button #12"
-Commands11=
+Exprs11="Zoom - (Fltr: " + filter.[0].fft.fc + " / " + filter[0].fft.bw + "Hz)"
+Commands11=cfg.SpecFreqMin = max(cfg.SpecFreqMin-100,0) :cfg.SpecFreqMax = cfg.SpecFreqMax+100 : filter[0].fft.fc:=(cfg.SpecFreqMin + cfg.SpecFreqMax)/2 : filter[0].fft.bw:=(cfg.SpecFreqMax - cfg.SpecFreqMin)*0.98
 Options11=2
 Hotkey11=0
-Exprs12="Button #13"
-Commands12=
+Exprs12="Reset View"
+Commands12=cfg.SpecFreqOffs:=0 : cfg.SpecFreqMin = 1500 : cfg.SpecFreqMax = 2500 : filter[0].fft.fc:=(cfg.SpecFreqMin + cfg.SpecFreqMax)/2 : filter[0].fft.bw:=cfg.SpecFreqMax - cfg.SpecFreqMin - 20
 Options12=2
 Hotkey12=0
-Exprs13="Button #14"
+Exprs13="SNR: " + str(Current_SNR) + " B: " + cfg.Wat1ClBrightns + " C: " + cfg.Wat1ClContrast
 Commands13=
 Options13=2
 Hotkey13=0
-Exprs14="Button #15"
+Exprs14="DMC: " + Daily_Meteor_Count + " HMC: " + Hourly_Meteor_Count + " Q: " + Queued
 Commands14=
 Options14=2
 Hotkey14=0
-Exprs15="Button #16"
+Exprs15="State: " + State
 Commands15=
 Options15=2
 Hotkey15=0
@@ -2462,55 +2475,55 @@ Options5=0
 Hotkey5=0
 
 [WatchWindow]
-Left=0
-Top=0
-Width=1031
-Height=597
-Visible=0
+Left=285
+Top=33
+Width=1367
+Height=767
+Visible=1
 FormStyle=0
 HideBorderAndMenus=0
 
 [WatchListAndPlotter]
-Flags=0
+Flags=1
 TextExportFlags=0
 CursorMode=0
 
 [WatchList]
-Title1=Noise
-Expr1=noise_n(500,1000)
+Title1=SNR
+Expr1=Current_SNR
 Form1=##0.0##
-MinV1=-100
-MaxV1=0
-Title2=Peak1_Ampl
-Expr2=peak_a(500,1000)
-Form2=##0.0##
-MinV2=-100
-MaxV2=0
-Title3=Peak1_Freq
-Expr3=peak_f(500,1000)
-Form3=###0.0##
-MinV3=200
-MaxV3=2700
-Title4=Peak2_Ampl
-Expr4=peak_a(1000,1500)
-Form4=##0.0##
-MinV4=-100
-MaxV4=0
-Title5=Peak2_Freq
-Expr5=peak_f(1000,1500)
-Form5=###0.0##
-MinV5=200
-MaxV5=2700
-Title6=Peak3_Ampl
-Expr6=peak_a(1500,2000)
-Form6=##0.0##
-MinV6=-100
-MaxV6=0
-Title7=Peak2_Freq
-Expr7=peak_f(1500,2000)
-Form7=###0.0##
-MinV7=200
-MaxV7=2700
+MinV1=0
+MaxV1=60
+Title2=Daily MC
+Expr2=Daily_Meteor_Count
+Form2=###0
+MinV2=0
+MaxV2=9999
+Title3=Hourly MC
+Expr3=Hourly_Meteor_Count
+Form3=##0
+MinV3=0
+MaxV3=999
+Title4=
+Expr4=
+Form4=
+MinV4=
+MaxV4=
+Title5=
+Expr5=
+Form5=
+MinV5=
+MaxV5=
+Title6=
+Expr6=
+Form6=
+MinV6=
+MaxV6=
+Title7=
+Expr7=
+Form7=
+MinV7=
+MaxV7=
 Title8=
 Expr8=
 Form8=
@@ -2976,17 +2989,17 @@ Expr100=
 Form100=
 MinV100=
 MaxV100=
-ColWidth0=0
-ColWidth1=0
-ColWidth2=0
-ColWidth3=0
-ColWidth4=0
+ColWidth0=162
+ColWidth1=105
+ColWidth2=59
+ColWidth3=71
+ColWidth4=70
 CmdsAfterScrollStep=
 
 [WatchHistoryMemory]
-PlotMaxSamples=0
-PlotMaxChannels=0
-PlotFileName=plotter0.tmp
+PlotMaxSamples=999999
+PlotMaxChannels=10
+PlotFileName=D:\plots\plotter0.tmp
 PlotExportName=pltexpt0.tmp
 PlotExportTimeColumn=0
 PlotExportTimeFormat=YYYY-MM-DD hh:mm:ss
@@ -2994,28 +3007,28 @@ ColumnSeparator=0
 PlotExportPeriodic=0
 
 [WatchHistoryPlotter]
-Running=0
+Running=1
 CaptureFileName=
-SecPerStep=0
-SmallMarker=0
-SmallInterval=30
-LargeMarker=0
-LargeInterval=2*60
+SecPerStep=60
+SmallMarker=1
+SmallInterval=60
+LargeMarker=2
+LargeInterval=5*60
 TimeLabelFormat=hh:mm
 DateLabelFormat=YY-MM-DD
-VertScalePenStyle=0
-BkgndColor=0
+VertScalePenStyle=1
+BkgndColor=16777215
 GridColor=0
 LabelColor=0
-PenColor1=0
-ShowWhat1=0
-PenDisplayStyle1=0
-PenColor2=0
-ShowWhat2=0
-PenDisplayStyle2=0
-PenColor3=0
-ShowWhat3=0
-PenDisplayStyle3=0
+PenColor1=16744448
+ShowWhat1=2
+PenDisplayStyle1=3
+PenColor2=33023
+ShowWhat2=2
+PenDisplayStyle2=3
+PenColor3=65280
+ShowWhat3=2
+PenDisplayStyle3=3
 PenColor4=0
 ShowWhat4=0
 PenDisplayStyle4=0
@@ -3307,30 +3320,33 @@ PenDisplayStyle99=0
 PenColor100=0
 ShowWhat100=0
 PenDisplayStyle100=0
-VerticalSplit=0
-VSplitUpperChannels=0
-LegendPos=0
-LegendDetails=0
+VerticalSplit=1
+VSplitUpperChannels=1
+LegendPos=4
+LegendDetails=1
 LegendFontName=Arial
 LegendFontSize=0
 HorzAxisFontName=Arial
-HorzAxisFontSize=0
+HorzAxisFontSize=10
 VertAxisFontName=Arial
 VertAxisFontSize=0
-AxisAssign0=0
-AxisLabel0=
-AxisAssign1=0
+AxisAssign0=1
+AxisLabel0=SNR (Db)
+AxisAssign1=1
 AxisLabel1=
 AxisAssign2=0
 AxisLabel2=
 AxisAssign3=0
 AxisLabel3=
-AxisAssign4=0
-AxisLabel4=
-AxisAssign5=0
-AxisLabel5=
+AxisAssign4=2
+AxisLabel4=Daily Meteor Count
+AxisAssign5=3
+AxisLabel5=Hourly Meteor Count
 AxisAssign6=0
 AxisLabel6=
 AxisAssign7=0
 AxisLabel7=
+PenWidth1=3
+PenWidth2=3
+PenWidth3=3
 
