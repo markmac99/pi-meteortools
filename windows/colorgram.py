@@ -29,8 +29,9 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
     tz = int(config['observer']['tz'])
 
     srcfile = os.path.join(srcpath, 'event_log_' + dt + '.csv')
-    targfile = targpath + yr + '/' + yr + mt + '/R' + yr + mt + dy + '_' + id + '.csv'
-    os.makedirs(targpath + yr + '/' + yr + mt, exist_ok=True)
+    targfile = os.path.join(targpath, yr, yr + mt, 'R' + yr + mt + dy + '_' + id + '.csv')
+    print(srcfile)
+    os.makedirs(os.path.join(targpath, yr, yr + mt), exist_ok=True)
 
     outf = open(targfile, 'w+')
 
@@ -39,7 +40,7 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
         mydata = csv.reader(inf, delimiter=',')
         for row in mydata:
             dstamp=row[0]
-            fdy = dstamp[:2]
+            fdy = dstamp[8:10]
             if fdy == dy: 
                 tstamp = row[1]
                 hr = tstamp[0:2]
@@ -434,7 +435,7 @@ def main(srcpath, targpath, tod):
 
     yr = yyyy[0:4]
     mt = yyyy[4:6]
-    ConvertToCsv(yr, mt, dys, srcpath, srcpath + '/csv/')
+    ConvertToCsv(yr, mt, dys, srcpath, os.path.join(srcpath,'../csv'))
 
 
 if __name__ == '__main__':

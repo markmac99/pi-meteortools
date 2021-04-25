@@ -11,10 +11,14 @@ if ((test-path $inifname) -eq $false) {
 
 $ini=get-inicontent $inifname
 $datadir=($ini['detector']['datadir']).replace('/','\')
+
 if((test-path $inifname) -eq $false){
     write-output "datadir missing or invalid, can't continue"
     exit 2
 }
+$RMS_ENV = $ini['RMS']['RMS_ENV']
+conda activate $RMS_ENV
+
 $logf=$datadir+'/logs/process-'+(get-date -uformat '%Y%m%d')+'.log'
 write-output 'updating colorgrammes' | tee-object $logf
 Set-Location $PSScriptRoot
