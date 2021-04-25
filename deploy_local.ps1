@@ -9,13 +9,15 @@ $targ=$targ.replace('/','\')
 
 xcopy /dy /exclude:exclude.rsp .\Windows\*.ps1 $targ
 xcopy /dy /exclude:exclude.rsp .\Windows\*.ini $targ
+xcopy /dy /exclude:exclude.rsp .\Windows\*.py $targ
 
 xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\DailyChecks\*.ps1 $targ
-xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\*.py $targ
 xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\*.ps1 $targ
-xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\FormatConverters\*.py $targ
-xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\orbitSolver\*.py $targ
 xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\orbitSolver\*.ps1 $targ
+
+if ((test-path $targ\converters) -eq 0 ){ mkdir $targ\converters }
+xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\ukmon_pylib\converters\*.py $targ\converters
+xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\ukmon_pylib\traj\*.py $targ
 
 if ((test-path $targ\CameraCurator) -eq 0 ){ mkdir $targ\CameraCurator }
 xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\CameraCurator\*.py $targ\CameraCurator

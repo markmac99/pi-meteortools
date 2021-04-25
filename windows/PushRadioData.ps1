@@ -3,9 +3,9 @@
 #
 set-location $PSScriptRoot
 . .\helperfunctions.ps1
-$inifname = './station.ini'
+$inifname = './radiostation.ini'
 if ((test-path $inifname) -eq $false) {
-    write-output "station.ini file missing or invalid, can't continue"
+    write-output "radiostation.ini file missing or invalid, can't continue"
     exit 1
 }
 
@@ -31,12 +31,11 @@ $userid=$ini['website']['userid']
 $key=$ini['website']['key']
 $targ= $userid+'@'+$sitename+':'+$targetdir
 
-#write-output "copying latest 2d image" | tee-object $logf -append
-#set-location $datadir
-#scp -o StrictHostKeyChecking=no -i $key latest2d.jpg $targ
-
 $ssloc=$datadir+'\screenshots'
 set-location $ssloc
+
+write-output "copying latest 2d image" | tee-object $logf -append
+scp -o StrictHostKeyChecking=no -i $key latest2d.jpg $targ
 
 $curdt=(get-date -uformat '%Y%m%d')
 $fnam=(get-childitem  event$curdt*.jpg | sort-object lastwritetime).name | select-object -last 1
@@ -62,5 +61,16 @@ scp -o StrictHostKeyChecking=no -i $key $fnam $targ
 
 $msg=(get-date -uformat '%Y%m%d-%H%M%S')+' done'
 write-output $msg | tee-object $logf -append
+
 set-location $PSScriptRoot
-.\pushToUkmon.ps1 
+
+$logf=$datadir+'/logs/ukmon-'+(get-date -uformat '%Y%m%d')+'.log'
+$ukmonkey=$ini['ukmon']['ukmon_keyfile']
+. $ukmonkey
+
+$station=$ini['ukmon']['ukmon_station']
+$srcloc=$datadir+'\csv\'
+write-output 'updating ukmon' | tee-object $logf 
+$s3targ='s3://ukmon-shared/archive/' + $station + '/Radio/'
+aws s3 sync $srcloc $s3targ | tee-object $logf -append
+set-location $PSScriptRoot

@@ -21,7 +21,7 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
     dt = yr + mt # + dy
 
     config = cfg.ConfigParser()
-    config.read('./station.ini')
+    config.read('./radiostation.ini')
     lat = float(config['observer']['Lati'])
     lng = float(config['observer']['Lati'])
     id = config['observer']['station']
@@ -183,10 +183,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
 
 def main(srcpath, targpath, tod):
-    try:
-        os.makedirs(targpath)
-    except:
-        print('dir exists')
+    os.makedirs(targpath, exist_ok=True)
 
     rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
     print(' src is {}, targ is {}'.format(rmobfile, targpath))
@@ -263,7 +260,7 @@ def main(srcpath, targpath, tod):
     plt.ylabel('Count')
 
     config = cfg.ConfigParser()
-    config.read('./station.ini')
+    config.read('./radiostation.ini')
     lati = float(config['observer']['Lati'])
     longi = float(config['observer']['Longi'])
     if longi < 0:
@@ -330,6 +327,7 @@ def main(srcpath, targpath, tod):
     # copy it to RMOB_latest.jpg
     #
     latfil = os.path.join(targpath, 'RMOB_latest.jpg')
+    print('copying {} to {}'.format(fname3, latfil))
     shutil.copy(fname3, latfil)
 
     # create three-month bar chart - this doesn't work so
