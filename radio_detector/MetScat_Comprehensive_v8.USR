@@ -1287,9 +1287,9 @@ Subtract=0
 [CAPTURE]
 Time_From=0
 Time_To=86399
-TimeInterval=50
-TimerActive=1
-PeriodicAction=capture ("C:\\spectrum\\latest2d.jpg")
+TimeInterval=900
+TimerActive=0
+PeriodicAction=capture
 PeriodicAction2=
 PeriodicAction3=
 PeriodicAction4=
@@ -1541,7 +1541,7 @@ IF57=(State="Gap" | State="Meteor") & (Current_Time - Meteor_Start_Time)>=Interm
 THEN57=Intermediate_Capture = Intermediate_Capture + Waterfall_Length : capture(Capture_Path + "event" + str("YYYYMMDD", now) + "_" + str("hhmmss", now) + "_" + str(Daily_Meteor_Count + 1) + ".jpg", 100)
 IF58=never
 THEN58=# Timing gap, signal below threshold and gap duration exceeded so log meteor event
-IF59=State="Gap" & Current_SNR<SNR_Threshold & (time - Meteor_End_Time)>=Meteor_Gap
+IF59=State="Gap" & Current_SNR<SNR_Threshold & (GetSystemTime() - Meteor_End_Time)>=Meteor_Gap
 THEN59=State = "Log" : rec.trigger = 0
 IF60=never
 THEN60=##### STATE: LOG ######################################################################################################################################
