@@ -13,7 +13,7 @@ host_ip = sys.argv[1]
 daycmode = '0x00000001'
 
 if len(sys.argv) > 3:
-    nightgain = sys.argv[3]
+    nightgain = float(sys.argv[3])
 else:
     nightgain = 60
 

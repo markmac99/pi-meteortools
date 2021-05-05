@@ -13,6 +13,7 @@ import glob
 import configparser
 
 import RMS.ConfigReader as cr
+import Utils.TrackStack as ts
 
 import boto3
 
@@ -136,6 +137,11 @@ def rmsExternal(cap_dir, arch_dir, config):
         print('unable to send mail')
 
     s.close()
+
+    try:
+        ts.trackStack(arch_dir, config)
+    except Exception:
+        pass
 
     os.remove(rebootlockfile)
 
