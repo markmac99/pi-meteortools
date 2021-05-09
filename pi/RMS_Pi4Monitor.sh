@@ -30,25 +30,30 @@ do
       if [ $? -eq 1 ] ; then
         # ok capture started but has not completed and has probably stalled
         logger 'RMS_Pi4Watchdog: RMS stopped acquisition'
-        killall python
-        logger 'RMS_Pi4Watchdog: killed python'
 
+        # Restart RMS. taking care not to kill other python apps
+        ps -ef | grep RMS_ | egrep -v "watch|data|grep"|awk '{print $2}' | while read i
+        do
+          kill $i
+        done
+        logger 'RMS_Pi4Watchdog: killed RMS'
         sleep 5
-        rmspid=`ps -ef | grep RMS_StartCapture.sh | grep -v grep | awk '{print $2}'`
-        logger 'RMS_Pi4Watchdog: rms pid is ' $rmspid
-        kill -9 $rmspid
-        logger 'RMS_Pi4Watchdog: killed rms bash script'
 
-        sleep 5
         cd ~/source/RMS
         lxterminal -e Scripts/RMS_StartCapture.sh -r  & 
         logger 'RMS_Pi4Watchdog: restarted RMS...'
 
-        cd ~ukmon
-        killall liveMonitor.sh
-        sleep 5
-        lxterminal -e liveMonitor.sh  
-        logger 'RMS_Pi4Watchdog: restarted liveMonitor...'
+
+        if [ -d ~/source/ukmon-pitools ] ; then
+          cd ~/source/ukmon-pitools
+          ps -ef | grep liveMonitor | egrep -v "grep"|awk '{print $2}' | while read i
+          do
+            kill $i
+          done
+          sleep 5
+          lxterminal -e ./liveMonitor.sh >> /home/pi/RMS_data/logs/ukmon-live.log 2>&1  &
+          logger 'RMS_Pi4Watchdog: restarted ukmon liveMonitor...'
+        fi
 
         cd /home/pi/RMS_data/logs
         logger 'RMS_Pi4Watchdog: continuing...'
