@@ -1,5 +1,5 @@
 ---
-- hosts: meteorpi, meteorpi2, meteorpi4
+- hosts: meteorpi3 #, meteorpi4, meteorpi, meteorpi2
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
     destdir: ~/mjmm
@@ -17,6 +17,7 @@
     - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/sendAnEmail.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
 
   - name: update mail recip

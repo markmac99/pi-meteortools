@@ -17,10 +17,6 @@ import Utils.TrackStack as ts
 
 import boto3
 
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
 
 def rmsExternal(cap_dir, arch_dir, config):
     rebootlockfile = os.path.join(config.data_dir, config.reboot_lock_file)
@@ -32,31 +28,39 @@ def rmsExternal(cap_dir, arch_dir, config):
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
-    hname = os.uname()[1]
+    import sendAnEmail as em
     import sendToYoutube as stu
 
+    hname = os.uname()[1]
+
     extramsg = 'Notes:\n'
-    # upload mp4 to youtube
-    try: 
-        mp4name = os.path.basename(cap_dir) + '.mp4'
+    
+    if os.path.exists(os.path.join(srcdir, 'token.pickle')):
+        # upload mp4 to youtube
+        try: 
+            mp4name = os.path.basename(cap_dir) + '.mp4'
 
-        if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
-            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-                f.write('dummy\n')
+            if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
+                with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
+                    f.write('dummy\n')
 
-        with open(os.path.join(srcdir, '.ytdone'), 'r') as f:
-            line = f.readline().rstrip()
-            if line != mp4name:
-                tod = mp4name.split('_')[1]
-                tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
-                msg = '{:s} timelapse for {:s}'.format(hname, tod)
-                print('uploading {:s} to youtube'.format(mp4name))
-                stu.main(msg, os.path.join(arch_dir, mp4name))
-            else:
-                print('already uploaded {:s}'.format(mp4name))
-                
-            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-                f.write(mp4name)
+            with open(os.path.join(srcdir, '.ytdone'), 'r') as f:
+                line = f.readline().rstrip()
+                if line != mp4name:
+                    tod = mp4name.split('_')[1]
+                    tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
+                    msg = '{:s} timelapse for {:s}'.format(hname, tod)
+                    print('uploading {:s} to youtube'.format(mp4name))
+                    stu.main(msg, os.path.join(arch_dir, mp4name))
+                else:
+                    print('already uploaded {:s}'.format(mp4name))
+                    
+                with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
+                    f.write(mp4name)
+        except Exception:
+            errmsg = 'unable to upload timelapse'
+            print(errmsg)
+            extramsg = extramsg + errmsg + '\n'
 
         # upload the MP4 to S3 or a website
         if int(localcfg['postprocess']['upload']) == 1:
@@ -89,29 +93,8 @@ def rmsExternal(cap_dir, arch_dir, config):
                 os.system(cmdline)
                 cmdline = 'scp -i {:s} {:s} {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, fn, user, hn, mp4dir, stn, yymm)
                 os.system(cmdline)
-    except:
-        errmsg = 'unable to upload timelapse'
-        print(errmsg)
-        extramsg = extramsg + errmsg + '\n'
 
     # email a summary to the mailrecip
-    mailrecip = localcfg['postprocess']['mailrecip'].rstrip()
-    smtphost = localcfg['postprocess']['mailhost'].rstrip()
-    smtpport = int(localcfg['postprocess']['mailport'].rstrip())
-    smtpuser = localcfg['postprocess']['mailuser'].rstrip()
-    smtppwd = localcfg['postprocess']['mailpwd'].rstrip()
-    with open(os.path.expanduser(smtppwd), 'r') as fi:
-        line = fi.readline()
-        spls=line.split('=')
-        smtppass=spls[1].rstrip()
-
-    s = smtplib.SMTP(smtphost, smtpport)
-    s.starttls()
-    s.login(smtpuser, smtppass)
-    msg = MIMEMultipart()
-
-    msg['From']='pi@{:s}'.format(hname)
-    msg['To']=mailrecip
 
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
     splits = os.path.basename(arch_dir).split('_')
@@ -127,16 +110,7 @@ def rmsExternal(cap_dir, arch_dir, config):
                     ss = line.split(' ')
                     total = total + int(ss[4])
 
-    msg['Subject']='{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total)
-    message = '{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total)
-    message = message + '\n' + extramsg
-    msg.attach(MIMEText(message, 'plain'))
-    try:
-        s.sendmail(msg['From'], mailrecip, msg.as_string())
-    except:
-        print('unable to send mail')
-
-    s.close()
+    em.sendDailyMail(localcfg, hname, curdt, total, extramsg)
 
     try:
         ts.trackStack(arch_dir, config)
