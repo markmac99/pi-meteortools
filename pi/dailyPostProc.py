@@ -119,10 +119,13 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     os.remove(rebootlockfile)
 
-    sys.path.append('/home/pi/source/RMS/iStream')
-    import iStream as istr
-    istr.rmsExternal(cap_dir, arch_dir, config)
-
+    if os.path.exists(os.path.join(srcdir, 'doistream')):
+        print('doing istream')
+        sys.path.append('/home/pi/source/RMS/iStream')
+        import iStream as istr
+        istr.rmsExternal(cap_dir, arch_dir, config)
+    else:
+        print('not doing istream')
     return
 
 
