@@ -50,7 +50,7 @@ do
           do
             kill $i
           done
-          sleep 5
+          sleep 300
           lxterminal -e ./liveMonitor.sh >> /home/pi/RMS_data/logs/ukmon-live.log 2>&1  &
           logger 'RMS_Pi4Watchdog: restarted ukmon liveMonitor...'
         fi
