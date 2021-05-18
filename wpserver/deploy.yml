@@ -1,0 +1,11 @@
+---
+- hosts: www.markmcintyreastro.co.uk
+  vars:
+    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/wpserver
+    destdir: ~/data/mjmm-data
+  tasks:
+  - name: Copy files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    with_items:
+    - {src: '{{srcdir}}/createCamIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/createMthIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }

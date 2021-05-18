@@ -1,5 +1,5 @@
 ---
-- hosts: meteorpi3 #, meteorpi4, meteorpi, meteorpi2
+- hosts: meteorpi3, meteorpi4, meteorpi, meteorpi2
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
     destdir: ~/mjmm
