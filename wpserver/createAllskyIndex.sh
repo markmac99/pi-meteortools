@@ -6,11 +6,11 @@
 htmlfile=index.html
 idxfile=cameraindex.js
 currmth=$(date +%Y%m)
-if [ "$2" != "" ] ; then 
-    currmth=$2
+if [ "$1" != "" ] ; then 
+    currmth=$1
 fi
 
-cd $HOME/data/mjmm-data/$1/$currmth
+cd $HOME/data/mjmm-data/allsky/videos/$currmth
 
 echo "<html><head><title>Index of $currmth</title>" > $htmlfile
 echo "<link href=\"/data/mjmm-data/css/bootstrap.min.css\" rel=\"stylesheet\">" >> $htmlfile
@@ -41,11 +41,7 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-if [ "$currmth" == "stacks" ] ; then
-    mp4list=$(ls -1dr *.jpg)
-else
-    mp4list=$(ls -1dr *.mp4)
-fi
+mp4list=$(ls -1dr *.mp4)
 i=0
 echo "var row = table.insertRow(-1);" >> $idxfile
 for fil in $mp4list ; do 
@@ -54,7 +50,7 @@ for fil in $mp4list ; do
         echo "var row = table.insertRow(-1);" >> $idxfile
     fi
     echo "var cell = row.insertCell(-1);" >> $idxfile
-    echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$1/$currmth/$fil\\\"\\>$fil\\</a\\>\";" >> $idxfile
+    echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/allsky/videos/$currmth/$fil\\\"\\>$fil\\</a\\>\";" >> $idxfile
     chmod 644 $fil
     i=$((i+1))
 done

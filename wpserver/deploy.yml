@@ -9,3 +9,4 @@
     with_items:
     - {src: '{{srcdir}}/createCamIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/createMthIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/createAllskyIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }

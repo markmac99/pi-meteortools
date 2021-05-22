@@ -18,6 +18,7 @@ echo "header.className = \"h4\"; " >> cameraindex.js
 
 camlist=$(ls -1d UK* allsky)
 mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
+mthlist=$(echo stacks $mthlist)
 for mth in $mthlist ; do 
     echo "var row = table.insertRow(-1);" >> cameraindex.js
     for cam in $camlist; do
@@ -44,9 +45,12 @@ for cam in $camlist; do
     echo "cell.innerHTML = \"$cam\";" >> cameraindex.js
     echo "cell.className = \"small\";" >> cameraindex.js
     i=$((i+1))
-    chmod 644 $cam/$currmth/*.mp4
     if [ "$cam" != "allsky" ] ; then 
         ./createMthIndex.sh $cam
+        ./createMthIndex.sh $cam stacks
+    else
+        ./createAllskyIndex.sh
+#        ./createMthIndex.sh $cam stacks
     fi
 done
 
