@@ -29,23 +29,17 @@ def copyAndStack(arch_dir, srcdir, log):
     user = 'bitnami'
     hn = '3.9.128.14'
 
-    log.info('removing previous stack')    
     outdir = os.path.join(srcdir, 'tmp')
     camid = os.path.basename(arch_dir).split('_')[0]
     fn = os.path.join(outdir, '{}_latest.jpg'.format(camid))
 
     now = datetime.datetime.now()
     if now.day == 1:
-        log.info('saving last months stack')
-        yday = now + datetime.timedelta(days = -1)
-        lastmthfile = os.path.join(outdir, '{:s}_{:04d}{:02d}.jpg'.format(camid, yday.year, yday.month))
-        os.rename(fn, lastmthfile)
-        targdir = 'data/mjmm-data/{}/stacks/'.format(camid)
-        cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}'.format(idfile, lastmthfile, user, hn, targdir)
-        os.system(cmdline)
+        log.info('clearing last months data')
         cmdline = 'rm {}/*.fits {}/*.jpg'.format(outdir, outdir)
         os.system(cmdline)
 
+    log.info('removing previous night stack')    
     if os.path.isfile(fn):
         os.remove(fn)
     
@@ -64,6 +58,10 @@ def copyAndStack(arch_dir, srcdir, log):
         os.rename(os.path.join(outdir, jpgs[0]), os.path.join(outdir, '{}_latest.jpg'.format(camid)))
         targdir = 'data/meteors/'
         cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}'.format(idfile, fn, user, hn, targdir)
+        os.system(cmdline)
+        mthfile = os.path.join(outdir, '{:s}_{:04d}{:02d}.jpg'.format(camid, now.year, now.month))
+        targdir = 'data/mjmm-data/{}/stacks/'.format(camid)
+        cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}/{}'.format(idfile, fn, user, hn, targdir, mthfile)
         os.system(cmdline)
     else:
         log.info('no stack to upload')
