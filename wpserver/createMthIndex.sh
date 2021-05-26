@@ -30,7 +30,11 @@ echo "<script src=\"/js/bootstrap.min.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/plugins/morris/raphael.min.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/plugins/morris/morris.min.js\"></script>" >> $htmlfile
 echo "<script src=\"./$idxfile\"></script>" >> $htmlfile
-echo "<h2>List of videos available for this month</h2>" >> $htmlfile
+if [ "$currmth" == "stacks" ] ; then 
+    echo "<h2>List of monthly stacks available for $1</h2>" >> $htmlfile
+else 
+    echo "<h2>List of videos available for $1 for this month</h2>" >> $htmlfile
+fi
 echo "<p><a href=\"https://markmcintyreastro.co.uk/cameradata/\">Back to index</a></p><hr>" >> $htmlfile
 echo "<div id=\"mthindex\"></div>" >> $htmlfile
 echo "</body></html>"  >> $htmlfile

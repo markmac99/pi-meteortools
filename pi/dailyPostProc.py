@@ -72,8 +72,12 @@ def rmsExternal(cap_dir, arch_dir, config):
     with open(rebootlockfile, 'w') as f:
         f.write('1')
 
-    initLogging(config, 'tackley_')
+    # clear existing log handlers
     log = logging.getLogger("logger")
+    while log.hasHandlers():
+        log.removeHandler(log.handlers[0])
+        
+    initLogging(config, 'tackley_')
     log.info('ukmon external script started')
 
     log.info('reading local config')
