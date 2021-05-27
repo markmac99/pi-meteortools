@@ -22,7 +22,10 @@ from RMS.Logger import initLogging
 
 import boto3
 
+sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 from annotatateImage import annotateImage
+import sendAnEmail as em
+import sendToYoutube as stu
 
 
 def copyAndStack(arch_dir, srcdir, log):
@@ -92,8 +95,6 @@ def rmsExternal(cap_dir, arch_dir, config):
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
-    import sendAnEmail as em
-    import sendToYoutube as stu
 
     hname = os.uname()[1]
 
