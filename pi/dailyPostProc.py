@@ -22,6 +22,8 @@ from RMS.Logger import initLogging
 
 import boto3
 
+from annotatateImage import annotateImage
+
 
 def copyAndStack(arch_dir, srcdir, log):
     # copy FFs for stacking
@@ -51,11 +53,16 @@ def copyAndStack(arch_dir, srcdir, log):
 
     log.info('creating stack')
     sff.stackFFs(outdir, 'jpg',subavg=True, filter_bright=True)
+    numffs = glob.glob1(outdir, 'FF*.fits')
+    now = datetime.datetime.now()
+    title = '{} {}'.format(camid, now.strftime('%Y-%m-%d'))
 
     jpgs = glob.glob1(outdir, '*.jpg')
     if len(jpgs) > 0:
         log.info('uploading stack')
-        os.rename(os.path.join(outdir, jpgs[0]), os.path.join(outdir, '{}_latest.jpg'.format(camid)))
+        lateststack = os.path.join(outdir, '{}_latest.jpg'.format(camid))
+        os.rename(os.path.join(outdir, jpgs[0]), lateststack)
+        annotateImage(lateststack, title, numffs)
         targdir = 'data/meteors/'
         cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}'.format(idfile, fn, user, hn, targdir)
         os.system(cmdline)
