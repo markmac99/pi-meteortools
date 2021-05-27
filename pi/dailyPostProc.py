@@ -23,7 +23,7 @@ from RMS.Logger import initLogging
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
-from annotatateImage import annotateImage
+from annotateImage import annotateImage
 import sendAnEmail as em
 import sendToYoutube as stu
 
