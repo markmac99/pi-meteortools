@@ -1,5 +1,5 @@
 ---
-- hosts: meteorpi3, meteorpi, meteorpi4, meteorpi2
+- hosts: meteorpi2 #, meteorpi3, meteorpi4, meteorpi
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
     destdir: ~/mjmm
@@ -9,6 +9,7 @@
   - name: Copy files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
+    - {src: '{{srcdir}}/annotateImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}/', mode: '755', backup: no }

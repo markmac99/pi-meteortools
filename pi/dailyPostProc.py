@@ -56,7 +56,8 @@ def copyAndStack(arch_dir, srcdir, log):
 
     log.info('creating stack')
     sff.stackFFs(outdir, 'jpg',subavg=True, filter_bright=True)
-    numffs = glob.glob1(outdir, 'FF*.fits')
+    ffs = glob.glob1(outdir, 'FF*.fits')
+    numffs = len(ffs)
     now = datetime.datetime.now()
     title = '{} {}'.format(camid, now.strftime('%Y-%m-%d'))
 
@@ -69,8 +70,8 @@ def copyAndStack(arch_dir, srcdir, log):
         targdir = 'data/meteors/'
         cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}'.format(idfile, fn, user, hn, targdir)
         os.system(cmdline)
-        mthfile = os.path.join(outdir, '{:s}_{:04d}{:02d}.jpg'.format(camid, now.year, now.month))
-        targdir = 'data/mjmm-data/{}/stacks/'.format(camid)
+        mthfile = '{:s}_{:04d}{:02d}.jpg'.format(camid, now.year, now.month)
+        targdir = 'data/mjmm-data/{}/stacks'.format(camid)
         cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}/{}'.format(idfile, fn, user, hn, targdir, mthfile)
         os.system(cmdline)
     else:
@@ -84,7 +85,7 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     # clear existing log handlers
     log = logging.getLogger("logger")
-    while log.hasHandlers():
+    while len(log.handlers) > 0:
         log.removeHandler(log.handlers[0])
         
     initLogging(config, 'tackley_')
@@ -188,6 +189,11 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     if os.path.exists(os.path.join(srcdir, 'doistream')):
         log.info('doing istream')
+
+        # clear log handlers as we want istrastream in its own logfile
+        while len(log.handlers) > 0:
+            log.removeHandler(log.handlers[0])
+
         sys.path.append('/home/pi/source/RMS/iStream')
         import iStream as istr
         istr.rmsExternal(cap_dir, arch_dir, config)
