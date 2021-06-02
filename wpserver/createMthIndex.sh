@@ -11,6 +11,7 @@ if [ "$2" != "" ] ; then
 fi
 
 cd $HOME/data/mjmm-data/$1/$currmth
+chmod 755 .
 
 echo "<html><head><title>Index of $currmth</title>" > $htmlfile
 echo "<link href=\"/data/mjmm-data/css/bootstrap.min.css\" rel=\"stylesheet\">" >> $htmlfile
