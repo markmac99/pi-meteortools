@@ -17,10 +17,10 @@ while [ "$dead" != "yes" ]
 do
   # find most recent logfile then check when it last updated
   fn=`ls -1tr log* | tail -1`
-  sts=`find . -name $fn -mmin +10 -ls | wc -l`
+  sts=`find . -name $fn -mmin +2 -ls | wc -l`
 
   if [ $sts -ne 0 ] ; then  
-    # log file is more than ten minutes old
+    # log file is more than one minute old
     # check that we're not still waiting for capture to start
     grep "Starting capture" $fn
     if [ $? -eq 0 ] ; then 
@@ -32,7 +32,7 @@ do
         logger 'RMS_Pi4Watchdog: RMS stopped acquisition'
 
         # Restart RMS. taking care not to kill other python apps
-        ps -ef | grep RMS_ | egrep -v "watch|data|grep"|awk '{print $2}' | while read i
+        ps -ef | grep RMS_ | egrep -v "onitor|watch|data|grep"|awk '{print $2}' | while read i
         do
           kill $i
         done
