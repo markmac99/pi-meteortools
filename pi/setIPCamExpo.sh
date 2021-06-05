@@ -12,12 +12,7 @@ if [ "$1" == "" ] ; then
   echo "usage setIPCamExpo.sh DAY|NIGHT|REBOOT"
   exit 1
 fi
-PAR3=`grep device .config | grep -v '#' | awk '{print $3}'`
-if [ "$PAR3" == "protocols=tcp" ] ; then 
-  IPCAMADDR=` grep device .config | grep -v '#' | awk '{print $6}' | cut -d '/' -f3 | cut -d: -f1`
-else
-  IPCAMADDR=` grep device .config | grep -v '#' | awk '{print $3}' | cut -d '/' -f3 | cut -d: -f1`
-fi 
+IPCAMADDR=$(grep device .config  |awk -F "rtsp://" '{ print $2 }' | awk -F: '{print $1 }' | uniq)
 LOGF=/home/pi/RMS_data/logs/setExpo-`date +%Y%m%d`.log
 
 if [ "$1" == "REBOOT" ] ; then
