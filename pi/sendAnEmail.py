@@ -4,11 +4,12 @@
 import os
 import configparser
 import smtplib
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
-def sendDailyMail(localcfg, hname, curdt, total, extramsg):
+def sendDailyMail(localcfg, hname, curdt, total, extramsg, log):
 
     mailrecip = localcfg['postprocess']['mailrecip'].rstrip()
     smtphost = localcfg['postprocess']['mailhost'].rstrip()
@@ -33,9 +34,10 @@ def sendDailyMail(localcfg, hname, curdt, total, extramsg):
     message = message + '\n' + extramsg
     msg.attach(MIMEText(message, 'plain'))
     try:
+        log.info('invoking sendmail')
         s.sendmail(msg['From'], mailrecip, msg.as_string())
     except:
-        print('unable to send mail')
+        log.info('unable to send mail')
 
     s.close()
 
@@ -47,4 +49,5 @@ if __name__ == '__main__':
     hname = os.uname()[1]
     curdt = '2021-05-01'
 
-    sendDailyMail(localcfg, hname, curdt, 1, '')
+    log = logging.getLogger("logger")
+    sendDailyMail(localcfg, hname, curdt, 1, '', log)
