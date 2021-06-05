@@ -28,11 +28,11 @@ import sendAnEmail as em
 import sendToYoutube as stu
 
 
-def copyAndStack(arch_dir, srcdir, log):
+def copyAndStack(arch_dir, srcdir, log, localcfg):
     # copy FFs for stacking
-    idfile = '/home/pi/.ssh/markskey.pem'
-    user = 'bitnami'
-    hn = '3.9.128.14'
+    idfile = localcfg['postprocess']['webid'] # /home/pi/.ssh/markskey.pem'
+    user = localcfg['postprocess']['user']  # 'bitnami'
+    hn = localcfg['postprocess']['webserver'] # '3.9.128.14'
 
     outdir = os.path.join(srcdir, 'tmp')
     camid = os.path.basename(arch_dir).split('_')[0]
@@ -152,7 +152,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
             s3.meta.client.upload_file(fn, target, outf)
         else:
-            print('uploading to website')
+            log.info('uploading to website')
             user = localcfg['postprocess']['user']
             mp4dir = localcfg['postprocess']['mp4dir']
             cmdline = 'ssh -i {:s}  {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, user, hn, mp4dir, stn, yymm)
@@ -175,15 +175,15 @@ def rmsExternal(cap_dir, arch_dir, config):
                 if 'TOTAL' in line:
                     ss = line.split(' ')
                     total = total + int(ss[4])
-
-    em.sendDailyMail(localcfg, hname, curdt, total, extramsg)
+    log.info('sending email')
+    em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
 
     try:
         ts.trackStack(arch_dir, config)
     except Exception:
         pass
     
-    copyAndStack(arch_dir, srcdir, log)
+    copyAndStack(arch_dir, srcdir, log, localcfg)
 
     os.remove(rebootlockfile)
 
