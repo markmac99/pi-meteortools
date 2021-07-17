@@ -31,7 +31,7 @@ $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 
 conda activate $rms_env
-$srcdir='\\'+$hostname+'\RMS_Share\CapturedFiles\*'+$args[1]+'*'
+$srcdir='\\'+$hostname+'\RMS_Data\CapturedFiles\*'+$args[1]+'*'
 $srcdirs=(get-childitem $srcdir).fullname
 $targdir=$localfolder+'/Interesting/'+$args[1]
 $arcfil=$localfolder+'/ArchivedFiles/*'+$args[1]+'*/*.fits'
