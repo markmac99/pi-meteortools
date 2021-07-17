@@ -32,13 +32,13 @@ if ($? -ne "True")  {
 robocopy $rempath *.jpg *.dat eve*.txt *.csv *.zip *.ini *.wav .  /dcopy:DAT /tee /m /v /s /r:3
 
 # create next month's empty RMOB file, if it doesn't already exist
-$nexmth=(get-date).adddays(8).tostring("yyyyMM")
-$fname = -join($rempath,"\RMOB-", $nexmth, ".DAT")
-if((test-path $fname) -eq $false) 
-{ 
-    write-output "creating empty file...." 
-    new-item -path $fname 
-}
+#$nexmth=(get-date).adddays(8).tostring("yyyyMM")
+#$fname = -join($rempath,"\RMOB-", $nexmth, ".DAT")
+#if((test-path $fname) -eq $false) 
+#{ 
+#    write-output "creating empty file...." 
+#    new-item -path $fname 
+#}
 net use $rempath  /d
 
 write-output "archiving old data" 

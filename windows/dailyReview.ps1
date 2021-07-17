@@ -39,82 +39,40 @@ $myf = $destpath + '\'+$path
 if ($USE_EXE -eq 1){
     set-location $binviewer_exe_loc
     & .\CMN_binviewer.exe $myf -c | out-null
+    $bcfg = $binviewer_exe_loc + "/config.ini"
 }
 else {
     conda activate $binviewer_env
     set-location $binviewer_pyt_loc
     python CMN_BinViewer.py $myf -c
+    $bcfg = $binviewer_pyt_loc + "/config.ini"
 }
 set-location $PSScriptRoot
-.\uploadToCmnRejected.ps1 $myf
+$regex="userej"
+switch -regex -file $bcfg { 
+    $regex { 
+        $tst=($_.split('=')[1]).trim()
+        if ($tst -eq "1"){
+            .\uploadToCmnRejected.ps1 $myf
+        } 
+    }
+}
 
 # switch RMS environment to do some post processing
 if ($RMS_INSTALLED -eq 1){
     # reprocess the ConfirmedFiles folder to generate JPGs, shower maps, etc
     conda activate $RMS_ENV
     set-location $RMS_LOC
-    $destpath=$localfolder+'\ArchivedFiles'
     $mindt = (get-date).AddDays(-$age)
-    $dlist = (Get-ChildItem  -directory $destpath | Where-Object { $_.creationtime -gt $mindt }).name
-    foreach ($path in $dlist) {
-        $myf = $destpath + '\'+$path
-        $ftpfil=$myf+'\FTPdetectinfo_'+$path+'.txt'
-        #$platepar=$myf+ '\platepar_cmn2010.cal'
-
-        $ufo=$myf+'\*radiants.txt'
-        $isdone=(get-childitem $ufo).Name
-        $ftpexists=test-path $ftpfil
-        if ($isdone.count -eq 0 -and $ftpexists -ne 0){
-            # generate the UFO-compatible CSV, shower association map 
-            # convert fits to jpeg and create a stack
-            # python -m Utils.RMS2UFO $ftpfil $platepar
-            python -m Utils.ShowerAssociation $ftpfil -x
-            # python -m Utils.BatchFFtoImage $myf jpg
-            #stack them if more than one to stack
-            # $fits = $myf  + '\FF*.fits'
-            # $nfits=(get-childitem $fits).count
-            # if ($nfits -gt 1)
-            # {
-            #    python -m Utils.StackFFs $myf jpg -s -b -x   
-            # }
-            # mp4 generation is not yet in the main RMS codebase
-            # $mp4gen=$rms_loc+'/Utils/GenerateMP4s.py'
-            # if (test-path $mp4gen ){
-            #    python -m Utils.GenerateMP4s $myf
-            # }
-        }
-        else{
-            write-output skipping' '$myf
-        }
-    }    
     $destpath=$localfolder+'\ConfirmedFiles'
     $dlist = (Get-ChildItem  -directory $destpath | Where-Object { $_.creationtime -gt $mindt }).name
     foreach ($path in $dlist) {
         $myf = $destpath + '\'+$path
         $ftpfil=$myf+'\FTPdetectinfo_'+$path+'.txt'
-        # $platepar=$myf+ '\platepar_cmn2010.cal'
 
-        $ufo=$myf+'\*radiants.txt'
-        $isdone=(get-childitem $ufo).Name
         $ftpexists=test-path $ftpfil
         if ($ftpexists -ne 0){
-            # generate the UFO-compatible CSV, shower association map 
-            # convert fits to jpeg and create a stack
-            # python -m Utils.RMS2UFO $ftpfil $platepar
             python -m Utils.ShowerAssociation $ftpfil -x
-            # python -m Utils.BatchFFtoImage $myf jpg
-            #stack them if more than one to stack
-            # $fits = $myf  + '\FF*.fits'
-            # $nfits=(get-childitem $fits).count
-            # if ($nfits -gt 1)
-            # {
-            #    python -m Utils.StackFFs $myf jpg -s -b -x   
-            # }
-            # mp4 generation is not yet in the main RMS codebase
-            # $mp4gen=$rms_loc+'\Utils\GenerateMP4s.py'
-            # if (test-path $mp4gen ){
-            #    python -m Utils.GenerateMP4s $myf
-            # }
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
         }
@@ -124,6 +82,9 @@ if ($RMS_INSTALLED -eq 1){
     }    
 }
 set-location $PSScriptRoot
+$dtstr=((get-date).adddays(-1)).tostring('yyyyMMdd')
+.\getPossibles $inifname $dtstr
+
 # .\reorgByYMD.ps1 $args[0]
 # .\UploadToUkMon.ps1 $args[0]
 
