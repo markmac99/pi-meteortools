@@ -78,6 +78,16 @@ def copyAndStack(arch_dir, srcdir, log, localcfg):
         log.info('no stack to upload')
 
 
+def reStackAndPush(arch_dir):
+    config = cr.parse('.config')
+    log = logging.getLogger("logger")
+    initLogging(config, 'tackley_')
+    localcfg = configparser.ConfigParser()
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    copyAndStack(arch_dir, srcdir, log, localcfg)
+
+
 def rmsExternal(cap_dir, arch_dir, config):
     rebootlockfile = os.path.join(config.data_dir, config.reboot_lock_file)
     with open(rebootlockfile, 'w') as f:
