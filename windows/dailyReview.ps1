@@ -69,9 +69,12 @@ if ($RMS_INSTALLED -eq 1){
     foreach ($path in $dlist) {
         $myf = $destpath + '\'+$path
         $ftpfil=$myf+'\FTPdetectinfo_'+$path+'.txt'
+        $radfil=$myf+'\'+$path+'_radiants.png'
 
         $ftpexists=test-path $ftpfil
-        if ($ftpexists -ne 0){
+        $radexists=test-path $radfil
+
+        if ($ftpexists -ne 0 -and $radexists -eq 0 ){
             python -m Utils.ShowerAssociation $ftpfil -x
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
