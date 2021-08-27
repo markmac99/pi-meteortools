@@ -160,7 +160,10 @@ def rmsExternal(cap_dir, arch_dir, config):
                 region_name='eu-west-2')
             target=hn[5:]
             outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
-            s3.meta.client.upload_file(fn, target, outf)
+            try: 
+                s3.meta.client.upload_file(fn, target, outf)
+            except Exception:
+                print('upload to S3 failed')
         else:
             log.info('uploading to website')
             user = localcfg['postprocess']['user']
