@@ -10,6 +10,7 @@ $targ=$targ.replace('/','\')
 xcopy /dy /exclude:exclude.rsp .\Windows\*.ps1 $targ
 xcopy /dy /exclude:exclude.rsp .\Windows\*.ini $targ
 xcopy /dy /exclude:exclude.rsp .\Windows\*.py $targ
+xcopy /dy /exclude:exclude.rsp .\Windows\*.sh $targ
 
 xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\DailyChecks\*.ps1 $targ
 xcopy /dy /exclude:exclude.rsp ..\ukmon-shared\analysis\*.ps1 $targ
