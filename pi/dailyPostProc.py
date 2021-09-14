@@ -198,8 +198,6 @@ def rmsExternal(cap_dir, arch_dir, config):
     
     copyAndStack(arch_dir, srcdir, log, localcfg)
 
-    os.remove(rebootlockfile)
-
     if os.path.exists(os.path.join(srcdir, 'doistream')):
         log.info('doing istream')
 
@@ -211,6 +209,8 @@ def rmsExternal(cap_dir, arch_dir, config):
         import iStream as istr
         istr.rmsExternal(cap_dir, arch_dir, config)
     else:
+        # only remove this if we are finished with processing
+        os.remove(rebootlockfile)
         log.info('not doing istream')
     return
 
