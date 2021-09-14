@@ -15,6 +15,10 @@ $remfldr=$ini['camera']['remotefolder']
 $remuser=$ini['camera']['remoteuser']
 $rempass=(get-content $ini['camera']['remotepass'])
 
+$yy = (get-date -uformat '%Y')
+$ym = (get-date -uformat '%Y%m')
+$yd = (get-date -uformat '%Y%m%d')
+
 set-location $localfolder
 
 # now grab the latest radio data and process it
@@ -28,8 +32,27 @@ if ($? -ne "True")  {
     set-location $PSScriptRoot
     exit 2
 } 
+$srcfldr = $rempath + '\screenshots'
+$locfolder = $localfolder + '\screenshots\' + $yy + '\' + $ym + '\' + $yd
+$fils = 'event' + $yd + '*.jpg'
+robocopy $srcfldr $locfolder $fils /dcopy:DAT /tee /mov /v /s /r:3
 
-robocopy $rempath *.jpg *.dat eve*.txt *.csv *.zip *.ini *.wav .  /dcopy:DAT /tee /m /v /s /r:3
+$srcfldr = $rempath + '\sounds'
+$locfolder = $localfolder + '\sounds\' + $yy + '\' + $ym + '\' + $yd
+$fils = 'event' + $yd + '*.wav'
+robocopy $srcfldr $locfolder $fils /dcopy:DAT /tee /mov /v /s /r:3
+
+$srcfldr = $rempath + '\logs'
+$locfolder = $localfolder + '\logs'
+robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
+
+$srcfldr = $rempath + '\RMOB'
+$locfolder = $localfolder + '\RMOB'
+robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
+
+$srcfldr = $rempath + '\screenshots'
+$locfolder = $localfolder + '\screenshots'
+robocopy $srcfldr $locfolder *latest*.*    /dcopy:DAT /tee /m /v /s /r:3
 
 # create next month's empty RMOB file, if it doesn't already exist
 #$nexmth=(get-date).adddays(8).tostring("yyyyMM")
@@ -41,22 +64,22 @@ robocopy $rempath *.jpg *.dat eve*.txt *.csv *.zip *.ini *.wav .  /dcopy:DAT /te
 #}
 net use $rempath  /d
 
-write-output "archiving old data" 
+#write-output "archiving old data" 
 
 # delete older files to save space
-$prvmth = (get-date).addmonths(-2) 
-$ccyymm=get-date($prvmth) -uformat('%Y%m')
-$yymm=get-date($prvmth) -uformat('%y%m')
-$srcs = 'event_log'+$ccyymm+'*.txt'
-$archfile = 'event_log'+$ccyymm+'.zip'
-get-childitem -path $srcs | compress-archive -destinationpath $archfile -Update
-remove-item $srcs
-Set-Location screenshots
-$srcs = 'event'+$yymm+'*.jpg'
-$archfile = 'event'+$yymm+'.zip'
-get-childitem -path $srcs | compress-archive -destinationpath $archfile -Update
-Remove-Item $srcs
-Set-Location ..
+#$prvmth = (get-date).addmonths(-2) 
+#$ccyymm=get-date($prvmth) -uformat('%Y%m')
+#$yymm=get-date($prvmth) -uformat('%y%m')
+#$srcs = 'event_log'+$ccyymm+'*.txt'
+#$archfile = 'event_log'+$ccyymm+'.zip'
+#get-childitem -path $srcs | compress-archive -destinationpath $archfile -Update
+#remove-item $srcs
+#Set-Location screenshots
+#$srcs = 'event'+$yymm+'*.jpg'
+#$archfile = 'event'+$yymm+'.zip'
+#get-childitem -path $srcs | compress-archive -destinationpath $archfile -Update
+#Remove-Item $srcs
+#Set-Location ..
 
 set-location $PSScriptRoot
 .\PushRadioData.ps1 
