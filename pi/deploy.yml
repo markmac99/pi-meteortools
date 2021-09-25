@@ -13,6 +13,7 @@
     - {src: '{{srcdir}}/dvrip.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/networkCheck.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/RMS_Pi4Monitor.sh', dest: '{{destdir}}/', mode: '755', backup: no }
