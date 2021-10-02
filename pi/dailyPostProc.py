@@ -14,6 +14,7 @@ import shutil
 import configparser
 import logging
 import datetime
+import time
 
 import RMS.ConfigReader as cr
 import Utils.TrackStack as ts
@@ -115,7 +116,6 @@ def rmsExternal(cap_dir, arch_dir, config):
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
         try: 
-
             if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
                 with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
                     f.write('dummy\n')
@@ -127,7 +127,11 @@ def rmsExternal(cap_dir, arch_dir, config):
                     tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
                     msg = '{:s} timelapse for {:s}'.format(hname, tod)
                     log.info('uploading {:s} to youtube'.format(mp4name))
-                    stu.main(msg, os.path.join(arch_dir, mp4name))
+                    for retries in range(5):
+                        if stu.main(msg, os.path.join(arch_dir, mp4name)) == 0:
+                            break
+                        else:
+                            time.sleep(10)
                 else:
                     log.info('already uploaded {:s}'.format(mp4name))
                     
