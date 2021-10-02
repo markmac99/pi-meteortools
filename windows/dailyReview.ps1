@@ -23,6 +23,7 @@ $USE_EXE=$ini['python']['USE_EXE']
 $RMS_INSTALLED=$ini['rms']['rms_installed']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
+$upload_rej=$ini['cleaning']['uploadtogmn']
 
 # copy the latest data from the Pi
 $srcpath='\\'+$hostname+'\RMS_data\ArchivedFiles'
@@ -50,14 +51,15 @@ else {
 set-location $PSScriptRoot
 $regex="userej"
 switch -regex -file $bcfg { 
-    $regex { 
-        $tst=($_.split('=')[1]).trim()
-        if ($tst -eq "1"){
-            .\uploadToCmnRejected.ps1 $myf
-        } 
-    }
+    $regex { $tst=($_.split('=')[1]).trim()  } 
 }
 
+if ($tst -eq "1" -and $upload_rej -eq "True"){
+    .\uploadToCmnRejected.ps1 $myf
+}
+else {
+    write-output "Skipping GMN ML upload"
+}
 # switch RMS environment to do some post processing
 if ($RMS_INSTALLED -eq 1){
     # reprocess the ConfirmedFiles folder to generate JPGs, shower maps, etc
@@ -81,7 +83,7 @@ if ($RMS_INSTALLED -eq 1){
             copy-item $flat $myf
             python -m Utils.ShowerAssociation $ftpfil -x
             python -m Utils.StackFFs $myf -x -b jpg -f $myf\flat.bmp -m $myf\mask.bmp
-            python -m Utils.TrackStack $myf -c $myf\.config
+            python -m Utils.TrackStack $myf -c $myf\.config -x
             python -m Utils.BatchFFtoImage $myf jpg -t
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
