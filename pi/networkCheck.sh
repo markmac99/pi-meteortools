@@ -10,11 +10,13 @@ while true
 do
     ping -c 1 192.168.1.254  > /dev/null 2>&1
     x=$?
-    if [ $x -ne 0 ] ; then 
-        echo sudo ifconfig wlan0 down
+    sleep 30
+    ping -c 1 192.168.1.254  > /dev/null 2>&1
+    y=$? 
+    if [[ $x -ne 0 && y -ne 0 ]] ; then 
         logger -s -t networkCheck "wifi went off"
-        sleep 2
-        echo sudo ifconfig wlan0 up
+        sudo ifconfig wlan0 down
+        sudo ifconfig wlan0 up
     fi
     sleep 60
 done  
