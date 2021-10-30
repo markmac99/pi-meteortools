@@ -94,8 +94,8 @@ if ($RMS_INSTALLED -eq 1){
     }    
 }
 set-location $PSScriptRoot
-$dtstr=((get-date).adddays(-1)).tostring('yyyyMMdd')
-.\getPossibles $inifname $dtstr
+#$dtstr=((get-date).adddays(-1)).tostring('yyyyMMdd')
+#.\getPossibles $inifname $dtstr
 
 # .\reorgByYMD.ps1 $args[0]
 # .\UploadToUkMon.ps1 $args[0]
