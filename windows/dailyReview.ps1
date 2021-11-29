@@ -87,6 +87,7 @@ if ($RMS_INSTALLED -eq 1){
             python -m Utils.BatchFFtoImage $myf jpg -t
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
+            copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks
         }
         else{
             write-output skipping' '$myf
