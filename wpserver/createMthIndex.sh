@@ -2,15 +2,17 @@
 #
 # Script to make index file for camera uploads
 #
+here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $here/config.ini
 
-htmlfile=index.html
-idxfile=cameraindex.js
+htmlfile=$TMPDIR/$1-index.html
+idxfile=$TMPDIR/$1-cameraindex.js
 currmth=$(date +%Y%m)
 if [ "$2" != "" ] ; then 
     currmth=$2
 fi
 
-cd $HOME/data/mjmm-data/$1/$currmth
+cd $DATADIR/$1/$currmth
 chmod 755 .
 
 echo "<html><head><title>Index of $currmth</title>" > $htmlfile
@@ -30,7 +32,7 @@ echo "<script src=\"/js/jquery.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/bootstrap.min.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/plugins/morris/raphael.min.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/plugins/morris/morris.min.js\"></script>" >> $htmlfile
-echo "<script src=\"./$idxfile\"></script>" >> $htmlfile
+echo "<script src=\"./cameraindex.js\"></script>" >> $htmlfile
 if [ "$currmth" == "stacks" ] ; then 
     echo "<h2>List of monthly stacks available for $1</h2>" >> $htmlfile
 else 
@@ -67,3 +69,12 @@ done
 echo "var outer_div = document.getElementById(\"mthindex\");"   >> $idxfile
 echo "outer_div.appendChild(table);"  >> $idxfile
 echo "})"  >> $idxfile
+
+diff $idxfile $DATADIR/$1/$currmth/cameraindex.js > /dev/null 
+if [ $? -gt 0 ] ; then 
+    echo deploying changes
+    cp $htmlfile $DATADIR/$1/$currmth/index.html
+    cp $idxfile $DATADIR/$1/$currmth/cameraindex.js
+else
+    echo no changes
+fi 

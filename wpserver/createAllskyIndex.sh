@@ -2,15 +2,17 @@
 #
 # Script to make index file for camera uploads
 #
+here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $here/config.ini
 
-htmlfile=index.html
-idxfile=cameraindex.js
+htmlfile=$TMPDIR/allsky-index.html
+idxfile=$TMPDIR/allsky-cameraindex.js
 currmth=$(date +%Y%m)
 if [ "$1" != "" ] ; then 
     currmth=$1
 fi
 
-cd $HOME/data/mjmm-data/allsky/videos/$currmth
+cd $DATADIR/allsky/videos/$currmth
 
 echo "<html><head><title>Index of $currmth</title>" > $htmlfile
 echo "<link href=\"/data/mjmm-data/css/bootstrap.min.css\" rel=\"stylesheet\">" >> $htmlfile
@@ -29,7 +31,7 @@ echo "<script src=\"/js/jquery.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/bootstrap.min.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/plugins/morris/raphael.min.js\"></script>" >> $htmlfile
 echo "<script src=\"/js/plugins/morris/morris.min.js\"></script>" >> $htmlfile
-echo "<script src=\"./$idxfile\"></script>" >> $htmlfile
+echo "<script src=\"./cameraindex.js\"></script>" >> $htmlfile
 echo "<h2>List of videos available for this month</h2>" >> $htmlfile
 echo "<p><a href=\"https://markmcintyreastro.co.uk/cameradata/\">Back to index</a></p><hr>" >> $htmlfile
 echo "<div id=\"mthindex\"></div>" >> $htmlfile
@@ -58,3 +60,12 @@ done
 echo "var outer_div = document.getElementById(\"mthindex\");"   >> $idxfile
 echo "outer_div.appendChild(table);"  >> $idxfile
 echo "})"  >> $idxfile
+
+diff $idxfile $DATADIR/allsky/videos/$currmth/cameraindex.js > /dev/null 
+if [ $? -gt 0 ] ; then 
+    echo deploying changes
+    cp $htmlfile $DATADIR/allsky/videos/$currmth/index.html
+    cp $idxfile $DATADIR/allsky/videos/$currmth/cameraindex.js
+else
+    echo no changes
+fi
