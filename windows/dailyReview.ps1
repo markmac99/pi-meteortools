@@ -48,6 +48,18 @@ else {
     python CMN_BinViewer.py $myf -c
     $bcfg = $binviewer_pyt_loc + "/config.ini"
 }
+
+# get the FR files
+$fflist=(Get-ChildItem $myf\FF*.fits).name
+$fflist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
+foreach ($frfile in $fflist)
+{
+    $srcfile = $srcpath + '/'+ $path + '/' + $frfile
+    $srcfile = $srcfile.replace('/','\')
+    $destpath = $localfolder+'\ConfirmedFiles\' + $path
+    Copy-Item "$srcfile" "$destpath"
+}
+
 set-location $PSScriptRoot
 $regex="userej"
 switch -regex -file $bcfg { 
