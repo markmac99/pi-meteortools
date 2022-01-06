@@ -8,7 +8,7 @@ if ((test-path $inifname) -eq $false) {
 }
 
 $ini=get-inicontent $inifname
-$datadir=($ini['detector']['datadir']).replace('/','\')
+$datadir=($ini['host']['datadir']).replace('/','\')
 if((test-path $inifname) -eq $false){
     write-output "datadir missing or invalid, can't continue"
     exit 2

@@ -34,7 +34,7 @@ while (($? -ne "True") -and ($loopctr -lt 10))  {
     $loopctr++
 }
 if ($loopctr -eq 10)  {
-    Send-MailMessage -from $hostname@oservatory -to mark@localhost -subject "astromini down" -body "$hostname seems to be down, check power and network" -smtpserver 192.168.1.151    
+    Send-MailMessage -from $hostname@oservatory -to mark@localhost -subject "$hostname down" -body "$hostname seems to be down, check power and network" -smtpserver 192.168.1.151    
     exit 1
 }
 set-location $locfldr
@@ -91,7 +91,7 @@ else {
     robocopy $remfldr logs /dcopy:DAT /tee /v /s /r:3 
 
     Set-Location $psscriptroot
-    .\reorgByYMD.ps1 $inifname
+    #.\reorgByYMD.ps1 $inifname
 }
 Set-Location $psscriptroot
 Write-Output "finished" (get-date) 
