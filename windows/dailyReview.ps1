@@ -50,14 +50,17 @@ else {
 }
 
 # get the FR files
-$fflist=(Get-ChildItem $myf\FF*.fits).name
+Write-Output "Copying FR files where available"
+$conff = $localfolder+'\ConfirmedFiles\' + $path
+$fflist=(Get-ChildItem $conff\FF*.fits).name
 $fflist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
 foreach ($frfile in $fflist)
 {
     $srcfile = $srcpath + '/'+ $path + '/' + $frfile
     $srcfile = $srcfile.replace('/','\')
-    $destpath = $localfolder+'\ConfirmedFiles\' + $path
-    Copy-Item "$srcfile" "$destpath"
+    if ((test-path $srcfile) -eq 1){
+        Copy-Item "$srcfile" "$conff"
+    }
 }
 
 set-location $PSScriptRoot
