@@ -200,7 +200,8 @@ def rmsExternal(cap_dir, arch_dir, config):
     except Exception:
         pass
     
-    copyAndStack(arch_dir, srcdir, log, localcfg)
+    # doing this on my PC now, from confirmedFiles data
+    # copyAndStack(arch_dir, srcdir, log, localcfg)
 
     if os.path.exists(os.path.join(srcdir, 'doistream')):
         log.info('doing istream')
