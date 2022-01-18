@@ -13,6 +13,8 @@ $hostname=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
+$pylib=$ini['ukmon']['ukmon_pylib']
+$webserver=$ini['website']['webserver']
 
 if ($args.count -eq 2){
     $ym = [int]$args[1]
@@ -42,11 +44,11 @@ $stackfile = (Get-ChildItem  $destpath\*.jpg ).name
 if ((test-path $destpath\$stackfile) -eq 1)
 {
     $metcount = $stackfile.split('_')[2]
+    $env:pythonpath=$pylib
     python -m utils.annotateImage $destpath\$stackfile $hostname $metcount
     $newname=$hostname.toupper() + '_' + $ym + '.jpg'
     Move-Item $destpath\*.jpg $destpath\..\$newname -force
 
-    $webserver="wordpresssite"
     set-location "$destpath\.."
     $latf=$hostname.toupper() + '_latest.jpg'
     $webtarg=$webserver+":data/meteors"
@@ -55,3 +57,4 @@ if ((test-path $destpath\$stackfile) -eq 1)
     scp $newname $webtarg
 }
 set-location $loc
+pause
