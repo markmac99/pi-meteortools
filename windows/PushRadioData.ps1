@@ -42,8 +42,11 @@ write-output "copying latest 2d image" | tee-object $logf -append
 scp -o StrictHostKeyChecking=no -i $key latest2d.jpg $targ
 
 $curdt=(get-date -uformat '%Y%m%d')
-$fnam=(get-childitem  event$curdt*.jpg | sort-object lastwritetime).name | select-object -last 1
-if($fnam){
+$yy=$curdt.substring(0,4)
+$ym=$curdt.substring(0,6)
+$curpth="$yy\$ym\$curdt\event$curdt*.jpg"
+$fnam=(get-childitem  $curpth | sort-object lastwritetime).fullname | select-object -last 1
+if((test-path $fnam) -eq 1 ){
     Write-Output 'copying last capture' | tee-object $logf -append
     copy-item $fnam  -destination latestcapture.jpg
     scp -o StrictHostKeyChecking=no -i $key latestcapture.jpg $targ
@@ -68,13 +71,21 @@ write-output $msg | tee-object $logf -append
 
 set-location $PSScriptRoot
 
+# push to UKMON
 $logf=$datadir+'/logs/ukmon-'+(get-date -uformat '%Y%m%d')+'.log'
 $ukmonkey=$ini['ukmon']['ukmon_keyfile']
+$station=$ini['ukmon']['ukmon_station']
 . $ukmonkey
 
-$station=$ini['ukmon']['ukmon_station']
 $srcloc=$datadir+'\csv\'
 write-output 'updating ukmon' | tee-object $logf 
-$s3targ='s3://ukmon-shared/archive/' + $station + '/Radio/'
+$s3targ='s3://ukmon-shared/archive/' + $station + '/'
 aws s3 sync $srcloc $s3targ | tee-object $logf -append
+
+# now push to my own archive
+$ukmonkey=$ini['mjmmdata']['aws_keyfile']
+. $ukmonkey
+
+aws s3 sync $datadir\rmob\ s3://mjmm-data/Radio/ --exclude "*" --include "*RMOB*"
+
 set-location $PSScriptRoot

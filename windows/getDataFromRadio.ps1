@@ -3,17 +3,17 @@ set-location $PSScriptRoot
 . .\helperfunctions.ps1
 # read the inifile
 if ($args.count -eq 0) {
-    $inifname='radio.ini'
+    $inifname='radiostation.ini'
 }
 else {
     $inifname = $args[0]
 }
 $ini=get-inicontent $inifname
-$hostname=$ini['camera']['hostname']
-$localfolder=$ini['camera']['localfolder']
-$remfldr=$ini['camera']['remotefolder']
-$remuser=$ini['camera']['remoteuser']
-$rempass=(get-content $ini['camera']['remotepass'])
+$hostname=$ini['detectionpc']['hostname']
+$localfolder=$ini['detectionpc']['localfolder']
+$remfldr=$ini['detectionpc']['remotefolder']
+$remuser=$ini['detectionpc']['remoteuser']
+$rempass=(get-content $ini['detectionpc']['remotepass'])
 
 $yy = (get-date -uformat '%Y')
 $ym = (get-date -uformat '%Y%m')
@@ -49,10 +49,6 @@ robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
 $srcfldr = $rempath + '\RMOB'
 $locfolder = $localfolder + '\RMOB'
 robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
-
-$srcfldr = $rempath + '\screenshots'
-$locfolder = $localfolder + '\screenshots'
-robocopy $srcfldr $locfolder *latest*.*    /dcopy:DAT /tee /m /v /s /r:3
 
 net use $rempath  /d
 

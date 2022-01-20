@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 # import pandas as pd
 from datetime import date
+from datetime import datetime
 import calendar
 import csv
 import os
@@ -183,8 +184,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-def main(srcpath, targpath, tod):
-    os.makedirs(targpath, exist_ok=True)
+def main(srcpath, targpath, fulltarg, tod):
 
     rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
     print(' src is {}, targ is {}'.format(rmobfile, targpath))
@@ -248,7 +248,7 @@ def main(srcpath, targpath, tod):
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    fname = os.path.join(targpath, str(yyyy) + '.jpg')
+    fname = os.path.join(fulltarg, str(yyyy) + '.jpg')
     print('creating ', fname)
     plt.savefig(fname, dpi=600, bbox_inches='tight')
     plt.close()
@@ -300,7 +300,7 @@ def main(srcpath, targpath, tod):
     plt.tight_layout()
     # plt.show()
 
-    fname2 = os.path.join(targpath, str(yyyy) + dys + '.jpg')
+    fname2 = os.path.join(fulltarg, str(yyyy) + dys + '.jpg')
     print('creating ', fname2)
     plt.savefig(fname2, dpi=600, bbox_inches='tight')
     plt.close()
@@ -320,7 +320,7 @@ def main(srcpath, targpath, tod):
 
     # save this as RMOB_yyyymmdd.jpg
     #
-    fname3 = os.path.join(targpath, 'RMOB_' + str(yyyy) + dys + '.jpg')
+    fname3 = os.path.join(fulltarg, 'RMOB_' + str(yyyy) + dys + '.jpg')
     print('creating ', fname3)
     plt.savefig(fname3, dpi=600, bbox_inches='tight')
     plt.close()
@@ -423,7 +423,7 @@ def main(srcpath, targpath, tod):
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    fname2 = os.path.join(targpath, str(yyyy) + '-3mths.jpg')
+    fname2 = os.path.join(fulltarg, str(yyyy) + '-3mths.jpg')
     print('creating ', fname2)
     plt.savefig(fname2, dpi=600, bbox_inches='tight')
     plt.close()
@@ -449,7 +449,12 @@ if __name__ == '__main__':
         targpath = os.path.join(srcpath,'rmob')
     if len(sys.argv) > 3:
         tod = str(sys.argv[3])
+        dt = datetime.strptime(tod, '%Y%m')
     else:
-        tod = date.today().strftime("%Y%m")
+        dt = date.today()
+        tod = dt.strftime("%Y%m")
 
-    main(srcpath, targpath, tod)
+    fulltarg = os.path.join(targpath, f'{dt.year}', f'{dt.year}{dt.month:02d}')
+    os.makedirs(fulltarg, exist_ok=True)
+
+    main(srcpath, targpath, fulltarg, tod)
