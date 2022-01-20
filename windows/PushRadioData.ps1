@@ -83,9 +83,7 @@ $s3targ='s3://ukmon-shared/archive/' + $station + '/'
 aws s3 sync $srcloc $s3targ | tee-object $logf -append
 
 # now push to my own archive
-$ukmonkey=$ini['mjmmdata']['aws_keyfile']
-. $ukmonkey
+scp $datadir\rmob\$yy\$ym\$ym.jpg ukmonhelper:data/Radio/$yy/ 
 
-aws s3 sync $datadir\rmob\ s3://mjmm-data/Radio/ --exclude "*" --include "*RMOB*"
-
+# create index for the rmob history
 set-location $PSScriptRoot
