@@ -21,16 +21,17 @@ if ($args.count -eq 2){
 }else {
     $ym = (get-date -uformat '%Y%m')
 }
+$rdt=[datetime]($ym.substring(0,4)+'-'+$ym.substring(4))
+$prevym = ($rdt.addmonths(-1)).tostring('yyyyMM')
 
 $srcpath=$localfolder + '\ConfirmedFiles'
 $destpath=$localfolder+'\..\mthlystacks\'+$hostname
 
 if ((test-path $destpath) -eq 0) { mkdir $destpath}
 
-if((get-date -uformat '%d') -eq '01')
-{
-    Remove-Item $destpath\FF*.fits
-}
+$ffpatt = 'FF*' + $prevym + '*.fits'
+Remove-Item $destpath\$ffpatt
+
 $dlist = (Get-ChildItem  -directory "$srcpath\*_$ym*" ).name
 foreach ($path in $dlist) {
     robocopy $srcpath\$path $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /np
@@ -56,5 +57,8 @@ if ((test-path $destpath\$stackfile) -eq 1)
     $webtarg=$webserver+":data/mjmm-data/" + $hostname.toupper() + "/stacks"
     scp $newname $webtarg
 }
+else {
+    Write-Output 'no stack to upload'
+}
 set-location $loc
-pause
+#pause

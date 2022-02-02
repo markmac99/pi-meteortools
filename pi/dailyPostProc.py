@@ -182,7 +182,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
     splits = os.path.basename(arch_dir).split('_')
     curdt = splits[1]
-    logname=os.path.join(logdir, 'log_' + splits[1] + '_' + '*.log*')
+    logname=os.path.join(logdir, 'log_' + splits[0] + '_' + splits[1] + '_' + '*.log*')
     logfs = glob.glob(logname)
     total = 0
     for f in logfs:
