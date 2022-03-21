@@ -46,7 +46,7 @@ if ((test-path $destpath\$stackfile) -eq 1)
 {
     $metcount = $stackfile.split('_')[2]
     $env:pythonpath=$pylib
-    python -m utils.annotateImage $destpath\$stackfile $hostname $metcount
+    python -m utils.annotateImage $destpath\$stackfile $hostname $metcount $ym
     $newname=$hostname.toupper() + '_' + $ym + '.jpg'
     Move-Item $destpath\*.jpg $destpath\..\$newname -force
 

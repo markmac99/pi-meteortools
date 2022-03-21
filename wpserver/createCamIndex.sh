@@ -19,7 +19,7 @@ echo "header.className = \"h4\"; " >> $idxfile
 
 camlist=$(ls -1d UK* allsky)
 mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
-mthlist=$(echo stacks $mthlist)
+mthlist=$(echo stacks trackstacks $mthlist)
 for mth in $mthlist ; do 
     echo "var row = table.insertRow(-1);" >> $idxfile
     for cam in $camlist; do
@@ -49,6 +49,7 @@ for cam in $camlist; do
     if [ "$cam" != "allsky" ] ; then 
         $here/createMthIndex.sh $cam
         $here/createMthIndex.sh $cam stacks
+        $here/createMthIndex.sh $cam trackstacks
     else
         $here/createAllskyIndex.sh
     fi

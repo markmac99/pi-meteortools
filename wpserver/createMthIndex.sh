@@ -48,7 +48,7 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-if [ "$currmth" == "stacks" ] ; then
+if [[ "$currmth" == "stacks" || "$currmth" == "trackstacks" ]] ; then
     mp4list=$(ls -1dr *.jpg)
 else
     mp4list=$(ls -1dr *.mp4)

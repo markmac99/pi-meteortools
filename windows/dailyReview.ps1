@@ -112,6 +112,8 @@ if ($RMS_INSTALLED -eq 1){
 set-location $PSScriptRoot
 .\createMonthlyStack.ps1 $inifname
 
+.\uploadTrackStacks.ps1 $inifname 
+
 #$dtstr=((get-date).adddays(-1)).tostring('yyyyMMdd')
 #.\getPossibles $inifname $dtstr
 
