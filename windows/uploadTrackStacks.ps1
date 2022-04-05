@@ -16,7 +16,7 @@ $ini=get-inicontent $inifname
 $hostname=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 $pylib=$ini['ukmon']['ukmon_pylib']
-$webserver=$ini['website']['webserver']
+#$webserver=$ini['website']['webserver']
 
 
 if ($args.count -eq 2){
@@ -35,7 +35,7 @@ else {
     $metcount = [int]$li.split(' ')[3]
     
     $srcpath=$localfolder + '\..\trackstacks\'
-    $destpath=$localfolder+'\..\tmpstack\'
+    #$destpath=$localfolder+'\..\tmpstack\'
     
     $fnam = "$srcpath$hostname" + "_$ymd" + "*track_stack.jpg"
     
@@ -43,21 +43,24 @@ else {
     
     if ($stackfile.length -ne 0)
     {
-        $env:pythonpath=$pylib
-        python -m utils.annotateImage $srcpath\$stackfile $hostname $metcount $ymd
         $newname=$hostname.toupper() + '_' + $ymd + '.jpg'
-        Copy-Item $srcpath\$stackfile $destpath\$newname -force
+        Rename-Item $srcpath\$stackfile $srcpath\$newname
+        $env:pythonpath=$pylib
+        python -m utils.annotateImage $srcpath\$newname $hostname $metcount $ymd
+    }
+    $hnu = $hostname.toupper()
+    $dirname = "s3://mjmm-data/" + $hnu + "/trackstacks/"
+    . $ini['website']['awskey']
+    aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*"
+
+#        Copy-Item $srcpath\$newname $destpath\$newname -force
     
-        set-location "$destpath"
-        $dirname = "data/mjmm-data/" + $hostname.toupper() + "/trackstacks"
+#        set-location "$destpath"
+#        $dirname = "data/mjmm-data/" + $hostname.toupper() + "/trackstacks"
         #ssh $webserver "mkdir $dirname > /dev/null 2>&1"
-        $webtarg=$webserver+":"+$dirname
-        scp $newname $webtarg
-        remove-item $newname
-    }
-    else {
-        Write-Output 'no stack to upload'
-    }
+#        $webtarg=$webserver+":"+$dirname
+#        scp $newname $webtarg
+#        remove-item $newname
         
 }
 set-location $loc
