@@ -12,6 +12,10 @@ if [ "$2" != "" ] ; then
     currmth=$2
 fi
 
+if [ ! -d $DATADIR/$1/$currmth ] ; then 
+    exit
+fi
+
 cd $DATADIR/$1/$currmth
 chmod 755 .
 

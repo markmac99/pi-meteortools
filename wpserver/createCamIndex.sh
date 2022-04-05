@@ -43,7 +43,11 @@ echo "var row = header.insertRow(0);"  >> $idxfile
 i=0
 for cam in $camlist; do
     echo "var cell = row.insertCell($i);" >> $idxfile
-    echo "cell.innerHTML = \"$cam\";" >> $idxfile
+    if [ "$cam" == "UK9999" ] ; then 
+        echo "cell.innerHTML = \"AuroraCam\";" >> $idxfile
+    else 
+        echo "cell.innerHTML = \"$cam\";" >> $idxfile
+    fi
     echo "cell.className = \"small\";" >> $idxfile
     i=$((i+1))
     if [ "$cam" != "allsky" ] ; then 

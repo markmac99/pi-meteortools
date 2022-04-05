@@ -113,6 +113,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     extramsg = 'Notes:\n'
     
     mp4name = os.path.basename(cap_dir) + '.mp4'
+    """
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
         try: 
@@ -141,7 +142,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             errmsg = 'unable to upload timelapse'
             log.info(errmsg)
             extramsg = extramsg + errmsg + '\n'
-
+    """
     # upload the MP4 to S3 or a website
     if int(localcfg['postprocess']['upload']) == 1:
         hn = localcfg['postprocess']['host']
@@ -178,7 +179,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             os.system(cmdline)
 
     # email a summary to the mailrecip
-
+    """
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
     splits = os.path.basename(arch_dir).split('_')
     curdt = splits[1]
@@ -217,6 +218,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         # only remove this if we are finished with processing
         os.remove(rebootlockfile)
         log.info('not doing istream')
+    """
     return
 
 
