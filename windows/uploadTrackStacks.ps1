@@ -43,25 +43,38 @@ else {
     
     if ($stackfile.length -ne 0)
     {
-        $newname=$hostname.toupper() + '_' + $ymd + '.jpg'
-        Rename-Item $srcpath\$stackfile $srcpath\$newname
+        $hnu = $hostname.toupper()
+        $newname=$hnu + '_' + $ymd + '.jpg'
+        Rename-Item $srcpath\$stackfile $newname
         $env:pythonpath=$pylib
         python -m utils.annotateImage $srcpath\$newname $hostname $metcount $ymd
+        $dirname = "s3://mjmm-data/" + $hnu + "/trackstacks/"
+        . $ini['website']['awskey']
+        aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*"
     }
-    $hnu = $hostname.toupper()
-    $dirname = "s3://mjmm-data/" + $hnu + "/trackstacks/"
-    . $ini['website']['awskey']
-    aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*"
-
-#        Copy-Item $srcpath\$newname $destpath\$newname -force
-    
-#        set-location "$destpath"
-#        $dirname = "data/mjmm-data/" + $hostname.toupper() + "/trackstacks"
-        #ssh $webserver "mkdir $dirname > /dev/null 2>&1"
-#        $webtarg=$webserver+":"+$dirname
-#        scp $newname $webtarg
-#        remove-item $newname
-        
+    else
+    {
+        $cnfpath = $localfolder + "\ConfirmedFiles\"
+        $ofnam =  "$cnfpath$hostname" + "_$ymd*\" + "*track_stack.jpg"
+        $stackfile = (Get-ChildItem  $ofnam ).fullName
+        if ($stackfile.length -ne 0)
+        {
+            $hnu = $hostname.toupper()
+            $newname=$hnu + '_' + $ymd + '.jpg'
+            copy-Item $stackfile $srcpath\$newname -Force
+            $env:pythonpath=$pylib
+            python -m utils.annotateImage $srcpath\$newname $hostname $metcount $ymd
+            $dirname = "s3://mjmm-data/" + $hnu + "/trackstacks/"
+            . $ini['website']['awskey']
+            aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*"
+        }
+        else 
+        {
+            write-output "no file $fnam found"
+            set-location $loc
+            Start-Sleep 10
+        }
+    }        
 }
 set-location $loc
 
