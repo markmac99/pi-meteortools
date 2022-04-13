@@ -12,14 +12,28 @@ import sys
 import shutil
 import dateutil.relativedelta
 import configparser as cfg
+import glob
 
 interval = 100  # millisecs between loops in Colorlab
 
 
-def ConvertToCsv(yr, mt, dy, srcpath, targpath):
-    print('converting to CSV for ' + yr + mt + dy)
+def findInterestingJpgs(srcpath, targpath):
+    # SpecLab is creating files called interesting_X.jpg. I want the most recent two 
+    # to display on the website
+    os.chdir(srcpath)
+    flist = sorted(filter(os.path.isfile, glob.glob1('.','interesting*.jpg')), key=os.path.getmtime)
+    if len(flist) > 0:
+        outf = os.path.join(targpath, 'screenshot1.jpg')
+        shutil.copy(os.path.join(srcpath, flist[-1]), outf)
+        if len(flist) > 1:
+            outf = os.path.join(targpath, 'screenshot2.jpg')
+            shutil.copy(os.path.join(srcpath, flist[-2]), outf)
+
+
+def ConvertToCsv(yr, mth, dy, srcpath, targpath):
+    print('converting to CSV for ' + yr + mth + dy)
     # dt = "{:4d}{:02d}{:02d}".format(yr,mt,dy)
-    dt = yr + mt # + dy
+    dt = yr + mth # + dy
 
     config = cfg.ConfigParser()
     config.read('./radiostation.ini')
@@ -30,9 +44,9 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
     tz = int(config['observer']['tz'])
 
     srcfile = os.path.join(srcpath, 'event_log_' + dt + '.csv')
-    targfile = os.path.join(targpath, yr, yr + mt, 'R' + yr + mt + dy + '_' + id + '.csv')
+    targfile = os.path.join(targpath, yr, yr + mth, 'R' + yr + mth + dy + '_' + id + '.csv')
     print(srcfile)
-    os.makedirs(os.path.join(targpath, yr, yr + mt), exist_ok=True)
+    os.makedirs(os.path.join(targpath, yr, yr + mth), exist_ok=True)
 
     outf = open(targfile, 'w+')
 
@@ -50,7 +64,7 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
                 bri = round(float(row[2]) - float(row[3]), 2)
                 freq = row[6]
                 dur = float(row[7]) * interval
-                s = "RMOB,{:s},{:s},{:s},{:s},{:s},{:s},".format(yr, mt, dy, hr, mi, se)
+                s = "RMOB,{:s},{:s},{:s},{:s},{:s},{:s},".format(yr, mth, dy, hr, mi, se)
                 s = s + "{:f},{:f},{:s},".format(bri, dur, freq)
                 s = s + "{:s},{:f},{:f},{:f},{:d}\n".format(id, lng, lat, alt, tz)
                 outf.write(s)
@@ -184,10 +198,13 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-def main(srcpath, targpath, fulltarg, tod):
+def makeColorGram(srcpath, targpath, tod):
 
-    rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
-    print(' src is {}, targ is {}'.format(rmobfile, targpath))
+    fulltarg = os.path.join(targpath, tod[:4], tod)
+    os.makedirs(fulltarg, exist_ok=True)
+
+    rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.dat')
+    print(f' src is {rmobfile}, targ is {fulltarg}')
     # create heatmap for this month
     # named yyyymm.jpg eg 200206.jpg
     mthdays = calendar.monthrange(int(tod[:4]), int(tod[4:6]))[1]
@@ -261,7 +278,7 @@ def main(srcpath, targpath, fulltarg, tod):
     plt.ylabel('Count')
 
     config = cfg.ConfigParser()
-    config.read('./radiostation.ini')
+    config.read(os.path.join('.', 'radiostation.ini'))
     lati = float(config['observer']['Lati'])
     longi = float(config['observer']['Longi'])
     if longi < 0:
@@ -358,7 +375,7 @@ def main(srcpath, targpath, fulltarg, tod):
 
     # read in three months of data
     #
-    rmob1 = os.path.join(srcpath, 'RMOB-' + d3.strftime("%Y%m") + '.DAT')
+    rmob1 = os.path.join(srcpath, 'RMOB-' + d3.strftime("%Y%m") + '.dat')
     with open(rmob1) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
@@ -372,7 +389,7 @@ def main(srcpath, targpath, fulltarg, tod):
             line_count += 1
         print(f'Processed {line_count} lines.')
 
-    rmob1 = os.path.join(srcpath, 'RMOB-' + d2.strftime("%Y%m") + '.DAT')
+    rmob1 = os.path.join(srcpath, 'RMOB-' + d2.strftime("%Y%m") + '.dat')
     with open(rmob1) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
@@ -386,7 +403,7 @@ def main(srcpath, targpath, fulltarg, tod):
             line_count += 1
         print(f'Processed {line_count} lines.')
 
-    rmob1 = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
+    rmob1 = os.path.join(srcpath, 'RMOB-' + tod + '.dat')
     with open(rmob1) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
@@ -430,12 +447,7 @@ def main(srcpath, targpath, fulltarg, tod):
     latfname = os.path.join(targpath, '3months_latest.jpg')
     shutil.copy(fname2, latfname)
 
-    # create CSV versions of the above suitable for UKMON
-    # to consume
-
-    yr = yyyy[0:4]
-    mt = yyyy[4:6]
-    ConvertToCsv(yr, mt, dys, srcpath, os.path.join(srcpath,'../csv'))
+    return dys
 
 
 if __name__ == '__main__':
@@ -446,7 +458,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         targpath = sys.argv[2]
     else:
-        targpath = os.path.join(srcpath,'rmob')
+        targpath = os.path.join(srcpath,'..','rmob')
     if len(sys.argv) > 3:
         tod = str(sys.argv[3])
         dt = datetime.strptime(tod, '%Y%m')
@@ -454,7 +466,8 @@ if __name__ == '__main__':
         dt = date.today()
         tod = dt.strftime("%Y%m")
 
-    fulltarg = os.path.join(targpath, f'{dt.year}', f'{dt.year}{dt.month:02d}')
-    os.makedirs(fulltarg, exist_ok=True)
-
-    main(srcpath, targpath, fulltarg, tod)
+    dys = makeColorGram(srcpath, targpath, tod)
+    
+    csvpath = os.path.join(targpath,'csv')
+    ConvertToCsv(tod[:4], tod[4:6], dys, srcpath, csvpath)
+    findInterestingJpgs(srcpath, targpath)

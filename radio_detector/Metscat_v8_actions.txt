@@ -99,6 +99,7 @@ if( continuation ) then fp5(str("YYYYMMDDhh", Current_Time) + "," + str("hh", Cu
 if( continuation ) then fclose5
 if( continuation ) then Hourly_Meteor_Count = 0 : Hourly_Meteor_Duration = 0 : Hourly_Meteor_Longest = 0 : Do_Log_Upload = Current_Time
 if( continuation ) then exec(Upload_Command + "\"" + Log_Path + "\" \"hourly_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+if( continuation ) then exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
 if( never ) then # If the current time is on the hour, reset the hourly flag ready to trigger again at the end of the next hour
 if( str("mmss", Current_Time)="0000" ) then Hourly_Flag = 0
 if( never ) then ##### TIMED ACTION TRIGGERED: DAILY ###################################################################################################################
