@@ -53,5 +53,5 @@ robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
 net use $rempath  /d
 
 set-location $PSScriptRoot
-.\PushRadioData.ps1 
+#.\PushRadioData.ps1 
 write-output "done" 
