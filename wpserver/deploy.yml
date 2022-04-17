@@ -8,13 +8,9 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/createCamIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/createMthIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/createAllskyIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/createRmoblist.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/lambdaForRadio.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/radiostation.ini', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/processRadioData.sh', dest: '{{destdir}}/', mode: '755', backup: no }
   - name: update DATADIR
     lineinfile:
       path: '{{destdir}}/config.ini'

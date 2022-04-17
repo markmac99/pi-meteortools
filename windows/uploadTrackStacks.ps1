@@ -16,7 +16,6 @@ $ini=get-inicontent $inifname
 $hostname=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 $pylib=$ini['ukmon']['ukmon_pylib']
-#$webserver=$ini['website']['webserver']
 
 
 if ($args.count -eq 2){
@@ -24,6 +23,7 @@ if ($args.count -eq 2){
 }else {
     $ymd = (get-date).adddays(-1).tostring('yyyyMMdd')
 }
+
 $cnfpath=$localfolder + "\ConfirmedFiles\$hostname" + "_$ymd" +"*\FTPdetectinfo*.txt"
 $ftps = (get-childitem $cnfpath).FullName
 if ($ftps.count -eq 0 ) { 

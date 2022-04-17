@@ -50,13 +50,6 @@ for cam in $camlist; do
     fi
     echo "cell.className = \"small\";" >> $idxfile
     i=$((i+1))
-    if [ "$cam" != "allsky" ] ; then 
-        $here/createMthIndex.sh $cam
-        $here/createMthIndex.sh $cam stacks
-        $here/createMthIndex.sh $cam trackstacks
-    else
-        $here/createAllskyIndex.sh
-    fi
 done
 
 echo "var outer_div = document.getElementById(\"cam-list\");"   >> $idxfile
