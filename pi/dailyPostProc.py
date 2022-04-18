@@ -14,6 +14,7 @@ import shutil
 import configparser
 import logging
 import datetime
+import time
 
 import RMS.ConfigReader as cr
 import Utils.TrackStack as ts
@@ -22,12 +23,17 @@ from RMS.Logger import initLogging
 
 import boto3
 
+sys.path.append(os.path.split(os.path.abspath(__file__))[0])
+from annotateImage import annotateImage
+import sendAnEmail as em
+import sendToYoutube as stu
 
-def copyAndStack(arch_dir, srcdir, log):
+
+def copyAndStack(arch_dir, srcdir, log, localcfg):
     # copy FFs for stacking
-    idfile = '/home/pi/.ssh/markskey.pem'
-    user = 'bitnami'
-    hn = '3.9.128.14'
+    idfile = localcfg['postprocess']['webid'] # /home/pi/.ssh/markskey.pem'
+    user = localcfg['postprocess']['user']  # 'bitnami'
+    hn = localcfg['postprocess']['webserver'] # '3.9.128.14'
 
     outdir = os.path.join(srcdir, 'tmp')
     camid = os.path.basename(arch_dir).split('_')[0]
@@ -51,20 +57,36 @@ def copyAndStack(arch_dir, srcdir, log):
 
     log.info('creating stack')
     sff.stackFFs(outdir, 'jpg',subavg=True, filter_bright=True)
+    ffs = glob.glob1(outdir, 'FF*.fits')
+    numffs = len(ffs)
+    now = datetime.datetime.now()
+    title = '{} {}'.format(camid, now.strftime('%Y-%m-%d'))
 
     jpgs = glob.glob1(outdir, '*.jpg')
     if len(jpgs) > 0:
         log.info('uploading stack')
-        os.rename(os.path.join(outdir, jpgs[0]), os.path.join(outdir, '{}_latest.jpg'.format(camid)))
+        lateststack = os.path.join(outdir, '{}_latest.jpg'.format(camid))
+        os.rename(os.path.join(outdir, jpgs[0]), lateststack)
+        annotateImage(lateststack, title, numffs)
         targdir = 'data/meteors/'
         cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}'.format(idfile, fn, user, hn, targdir)
         os.system(cmdline)
-        mthfile = os.path.join(outdir, '{:s}_{:04d}{:02d}.jpg'.format(camid, now.year, now.month))
-        targdir = 'data/mjmm-data/{}/stacks/'.format(camid)
+        mthfile = '{:s}_{:04d}{:02d}.jpg'.format(camid, now.year, now.month)
+        targdir = 'data/mjmm-data/{}/stacks'.format(camid)
         cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}/{}'.format(idfile, fn, user, hn, targdir, mthfile)
         os.system(cmdline)
     else:
         log.info('no stack to upload')
+
+
+def reStackAndPush(arch_dir):
+    config = cr.parse('.config')
+    log = logging.getLogger("logger")
+    initLogging(config, 'tackley_')
+    localcfg = configparser.ConfigParser()
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    copyAndStack(arch_dir, srcdir, log, localcfg)
 
 
 def rmsExternal(cap_dir, arch_dir, config):
@@ -72,17 +94,19 @@ def rmsExternal(cap_dir, arch_dir, config):
     with open(rebootlockfile, 'w') as f:
         f.write('1')
 
-    initLogging(config, 'tackley_')
+    # clear existing log handlers
     log = logging.getLogger("logger")
-    log.info('ukmon external script started')
+    while len(log.handlers) > 0:
+        log.removeHandler(log.handlers[0])
+        
+    initLogging(config, 'tackley_')
+    log.info('tackley external script started')
 
     log.info('reading local config')
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
-    import sendAnEmail as em
-    import sendToYoutube as stu
 
     hname = os.uname()[1]
 
@@ -92,7 +116,6 @@ def rmsExternal(cap_dir, arch_dir, config):
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
         try: 
-
             if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
                 with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
                     f.write('dummy\n')
@@ -104,7 +127,11 @@ def rmsExternal(cap_dir, arch_dir, config):
                     tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
                     msg = '{:s} timelapse for {:s}'.format(hname, tod)
                     log.info('uploading {:s} to youtube'.format(mp4name))
-                    stu.main(msg, os.path.join(arch_dir, mp4name))
+                    for retries in range(5):
+                        if stu.main(msg, os.path.join(arch_dir, mp4name)) == 0:
+                            break
+                        else:
+                            time.sleep(10)
                 else:
                     log.info('already uploaded {:s}'.format(mp4name))
                     
@@ -137,9 +164,12 @@ def rmsExternal(cap_dir, arch_dir, config):
                 region_name='eu-west-2')
             target=hn[5:]
             outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
-            s3.meta.client.upload_file(fn, target, outf)
+            try: 
+                s3.meta.client.upload_file(fn, target, outf)
+            except Exception:
+                print('upload to S3 failed')
         else:
-            print('uploading to website')
+            log.info('uploading to website')
             user = localcfg['postprocess']['user']
             mp4dir = localcfg['postprocess']['mp4dir']
             cmdline = 'ssh -i {:s}  {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, user, hn, mp4dir, stn, yymm)
@@ -152,7 +182,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
     splits = os.path.basename(arch_dir).split('_')
     curdt = splits[1]
-    logname=os.path.join(logdir, 'log_' + splits[1] + '_' + '*.log*')
+    logname=os.path.join(logdir, 'log_' + splits[0] + '_' + splits[1] + '_' + '*.log*')
     logfs = glob.glob(logname)
     total = 0
     for f in logfs:
@@ -162,24 +192,30 @@ def rmsExternal(cap_dir, arch_dir, config):
                 if 'TOTAL' in line:
                     ss = line.split(' ')
                     total = total + int(ss[4])
-
-    em.sendDailyMail(localcfg, hname, curdt, total, extramsg)
+    log.info('sending email')
+    em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
 
     try:
         ts.trackStack(arch_dir, config)
     except Exception:
         pass
     
-    copyAndStack(arch_dir, srcdir, log)
-
-    os.remove(rebootlockfile)
+    # doing this on my PC now, from confirmedFiles data
+    # copyAndStack(arch_dir, srcdir, log, localcfg)
 
     if os.path.exists(os.path.join(srcdir, 'doistream')):
         log.info('doing istream')
+
+        # clear log handlers as we want istrastream in its own logfile
+        while len(log.handlers) > 0:
+            log.removeHandler(log.handlers[0])
+
         sys.path.append('/home/pi/source/RMS/iStream')
         import iStream as istr
         istr.rmsExternal(cap_dir, arch_dir, config)
     else:
+        # only remove this if we are finished with processing
+        os.remove(rebootlockfile)
         log.info('not doing istream')
     return
 

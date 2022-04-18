@@ -1,0 +1,15 @@
+---
+- hosts: ukmonhelper
+  gather_facts: no
+  tasks:
+  - name: import variables 
+    include_vars: ./vars.yml
+  - name: Ensures {{destdir}} exists
+    file: path={{destdir}} state=directory  
+    delegate_to: localhost
+  - name: Copy files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    tags: [dev,prod]
+    delegate_to: localhost
+    with_items:
+    - {src: '{{srcdir}}/', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: yes }

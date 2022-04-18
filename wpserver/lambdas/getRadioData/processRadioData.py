@@ -1,37 +1,37 @@
 import numpy as np
-# from mlxtend.plotting import heatmap
+import boto3
 import matplotlib
 import matplotlib.pyplot as plt
-# import pandas as pd
 from datetime import date
 import calendar
 import csv
 import os
-import sys
 import shutil
 import dateutil.relativedelta
 import configparser as cfg
+import tempfile
+
 
 interval = 100  # millisecs between loops in Colorlab
 
 
-def ConvertToCsv(yr, mt, dy, srcpath, targpath):
-    print('converting to CSV for ' + yr + mt + dy)
+def ConvertToCsv(yr, mth, dy, tmpfldr, targbucket, targfldr, s3):
+    print('converting to CSV for ' + yr + mth + dy)
     # dt = "{:4d}{:02d}{:02d}".format(yr,mt,dy)
-    dt = yr + mt # + dy
+    dt = yr + mth # + dy
 
     config = cfg.ConfigParser()
-    config.read('./radiostation.ini')
+    config.read(os.path.join(tmpfldr,'radiostation.ini'))
     lat = float(config['observer']['Lati'])
     lng = float(config['observer']['Lati'])
     id = config['observer']['station']
     alt = float(config['observer']['altitude'])
     tz = int(config['observer']['tz'])
 
-    srcfile = os.path.join(srcpath, 'event_log_' + dt + '.csv')
-    targfile = os.path.join(targpath, yr, yr + mt, 'R' + yr + mt + dy + '_' + id + '.csv')
-    print(srcfile)
-    os.makedirs(os.path.join(targpath, yr, yr + mt), exist_ok=True)
+    srcfile = os.path.join(tmpfldr, 'event_log_' + dt + '.csv')
+
+    targkey = os.path.join(targbucket, targfldr, yr, yr + mth, 'R' + yr + mth + dy + '_' + id + '.csv')
+    targfile = os.path.join(tmpfldr, 'R' + yr + mth + dy + '_' + id + '.csv')
 
     outf = open(targfile, 'w+')
 
@@ -49,13 +49,15 @@ def ConvertToCsv(yr, mt, dy, srcpath, targpath):
                 bri = round(float(row[2]) - float(row[3]), 2)
                 freq = row[6]
                 dur = float(row[7]) * interval
-                s = "RMOB,{:s},{:s},{:s},{:s},{:s},{:s},".format(yr, mt, dy, hr, mi, se)
+                s = "RMOB,{:s},{:s},{:s},{:s},{:s},{:s},".format(yr, mth, dy, hr, mi, se)
                 s = s + "{:f},{:f},{:s},".format(bri, dur, freq)
                 s = s + "{:s},{:f},{:f},{:f},{:d}\n".format(id, lng, lat, alt, tz)
                 outf.write(s)
-    inf.close
     outf.close
-    return 0
+    # now upload the file
+    print(f'uploading to {targkey}')
+    extraargs = {'ContentType': 'text/csv'}
+    s3.meta.client.upload_file(targfile, targbucket, targkey, ExtraArgs=extraargs) 
 
 
 def heatmap(data, row_labels, col_labels, ax=None,
@@ -183,11 +185,29 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-def main(srcpath, targpath, tod):
-    os.makedirs(targpath, exist_ok=True)
+def makeColorGram(srcbucket, srckey):
+    s3 = boto3.resource('s3')
+    targbucket = 'mjmm-data'
+    targfldr = 'Radio/'
 
-    rmobfile = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
-    print(' src is {}, targ is {}'.format(rmobfile, targpath))
+    tmpfldr = tempfile.mkdtemp()
+    _, rmobname = os.path.split(srckey)
+    # download the config file
+    cfgfile = os.path.join(tmpfldr, 'radiostation.ini')
+    s3.meta.client.download_file(srcbucket, 'radiostation.ini', cfgfile)
+
+    # download the RMOB file and event-log file 
+    rmobfile = os.path.join(tmpfldr, rmobname)
+    print(f'retrieving {srckey}')
+    s3.meta.client.download_file(srcbucket, srckey, rmobfile)
+    spls = rmobname.split('-')
+    tod = spls[1]
+    tod = tod[:6]
+    evtlog = os.path.join(tmpfldr, f'event_log_{tod}.csv')
+    evtkey = 'raw/' + f'event_log_{tod}.csv'
+    print(f'retrieving {evtkey}')
+    s3.meta.client.download_file(srcbucket, evtkey, evtlog)
+
     # create heatmap for this month
     # named yyyymm.jpg eg 200206.jpg
     mthdays = calendar.monthrange(int(tod[:4]), int(tod[4:6]))[1]
@@ -248,10 +268,16 @@ def main(srcpath, targpath, tod):
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    fname = os.path.join(targpath, str(yyyy) + '.jpg')
-    print('creating ', fname)
+    fname = os.path.join(tmpfldr, str(yyyy) + '.jpg')
     plt.savefig(fname, dpi=600, bbox_inches='tight')
     plt.close()
+
+    # now upload the file
+    curryr = yr[:4]
+    key = targfldr + curryr + '/' + str(yyyy) + '.jpg'
+    extraargs = {'ContentType': 'image/jpeg'}
+    print(f'uploading heatmap to {key}')
+    s3.meta.client.upload_file(fname, targbucket, key, ExtraArgs=extraargs) 
 
     # now generate the text and bar graph for today
     # as per the RMOB graphs
@@ -261,7 +287,7 @@ def main(srcpath, targpath, tod):
     plt.ylabel('Count')
 
     config = cfg.ConfigParser()
-    config.read('./radiostation.ini')
+    config.read(cfgfile)
     lati = float(config['observer']['Lati'])
     longi = float(config['observer']['Longi'])
     if longi < 0:
@@ -298,12 +324,15 @@ def main(srcpath, targpath, tod):
         + '-' + dys, loc='left')
 
     plt.tight_layout()
-    # plt.show()
 
-    fname2 = os.path.join(targpath, str(yyyy) + dys + '.jpg')
-    print('creating ', fname2)
+    fname2 = os.path.join(tmpfldr, str(yyyy) + dys + '.jpg')
     plt.savefig(fname2, dpi=600, bbox_inches='tight')
     plt.close()
+    # don't upload this file
+    #key = targfldr + str(yyyy) + dys + '.jpg'
+    #extraargs = {'ContentType': 'image/jpeg'}
+    #s3.meta.client.upload_file(fname2, targbucket, key, ExtraArgs=extraargs) 
+
 
     # create a single image combining the above two side by side
     # again as per the RMOB data
@@ -320,32 +349,19 @@ def main(srcpath, targpath, tod):
 
     # save this as RMOB_yyyymmdd.jpg
     #
-    fname3 = os.path.join(targpath, 'RMOB_' + str(yyyy) + dys + '.jpg')
-    print('creating ', fname3)
+    fname3 = os.path.join(tmpfldr, 'RMOB_' + str(yyyy) + dys + '.jpg')
     plt.savefig(fname3, dpi=600, bbox_inches='tight')
     plt.close()
 
-    # copy it to RMOB_latest.jpg
-    #
-    latfil = os.path.join(targpath, 'RMOB_latest.jpg')
-    print('copying {} to {}'.format(fname3, latfil))
-    shutil.copy(fname3, latfil)
-
-    # create three-month bar chart - this doesn't work so
-    # commented out for now
-    #
-    # mthcnts=myarray.flatten()
-    # hrs=range(1,len(mthcnts)+1)
-    # matplotlib.pyplot.bar(x=hrs,height=mthcnts)
-    # plt.ylabel('Count')
-    # plt.tight_layout()
-    # fname4 = targpath + 'RMOB_'+str(yyyy)+'.jpg'
-    # plt.savefig(fname4, dpi=300,bbox_inches='tight')
-    # plt.close()
+    # now upload the file
+    key = targfldr + 'RMOB_latest.jpg'
+    extraargs = {'ContentType': 'image/jpeg'}
+    print(f'uploading "latest" file to {key}')
+    s3.meta.client.upload_file(fname3, targbucket, key, ExtraArgs=extraargs) 
 
     # generate three-month heatmap
     #
-    tod = date.today().strftime("%Y%m")
+    mtod = date.today().strftime("%Y%m")
     mthdays = calendar.monthrange(date.today().year, date.today().month)[1]
     # m1=mthdays
     d2 = date.today() - dateutil.relativedelta.relativedelta(months=1)
@@ -358,7 +374,10 @@ def main(srcpath, targpath, tod):
 
     # read in three months of data
     #
-    rmob1 = os.path.join(srcpath, 'RMOB-' + d3.strftime("%Y%m") + '.DAT')
+    rmob1 = os.path.join(tmpfldr, 'RMOB-' + d3.strftime("%Y%m") + '.dat')
+    srckey = 'raw/RMOB-'+ d3.strftime("%Y%m") + '.dat'
+    s3.meta.client.download_file(srcbucket, srckey, rmob1)
+
     with open(rmob1) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
@@ -372,7 +391,9 @@ def main(srcpath, targpath, tod):
             line_count += 1
         print(f'Processed {line_count} lines.')
 
-    rmob1 = os.path.join(srcpath, 'RMOB-' + d2.strftime("%Y%m") + '.DAT')
+    rmob1 = os.path.join(tmpfldr, 'RMOB-' + d2.strftime("%Y%m") + '.dat')
+    srckey = 'raw/RMOB-'+ d2.strftime("%Y%m") + '.dat'
+    s3.meta.client.download_file(srcbucket, srckey, rmob1)
     with open(rmob1) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
@@ -386,7 +407,9 @@ def main(srcpath, targpath, tod):
             line_count += 1
         print(f'Processed {line_count} lines.')
 
-    rmob1 = os.path.join(srcpath, 'RMOB-' + tod + '.DAT')
+    rmob1 = os.path.join(tmpfldr, 'RMOB-' + mtod + '.dat')
+    srckey = 'raw/RMOB-'+ mtod + '.dat'
+    s3.meta.client.download_file(srcbucket, srckey, rmob1)
     with open(rmob1) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
         line_count = 0
@@ -423,33 +446,33 @@ def main(srcpath, targpath, tod):
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    fname2 = os.path.join(targpath, str(yyyy) + '-3mths.jpg')
-    print('creating ', fname2)
+    fname2 = os.path.join(tmpfldr, '3months_latest.jpg')
     plt.savefig(fname2, dpi=600, bbox_inches='tight')
     plt.close()
-    latfname = os.path.join(targpath, '3months_latest.jpg')
-    shutil.copy(fname2, latfname)
 
-    # create CSV versions of the above suitable for UKMON
-    # to consume
+    # now upload the file
+    key = targfldr + '3months_latest.jpg'
+    extraargs = {'ContentType': 'image/jpeg'}
+    print(f'uploading to {key}')
+    s3.meta.client.upload_file(fname2, targbucket, key, ExtraArgs=extraargs) 
 
-    yr = yyyy[0:4]
-    mt = yyyy[4:6]
-    ConvertToCsv(yr, mt, dys, srcpath, os.path.join(srcpath,'../csv'))
+    # now make the CSV files
+    ConvertToCsv(tod[:4], tod[4:6], dys, tmpfldr, targbucket, targfldr, s3)
+
+    shutil.rmtree(tmpfldr)
+    return dys
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        srcpath = sys.argv[1]
-    else:
-        srcpath = 'c:/spectrum/'
-    if len(sys.argv) > 2:
-        targpath = sys.argv[2]
-    else:
-        targpath = os.path.join(srcpath,'rmob')
-    if len(sys.argv) > 3:
-        tod = str(sys.argv[3])
-    else:
-        tod = date.today().strftime("%Y%m")
+    s3bucket = 'mjmm-rawradiodata'
+    s3object = 'raw/RMOB-202204.dat'
+    makeColorGram(s3bucket, s3object)
+    
 
-    main(srcpath, targpath, tod)
+def lambda_handler(event, context):
+    record = event['Records'][0]
+    s3bucket = record['s3']['bucket']['name']
+    s3object = record['s3']['object']['key']
+    print(s3object, s3bucket, 'hello')
+
+    makeColorGram(s3bucket, s3object)

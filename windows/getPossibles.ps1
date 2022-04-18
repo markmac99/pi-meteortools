@@ -31,9 +31,10 @@ $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 
 conda activate $rms_env
-$srcdir='\\'+$hostname+'\RMS_Share\CapturedFiles\*'+$args[1]+'*'
+$srcdir='\\'+$hostname+'\RMS_Data\CapturedFiles\*'+$args[1]+'*'
 $srcdirs=(get-childitem $srcdir).fullname
-$targdir=$localfolder+'/Interesting/'+$args[1]
+$fldrnam=(get-childitem $srcdir).name
+$targdir=$localfolder+'/Interesting/'+$fldrnam
 $arcfil=$localfolder+'/ArchivedFiles/*'+$args[1]+'*/*.fits'
 
 if ((test-path $targdir) -eq $false) { mkdir $targdir | out-null }
@@ -67,8 +68,11 @@ for($i=0; $i -lt $srcdirs.count ; $i++)
         Set-Location $rms_loc
         python -m Utils.BatchFFtoImage $targdir jpg
         $platepar=$localfolder+'/ArchivedFiles/*'+$args[1]+'*/platepar*'
-        write-output "copying $platepar"
+        write-output "copying $platepar and config"
         copy-item $platepar $targdir
+        $cfgfile=$localfolder+'/ArchivedFiles/'+$fldrnam+'/.config'
+        # required to copy a hidden file
+        get-childitem $cfgfile -force | copy-item -dest $targdir -force
         Set-Location $PSScriptRoot
     #    explorer ($targdir).replace('/','\')
     }

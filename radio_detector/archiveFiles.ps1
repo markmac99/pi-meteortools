@@ -8,7 +8,7 @@ if ((test-path $inifname) -eq $false) {
 }
 
 $ini=get-inicontent $inifname
-$datadir=($ini['detector']['datadir']).replace('/','\')
+$datadir=($ini['host']['datadir']).replace('/','\')
 if((test-path $inifname) -eq $false){
     write-output "datadir missing or invalid, can't continue"
     exit 2
@@ -16,18 +16,19 @@ if((test-path $inifname) -eq $false){
 $arcdir=($ini['host']['archivedir']).replace('/','\')
 Set-Location $datadir
 $txtdt=[string]$args[0]
-$jpgdt=$txtdt.substring(2)
+#$jpgdt=$txtdt.substring(2)
+$jpgdt=$txtdt
 
-compress-archive -path event_log$txtdt*.txt -DestinationPath event_log$txtdt.zip
-if ((test-path event_log$txtdt.zip) -eq 1)
+compress-archive -path sounds\event$txtdt*.wav -DestinationPath sounds\sound_$txtdt.zip
+if ((test-path sounds\sound_$txtdt.zip) -eq 1)
 {
-    Move-Item event_log$txtdt.zip $arcdir -force
-    Remove-Item event_log$txtdt*.txt
+    Move-Item sounds\sound_$txtdt.zip $arcdir -force
+    Remove-Item sounds\event$txtdt*.wav
 }
-compress-archive -path screenshots\event$jpgdt*.jpg -DestinationPath screenshots\event$jpgdt.zip
-if ((test-path screenshots\event$jpgdt.zip) -eq 1)
+compress-archive -path screenshots\event$jpgdt*.jpg -DestinationPath screenshots\images_$jpgdt.zip
+if ((test-path screenshots\images_$jpgdt.zip) -eq 1)
 {
-    Move-Item screenshots\event$jpgdt.zip $arcdir -force
+    Move-Item screenshots\images_$jpgdt.zip $arcdir -force
     Remove-Item screenshots\event$jpgdt*.jpg
 }
 set-location $curloc

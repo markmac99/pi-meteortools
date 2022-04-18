@@ -2,15 +2,10 @@
 # sets the exposure on the IPCamera using Python_DVRIP
 #
 import sys
+import time
 from dvrip import DVRIPCam
 
 host_ip = sys.argv[1]
-
-# my camera 2 is a bit broken in colour mode
-#if '30' in host_ip:
-#    daycmode = '0x00000002'
-#else:
-daycmode = '0x00000001'
 
 if len(sys.argv) > 3:
     nightgain = float(sys.argv[3])
@@ -21,7 +16,7 @@ daynight=sys.argv[2]
 if daynight == 'DAY':
     expo = 30
     gain = 30
-    cmode = daycmode
+    cmode = '0x00000001'
     minexp = '0x00000064'
     maxexp = '0x00009C40'
 else:
@@ -32,10 +27,18 @@ else:
     maxexp = '0x00009C40'
 
 cam = DVRIPCam(host_ip)
-if cam.login():
-    print("Success! Connected to " + host_ip)
-else:
-    print("Failure. Could not connect.")
+print('connecting to', host_ip)
+for i in range(5):
+    try: 
+        if cam.login():
+            print("Success! Connected to " + host_ip)
+            break
+    except:
+        print("Failure. Could not connect. retrying in 30 seconds")
+        time.sleep(30)
+if i == 4:
+    print('unable to connect to camera, aborting')
+    exit(1)
 
 params = cam.get_info("Camera")
 print(params['Param'])

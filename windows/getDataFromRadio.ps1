@@ -3,17 +3,21 @@ set-location $PSScriptRoot
 . .\helperfunctions.ps1
 # read the inifile
 if ($args.count -eq 0) {
-    $inifname='radio.ini'
+    $inifname='radiostation.ini'
 }
 else {
     $inifname = $args[0]
 }
 $ini=get-inicontent $inifname
-$hostname=$ini['camera']['hostname']
-$localfolder=$ini['camera']['localfolder']
-$remfldr=$ini['camera']['remotefolder']
-$remuser=$ini['camera']['remoteuser']
-$rempass=(get-content $ini['camera']['remotepass'])
+$hostname=$ini['detectionpc']['hostname']
+$localfolder=$ini['detectionpc']['localfolder']
+$remfldr=$ini['detectionpc']['remotefolder']
+$remuser=$ini['detectionpc']['remoteuser']
+$rempass=(get-content $ini['detectionpc']['remotepass'])
+
+$yy = (get-date -uformat '%Y')
+$ym = (get-date -uformat '%Y%m')
+$yd = (get-date -uformat '%Y%m%d')
 
 set-location $localfolder
 
@@ -28,36 +32,26 @@ if ($? -ne "True")  {
     set-location $PSScriptRoot
     exit 2
 } 
+$srcfldr = $rempath + '\screenshots'
+$locfolder = $localfolder + '\screenshots\' + $yy + '\' + $ym + '\' + $yd
+$fils = 'event' + $yd + '*.jpg'
+robocopy $srcfldr $locfolder $fils /dcopy:DAT /tee /mov /v /s /r:3
 
-robocopy $rempath *.jpg *.dat eve*.txt *.csv *.zip *.ini *.wav .  /dcopy:DAT /tee /m /v /s /r:3
+$srcfldr = $rempath + '\sounds'
+$locfolder = $localfolder + '\sounds\' + $yy + '\' + $ym + '\' + $yd
+$fils = 'event' + $yd + '*.wav'
+robocopy $srcfldr $locfolder $fils /dcopy:DAT /tee /mov /v /s /r:3
 
-# create next month's empty RMOB file, if it doesn't already exist
-$nexmth=(get-date).adddays(8).tostring("yyyyMM")
-$fname = -join($rempath,"\RMOB-", $nexmth, ".DAT")
-if((test-path $fname) -eq $false) 
-{ 
-    write-output "creating empty file...." 
-    new-item -path $fname 
-}
+$srcfldr = $rempath + '\logs'
+$locfolder = $localfolder + '\logs'
+robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
+
+$srcfldr = $rempath + '\RMOB'
+$locfolder = $localfolder + '\RMOB'
+robocopy $srcfldr $locfolder *.*    /dcopy:DAT /tee /m /v /s /r:3
+
 net use $rempath  /d
 
-write-output "archiving old data" 
-
-# delete older files to save space
-$prvmth = (get-date).addmonths(-2) 
-$ccyymm=get-date($prvmth) -uformat('%Y%m')
-$yymm=get-date($prvmth) -uformat('%y%m')
-$srcs = 'event_log'+$ccyymm+'*.txt'
-$archfile = 'event_log'+$ccyymm+'.zip'
-get-childitem -path $srcs | compress-archive -destinationpath $archfile -Update
-remove-item $srcs
-Set-Location screenshots
-$srcs = 'event'+$yymm+'*.jpg'
-$archfile = 'event'+$yymm+'.zip'
-get-childitem -path $srcs | compress-archive -destinationpath $archfile -Update
-Remove-Item $srcs
-Set-Location ..
-
 set-location $PSScriptRoot
-.\PushRadioData.ps1 
+#.\PushRadioData.ps1 
 write-output "done" 

@@ -38,7 +38,7 @@ if ($dtim.hour -lt 13 )
 {
     $ftim=$dtim.adddays(-1)
 }
-$srcpath='\\'+$hostname+'\RMS_Share\CapturedFiles\'+$camera_name+'_'+$ftim.tostring('yyyyMMdd')+'*'
+$srcpath='\\'+$hostname+'\RMS_data\CapturedFiles\'+$camera_name+'_'+$ftim.tostring('yyyyMMdd')+'*'
 $srcpath=(get-childitem $srcpath).fullname
 
 $destpath=$localfolder+'/Interesting/'+$ftim.tostring('yyyyMMdd')
