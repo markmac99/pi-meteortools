@@ -12,22 +12,9 @@ import sys
 import shutil
 import dateutil.relativedelta
 import configparser as cfg
-import glob
+
 
 interval = 100  # millisecs between loops in Colorlab
-
-
-def findInterestingJpgs(srcpath, targpath):
-    # SpecLab is creating files called interesting_X.jpg. I want the most recent two 
-    # to display on the website
-    os.chdir(srcpath)
-    flist = sorted(filter(os.path.isfile, glob.glob1('.','interesting*.jpg')), key=os.path.getmtime)
-    if len(flist) > 0:
-        outf = os.path.join(targpath, 'screenshot1.jpg')
-        shutil.copy(os.path.join(srcpath, flist[-1]), outf)
-        if len(flist) > 1:
-            outf = os.path.join(targpath, 'screenshot2.jpg')
-            shutil.copy(os.path.join(srcpath, flist[-2]), outf)
 
 
 def ConvertToCsv(yr, mth, dy, srcpath, targpath):
@@ -470,4 +457,12 @@ if __name__ == '__main__':
     
     csvpath = os.path.join(targpath,'csv')
     ConvertToCsv(tod[:4], tod[4:6], dys, srcpath, csvpath)
-    findInterestingJpgs(srcpath, targpath)
+
+
+def lambda_handler(event, context):
+
+    record = event['Records'][0]
+    s3bucket = record['s3']['bucket']['name']
+    s3object = record['s3']['object']['key']
+    print(s3object, s3bucket, 'hello')
+    return
