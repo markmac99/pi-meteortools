@@ -9,7 +9,7 @@ Description: >
 
 Globals:
   Function:
-    MemorySize: 128
+    MemorySize: 512
     
 Resources:
   processRadioData:
@@ -19,8 +19,11 @@ Resources:
       Description: creates colorgram and heatmaps from RMOB dat file
       Handler: processRadioData.lambda_handler
       Runtime: python3.8
-      Timeout: 30
+      Timeout: 60
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Environment:
+        Variables:
+          MPLCONFIGDIR: /tmp/mpl
       Events:
         createNewDatFile:
           Type: S3
