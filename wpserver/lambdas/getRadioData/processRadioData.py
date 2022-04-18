@@ -273,7 +273,8 @@ def makeColorGram(srcbucket, srckey):
     plt.close()
 
     # now upload the file
-    key = targfldr + str(yyyy) + '/' + str(yyyy) + '.jpg'
+    curryr = yr[:4]
+    key = targfldr + curryr + '/' + str(yyyy) + '.jpg'
     extraargs = {'ContentType': 'image/jpeg'}
     print(f'uploading heatmap to {key}')
     s3.meta.client.upload_file(fname, targbucket, key, ExtraArgs=extraargs) 
