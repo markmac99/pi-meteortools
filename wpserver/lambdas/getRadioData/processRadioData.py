@@ -475,4 +475,6 @@ def lambda_handler(event, context):
     s3object = record['s3']['object']['key']
     print(s3object, s3bucket, 'hello')
 
-    makeColorGram(s3bucket, s3object)
+    if 'RMOB-' in s3object:
+        makeColorGram(s3bucket, s3object)
+            

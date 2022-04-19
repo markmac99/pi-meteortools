@@ -7,7 +7,7 @@ if( never ) then # Meteor_Gap - the period that the signal has to drop below the
 if( never ) then # Log_Threshold - the minimum duration of a meteor event that will be logged in seconds, logs everything if less than FFT window time (length)
 if( never ) then # Waterfall_Length - the width of the waterfall display in seconds, subtract 20% to be sure of screenshot containing start and end of events
 if( never ) then # Sound_Capture - set to 1 to capture meteor sounds, 0 to disable sound capture
-if( initialising ) then SNR_Threshold = 14 : Meteor_Gap = 2 : Log_Threshold = 0.05 : Waterfall_Length = 25 : Sound_Capture = 1
+if( initialising ) then SNR_Threshold = 17 : Meteor_Gap = 2 : Log_Threshold = 0.05 : Waterfall_Length = 25 : Sound_Capture = 1
 if( never ) then # Log_Path - the location to log files for meteor events (remember to double escape backslashes, including trailing backslash)
 if( never ) then # Capture_Path - the location to save screen captures of meteor events (format as above)
 if( never ) then # Sound_Path - the location to save .WAV sound capture of meteor events (format as above)
@@ -21,7 +21,7 @@ if( never ) then # Upload_Limit - number of "interesting" screen captures to rot
 if( never ) then # Upload_Method - set to ftp or sftp or s3  Important: Copy the upload_ftp.bat, upload_sftp.bat or upload_s3.bat file in to the Spectrum Lab folder!
 if( never ) then # Upload_Directory - the location to upload to, either a directory or an S3 folder, include leading and trailing slashes, e.g. /var/www/html/uploads/ or /meteorfolder/
 if( never ) then # Hostname_Bucket - the host name or S3 bucket to upload your files to e.g. ftp.example.com or meteorbucket
-if( initialising ) then Upload_Capture = 1 : Upload_Log = 1 : Upload_Threshold = 30 : Upload_Limit = 30 : Upload_Method = "s3" : Upload_Directory = "/rawradiodata/" : Hostname_Bucket = "mjmm-data"
+if( initialising ) then Upload_Capture = 1 : Upload_Log = 1 : Upload_Threshold = 30 : Upload_Limit = 30 : Upload_Method = "s3" : Upload_Directory = "/raw/" : Hostname_Bucket = "mjmm-rawradiodata"
 if( never ) then # ====== User definable options for FTP and SFTP upload - see comments in upload_ftp.bat and upload_sftp.bat files! ======
 if( never ) then # FTP_Username - the user name for your FTP server e.g. ftpuploaduser
 if( never ) then # FTP_Password - the password for your FTP server e.g. ftpuploadpassword (unfortunately non-encrypted!) (not required if using SFTP certificate authentication)
@@ -111,7 +111,7 @@ if( continuation ) then fp3(str("YYYY/MM/DD", Current_Time) + "," + str(Daily_Me
 if( continuation ) then fclose3
 if( continuation ) then Daily_Meteor_Count = 0 : Do_Log_Upload = Current_Time
 if( never ) then # We have a set of logs to upload (by reference to their date in Do_Log_Upload) and upload logs is true, upload them and then reset flag
-if( Do_Log_Upload<>0 && Upload_Log=1 ) then exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+if( Midnight_Flag=1 && Do_Log_Upload<>0 && Upload_Log=1 ) then exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
 if( continuation ) then exec(Upload_Command + "\"" + Log_Path + "\" \"hourly_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
 if( continuation ) then exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
 if( continuation ) then exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB_Dur-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
