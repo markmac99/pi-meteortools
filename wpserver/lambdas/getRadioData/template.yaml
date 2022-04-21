@@ -19,7 +19,7 @@ Resources:
       Description: creates colorgram and heatmaps from RMOB dat file
       Handler: processRadioData.lambda_handler
       Runtime: python3.8
-      Timeout: 60
+      Timeout: 120
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
       Environment:
         Variables:
@@ -34,9 +34,9 @@ Resources:
               S3Key:
                 Rules:
                 - Name: prefix
-                  Value: raw/
+                  Value: raw/event_log
                 - Name: suffix
-                  Value: .dat
+                  Value: .csv
     Metadata:
       BuildMethod: python3.8
       
