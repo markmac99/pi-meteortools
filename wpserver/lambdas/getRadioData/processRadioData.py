@@ -253,9 +253,9 @@ def makeColorGram(srcbucket, srckey):
 
     spls = evtlogname.split('_')
     thisdt = spls[2]
-    ym = datetime.datetime.strptime(thisdt,'%Y%m.csv')
-    back1 = (ym + datetime.timedelta(days=-25)).strftime('%Y%m')
-    back2 = (ym + datetime.timedelta(days=-55)).strftime('%Y%m')
+    evtdt = datetime.datetime.strptime(thisdt,'%Y%m.csv')
+    back1 = (evtdt + datetime.timedelta(days=-25)).strftime('%Y%m')
+    back2 = (evtdt + datetime.timedelta(days=-55)).strftime('%Y%m')
 
     key = f'{srcfldr}/event_log_{back1}.csv'
     locback1 = f'{tmpfldr}/event_log_{back1}.csv'
@@ -302,11 +302,11 @@ def makeColorGram(srcbucket, srckey):
 
     plt.ylabel('Hour', labelpad=-2)
 
-    plt.text(0.5, 1.1, 'Heatmap for ' + str(ym), horizontalalignment='center', transform=ax.transAxes, fontsize=15)
+    plt.text(0.5, 1.1, 'Heatmap for ' + ym, horizontalalignment='center', transform=ax.transAxes, fontsize=15)
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    heatmapname = os.path.join(tmpfldr, str(ym) + '.jpg')
+    heatmapname = os.path.join(tmpfldr, ym + '.jpg')
     plt.savefig(heatmapname, dpi=600, bbox_inches='tight')
     plt.close()
 
@@ -351,12 +351,12 @@ def makeColorGram(srcbucket, srckey):
     stat = config['observer']['Station']
     plt.title(f'{obs:<30}{loc1:<30}\n{cntr:<30}{loc2:<30}\n{city:<30}{freq:<30}\n'
         + f'{antn:<30}{azim:<30}\n{rfpr:<30}{recv:<30}\n{obsm:<60}\n{comp:<60}\n\n'
-        + stat + ' Meteor Station\nCount of detections per hour ' + str(ym)
+        + stat + ' Meteor Station\nCount of detections per hour ' + ym
         + '-' + dom, loc='left')
 
     plt.tight_layout()
 
-    barchartfile = os.path.join(tmpfldr, str(ym) + dom + '.jpg')
+    barchartfile = os.path.join(tmpfldr, ym + dom + '.jpg')
     plt.savefig(barchartfile, dpi=600, bbox_inches='tight')
     plt.close()
 
