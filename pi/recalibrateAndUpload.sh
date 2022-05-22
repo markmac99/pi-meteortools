@@ -13,7 +13,7 @@ for fldr in $fldrs ; do
 	# recalibrate, then generate reports 
 	python -m RMS.Astrometry.ApplyRecalibrate $ftpf
 	python -m Utils.CalibrationReport $fldr
-	python -m Utils.ShowerAssociation $ftpf
+	python -m Utils.ShowerAssociation $ftpf -p gist_ncar
 	pushd ~/RMS_data/ArchivedFiles/tmp
 	cp ${fldr}_detected.tar.bz2 .
 	bunzip2 ${bn}_detected.tar.bz2

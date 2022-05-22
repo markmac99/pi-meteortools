@@ -14,38 +14,44 @@ if ($args.count -gt 1){
 $camlist = @('uk0006','uk000f','uk001l','uk002f')
 
 $ftplist=@()
+$startdt = [datetime]::parseexact($dt1,'yyyyMMdd', $null)
+$enddt = [datetime]::parseexact($dt2,'yyyyMMdd', $null)
 
-for ($i=0;$i -lt $camlist.count ; $i++) { 
-    $inifname =$camlist[$i]+ ".ini"
-    $ini=get-inicontent $inifname
-    $localfolder=$ini['camera']['localfolder']
-    $rms_loc=$ini['rms']['rms_loc']
-    $rms_env=$ini['rms']['rms_env']
-    $srcpath=$localfolder + '\ConfirmedFiles'
-    $datedir=$srcpath + '\*_' + $dt1 + "_*" 
-    $dlist = (Get-ChildItem  -directory "$datedir" ).name
-    $ftpfil=$srcpath + '\' + $dlist + '\FTPdetectinfo_' + $dlist + '.txt'
-    $bftpfil = 'c:/temp/' + (split-path $ftpfil -leaf)
 
-    copy-item $ftpfil c:\temp\
-    $ftplist = $ftplist + $bftpfil
+while ($startdt -le $enddt){
+    $dt1=$startdt.tostring('yyyyMMdd')
+    for ($i=0;$i -lt $camlist.count ; $i++) { 
+        $inifname =$camlist[$i]+ ".ini"
+        $ini=get-inicontent $inifname
+        $localfolder=$ini['camera']['localfolder']
+        $rms_loc=$ini['rms']['rms_loc']
+        $rms_env=$ini['rms']['rms_env']
+        $srcpath=$localfolder + '\ConfirmedFiles'
+        $datedir=$srcpath + '\*_' + $dt1 + "_*" 
+        $dlist = (Get-ChildItem  -directory "$datedir" ).name
+        $ftpfil=$srcpath + '\' + $dlist + '\FTPdetectinfo_' + $dlist + '.txt'
+        $bftpfil = $targpth +'\tmp\' + (split-path $ftpfil -leaf)
+        $targpth=$localfolder + '\..\radiants'
+        if ((test-path $ftpfil) -ne 0 ) {
+            copy-item $ftpfil "$targpth\tmp\"
+            $ftplist = $ftplist + $bftpfil
+        }
+    }
+    $startdt = $startdt.adddays(1)
 }
 $cfg = $srcpath + '/' + $dlist + '/.config'
 Set-Location $rms_loc
 conda activate $rms_env
-python -m Utils.ShowerAssociation $ftplist[0] $ftplist[1] $ftplist[2] $ftplist[3] -x -c $cfg
-foreach ($fil in $ftplist)
-{
-    remove-item $fil
-}
-$targpth=$localfolder + '\..\radiants'
+python -m Utils.ShowerAssociation "$targpth\tmp\*" -x -c $cfg  -p gist_ncar
 if ((test-path $targpth) -eq 0 ) {mkdir $targpth }
 
-$radpng = (Get-ChildItem  "c:\temp\*$dt1*radiants.png" ).name
-$newfname = 'ALLCAM'+ $radpng.substring(6,$radtxt.length-6)
-Move-Item "c:\temp\$radpng" "$targpth\$newfname" -force
-$radtxt = (Get-ChildItem  "c:\temp\*$dt1*radiants.txt" ).name
+$radpng = (Get-ChildItem  "$targpth\tmp\*$dt1*radiants.png" ).name
+$newfname = 'ALLCAM'+ $radpng.substring(6,$radpng.length-6)
+Move-Item "$targpth\tmp\$radpng" "$targpth\$newfname" -force
+Write-Output "created $newfname"
+$radtxt = (Get-ChildItem  "$targpth\tmp\*$dt1*radiants.txt" ).name
 $newfname = 'ALLCAM'+ $radtxt.substring(6,$radtxt.length-6)
-move-item "c:\temp\$radtxt" "$targpth\$newfname" -force 
+move-item "$targpth\tmp\$radtxt" "$targpth\$newfname" -force 
+remove-item "$targpth\tmp\*"
 
 set-location $loc

@@ -45,7 +45,7 @@ while ($sdt -le $edt)
 conda activate $rms_env
 $env:pythonpath="$rms_loc"
 set-location $rms_loc
-python -m Utils.ShowerAssociation $locfldr/radiants/temp/* -c ${locfldr}/config/uk0006/.config 
+python -m Utils.ShowerAssociation $locfldr/radiants/temp/* -c ${locfldr}/config/uk0006/.config -p gist_ncar
 $fils=(get-item "${locfldr}/radiants/temp/UK*").Name
 foreach($fil in $fils){
     $newn=$fil.replace("UK002F","ALLCAM")
