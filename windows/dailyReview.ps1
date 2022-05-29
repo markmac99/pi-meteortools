@@ -99,7 +99,7 @@ if ($RMS_INSTALLED -eq 1){
             $flat = $localfolder + '\ArchivedFiles\' + $path + '\flat.bmp'
             copy-item $mask $myf
             copy-item $flat $myf
-            python -m Utils. $ftpfil -x -p gist_ncar
+            python -m Utils.ShowerAssociation $ftpfil -x -p gist_ncar
             python -m Utils.StackFFs $myf -x -b jpg -f $myf\flat.bmp -m $myf\mask.bmp
             python -m Utils.TrackStack $myf -c $myf\.config -x
             python -m Utils.BatchFFtoImage $myf jpg -t
@@ -123,6 +123,4 @@ set-location $PSScriptRoot
 .\createMonthlyStack.ps1 $inifname
 
 .\uploadTrackStacks.ps1 $inifname 
-
-# .\UploadToUkMon.ps1 $args[0]
 
