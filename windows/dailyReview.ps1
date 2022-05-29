@@ -24,6 +24,7 @@ $RMS_INSTALLED=$ini['rms']['rms_installed']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 $upload_rej=$ini['cleaning']['uploadtogmn']
+$pylib=$ini['ukmon']['ukmon_pylib']
 
 # copy the latest data from the Pi
 $srcpath='\\'+$hostname+'\RMS_data\ArchivedFiles'
@@ -75,6 +76,8 @@ if ($tst -eq "1" -and $upload_rej -eq "True"){
 else {
     write-output "Skipping GMN ML upload"
 }
+
+$env:pythonpath=$pylib
 # switch RMS environment to do some post processing
 if ($RMS_INSTALLED -eq 1){
     # reprocess the ConfirmedFiles folder to generate JPGs, shower maps, etc
@@ -102,7 +105,14 @@ if ($RMS_INSTALLED -eq 1){
             python -m Utils.BatchFFtoImage $myf jpg -t
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
-            copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks
+
+            $li = (get-content $ftpfil | select-object -first 1)
+            $metcount = [int]$li.split(' ')[3]
+            $ts=(Get-ChildItem $myf\*track_stack.jpg).name
+            $ymd=$ts.substring(7,8)
+            python -m utils.annotateImage $myf\$ts $hostname $metcount $ymd
+            $newn=$ts.substring(0,15)+".jpg"
+            copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
         }
         else{
             write-output skipping' '$myf
@@ -114,9 +124,5 @@ set-location $PSScriptRoot
 
 .\uploadTrackStacks.ps1 $inifname 
 
-#$dtstr=((get-date).adddays(-1)).tostring('yyyyMMdd')
-#.\getPossibles $inifname $dtstr
-
-# .\reorgByYMD.ps1 $args[0]
 # .\UploadToUkMon.ps1 $args[0]
 
