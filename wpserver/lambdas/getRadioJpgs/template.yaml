@@ -21,6 +21,8 @@ Resources:
       Runtime: python3.8
       Timeout: 30
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Tags:
+        billingtag: "MarksWebsite"
       Events:
         createNewJpg:
           Type: S3
@@ -41,3 +43,6 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: mjmm-rawradiodata
+      Tags:
+      - Key: "billingtag"
+        Value: "MarksWebsite"
