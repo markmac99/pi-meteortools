@@ -42,6 +42,34 @@ Resources:
     Metadata:
       BuildMethod: python3.8
       
+  processRadioJpgs:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: processRadioJpgs
+      CodeUri: ./processRadioJpgs
+      Description: uploads latest interesting jpgs
+      Handler: processRadioJpgs.lambda_handler
+      Runtime: python3.8
+      Timeout: 30
+      Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Tags:
+        billingtag: "MarksWebsite"
+      Events:
+        createNewJpg:
+          Type: S3
+          Properties:
+            Bucket: !Ref mjmmrawradiodata
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                - Name: prefix
+                  Value: raw/
+                - Name: suffix
+                  Value: .jpg
+#    Metadata:
+#      BuildMethod: python3.8
+
   mjmmrawradiodata:
     Type: AWS::S3::Bucket
     Properties:

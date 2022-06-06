@@ -16,6 +16,7 @@ def updateInterestingJpgs(srcbucket, srckey):
     extraargs = {'ContentType': 'image/jpeg'}
     try:
         s3.meta.client.copy(copysrc, destbucket, sc2key, ExtraArgs=extraargs)
+        print(f'uploaded {copysrc} to {destbucket}/{sc1key}')
     except:
         print('screenshot1.jpg not found')
 
