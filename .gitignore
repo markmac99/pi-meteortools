@@ -5,3 +5,4 @@ pi/__pycache__/dvrip.cpython-37.pyc
 infrastructure/terraform/.terraform.lock.hcl
 infrastructure/terraform/terraform.tfstate
 infrastructure/terraform/terraform.tfstate.backup
+infrastructure/terraform/.terraform/providers/registry.terraform.io/hashicorp/aws/4.18.0/windows_amd64/terraform-provider-aws_v4.18.0_x5.exe
