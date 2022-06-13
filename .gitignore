@@ -2,3 +2,6 @@ unused
 rbassom
 pi/__pycache__/dvrip.cpython-37.pyc
 **/.aws-sam
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/terraform.tfstate
+infrastructure/terraform/terraform.tfstate.backup

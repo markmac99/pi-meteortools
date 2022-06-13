@@ -302,11 +302,11 @@ def makeColorGram(srcbucket, srckey):
 
     plt.ylabel('Hour', labelpad=-2)
 
-    plt.text(0.5, 1.1, 'Heatmap for ' + ym, horizontalalignment='center', transform=ax.transAxes, fontsize=15)
+    plt.text(0.5, 1.1, f'Heatmap for {ym}', horizontalalignment='center', transform=ax.transAxes, fontsize=15)
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    heatmapname = os.path.join(tmpfldr, ym + '.jpg')
+    heatmapname = os.path.join(tmpfldr, f'{ym}.jpg')
     plt.savefig(heatmapname, dpi=600, bbox_inches='tight')
     plt.close()
 
@@ -356,7 +356,7 @@ def makeColorGram(srcbucket, srckey):
 
     plt.tight_layout()
 
-    barchartfile = os.path.join(tmpfldr, ym + dom + '.jpg')
+    barchartfile = os.path.join(tmpfldr, f'{ym}{dom}.jpg')
     plt.savefig(barchartfile, dpi=600, bbox_inches='tight')
     plt.close()
 
@@ -453,6 +453,24 @@ def uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile):
     print(f'uploading to {targkey}')
     extraargs = {'ContentType': 'text/csv'}
     s3.meta.client.upload_file(csvfile, targbucket, targkey, ExtraArgs=extraargs) 
+
+    # and then upload it to the ukmon-shared bucket too, using suitable creds
+    sts_client = boto3.client('sts')
+
+    try: 
+        assumed_role_object=sts_client.assume_role(
+            RoleArn="arn:aws:iam::822069317839:role/service-role/S3FullAccess",
+            RoleSessionName="AssumeRoleSession1")
+        credentials=assumed_role_object['Credentials']
+        s3u = boto3.resource('s3',
+            aws_access_key_id=credentials['AccessKeyId'],
+            aws_secret_access_key=credentials['SecretAccessKey'],
+            aws_session_token=credentials['SessionToken'])
+        print('about to push file')
+        targkey =f'archive/Tackley/Radio/{ymd[:4]}/{ymd[:6]}/{fname}'
+        s3u.meta.client.upload_file(csvfile, 'ukmon-shared', targkey, ExtraArgs=extraargs) 
+    except: 
+        print('unable to assume role')
 
     return 
 
