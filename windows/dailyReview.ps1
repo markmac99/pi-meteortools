@@ -54,16 +54,20 @@ else {
 Write-Output "Copying FR files where available"
 $conff = $localfolder+'\ConfirmedFiles\' + $path
 $fflist=(Get-ChildItem $conff\FF*.fits).name
-$fflist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
-foreach ($frfile in $fflist)
+if ($fflist.count -gt 0)
 {
-    $srcfile = $srcpath + '/'+ $path + '/' + $frfile
-    $srcfile = $srcfile.replace('/','\')
-    if ((test-path $srcfile) -eq 1){
-        Copy-Item "$srcfile" "$conff"
+    $fflist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
+    foreach ($frfile in $fflist)
+    {
+        $srcfile = $srcpath + '/'+ $path + '/' + $frfile
+        $srcfile = $srcfile.replace('/','\')
+        if ((test-path $srcfile) -eq 1){
+            Copy-Item "$srcfile" "$conff"
+        }
     }
+}else {
+    write-output "No FF/FR files today"
 }
-
 set-location $PSScriptRoot
 $regex="userej"
 switch -regex -file $bcfg { 
@@ -109,10 +113,14 @@ if ($RMS_INSTALLED -eq 1){
             $li = (get-content $ftpfil | select-object -first 1)
             $metcount = [int]$li.split(' ')[3]
             $ts=(Get-ChildItem $myf\*track_stack.jpg).name
-            $ymd=$ts.substring(7,8)
-            python -m utils.annotateImage $myf\$ts $hostname $metcount $ymd
-            $newn=$ts.substring(0,15)+".jpg"
-            copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
+            if ($ts.count -ne 0){
+                $ymd=$ts.substring(7,8)
+                python -m utils.annotateImage $myf\$ts $hostname $metcount $ymd
+                $newn=$ts.substring(0,15)+".jpg"
+                copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
+            }else {
+                write-output "No trackstack today"
+            }
         }
         else{
             write-output skipping' '$myf
