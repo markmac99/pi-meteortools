@@ -219,6 +219,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         os.remove(rebootlockfile)
         log.info('not doing istream')
     """
+    os.remove(rebootlockfile)
     return
 
 

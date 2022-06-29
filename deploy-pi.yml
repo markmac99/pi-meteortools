@@ -1,5 +1,5 @@
 ---
-- hosts: uk0006, uk000f, uk001l, uk002f, testpi3, testpi4
+- hosts: "{{host | default ('uk0006, uk000f, uk001l, uk002f, testpi3, testpi4')}}"
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
     destdir: ~/mjmm
@@ -9,6 +9,7 @@
   - name: Copy files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
+    - {src: '{{srcdir}}/logGrabInterval.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/recalibrateAndUpload.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/auroracamPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/annotateImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
@@ -30,54 +31,34 @@
 
   - name: update mail recip
     lineinfile: 
-      path: ~/mjmm/config.ini
+      path: '{{destdir}}/config.ini'
       regexp: 'MAILRECIP='
       line: 'MAILRECIP=markmcintyre99@googlemail.com'
-  - name: update mail host
-    lineinfile: 
-      path: ~/mjmm/config.ini
-      regexp: 'MAILHOST='
-      line: 'MAILHOST=smtp.gmail.com'
-  - name: update mail port
-    lineinfile: 
-      path: ~/mjmm/config.ini
-      regexp: 'MAILPORT='
-      line: 'MAILPORT=587'
-  - name: update mail user
-    lineinfile: 
-      path: ~/mjmm/config.ini
-      regexp: 'MAILUSER='
-      line: 'MAILUSER=mjmm456'
-  - name: update mail pwd
-    lineinfile: 
-      path: ~/mjmm/config.ini
-      regexp: 'MAILPWD='
-      line: 'MAILPWD=~/.ssh/gmailpass'
   - name: update id file
     lineinfile:
-      path: ~/mjmm/config.ini
+      path: '{{destdir}}/config.ini'
       regexp: 'IDFILE='
       #line: 'IDFILE=~/.ssh/markskey.pem'
       line: 'IDFILE=~/.ssh/mjmm-data.key'
   - name: update AWS host
     lineinfile:
-      path: ~/mjmm/config.ini
+      path: '{{destdir}}/config.ini'
       regexp: 'HOST='
       #line: 'HOST=ec2-3-9-128-14.eu-west-2.compute.amazonaws.com'
       line: 'HOST=s3://mjmm-data'
   - name: update AWS user
     lineinfile:
-      path: ~/mjmm/config.ini
+      path: '{{destdir}}/config.ini'
       regexp: 'USER='
       line: 'USER=bitnami'
   - name: update target folder
     lineinfile:
-      path: ~/mjmm/config.ini
+      path: '{{destdir}}/config.ini'
       regexp: 'MP4DIR='
       line: 'MP4DIR=/mnt/mjmm-data/'
-  #- name: update night gain
-  #  lineinfile:
-  #    path: ~/mjmm/config.ini
-  #    regexp: 'NIGHTGAIN='
-  #    line: 'NIGHTGAIN={{nightgain}}'
+  - name: make sure modules are downloaded
+    shell: source ~/vRMS/bin/activate && pip install -r {{destdir}}/requirements.txt
+    args:
+      executable: /bin/bash
+
   
