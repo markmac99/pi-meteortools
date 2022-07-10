@@ -51,15 +51,24 @@ else {
 }
 
 # get the FR files
-Write-Output "Copying FR files where available"
+Write-Output "Copying mp4 and FR files where available"
 $conff = $localfolder+'\ConfirmedFiles\' + $path
 $fflist=(Get-ChildItem $conff\FF*.fits).name
 if ($fflist.count -gt 0)
 {
-    $fflist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
-    foreach ($frfile in $fflist)
+    $frlist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
+    foreach ($frfile in $frlist)
     {
         $srcfile = $srcpath + '/'+ $path + '/' + $frfile
+        $srcfile = $srcfile.replace('/','\')
+        if ((test-path $srcfile) -eq 1){
+            Copy-Item "$srcfile" "$conff"
+        }
+    }
+    $mp4list=$fflist.replace('.fits','.mp4')
+    foreach ($mp4file in $mp4list)
+    {
+        $srcfile = $srcpath + '/'+ $path + '/' + $mp4file
         $srcfile = $srcfile.replace('/','\')
         if ((test-path $srcfile) -eq 1){
             Copy-Item "$srcfile" "$conff"
