@@ -2,20 +2,19 @@ import numpy as np
 import boto3
 import matplotlib
 import matplotlib.pyplot as plt
-from datetime import date
 import calendar
 import csv
 import os
 import shutil
-import dateutil.relativedelta
 import configparser as cfg
 import tempfile
+import datetime
 
 
 interval = 100  # millisecs between loops in Colorlab
 
 
-def ConvertToCsv(yr, mth, dy, tmpfldr, targbucket, targfldr, s3):
+def ConvertToCsv(yr, mth, dy, tmpfldr):
     print('converting to CSV for ' + yr + mth + dy)
     # dt = "{:4d}{:02d}{:02d}".format(yr,mt,dy)
     dt = yr + mth # + dy
@@ -30,7 +29,6 @@ def ConvertToCsv(yr, mth, dy, tmpfldr, targbucket, targfldr, s3):
 
     srcfile = os.path.join(tmpfldr, 'event_log_' + dt + '.csv')
 
-    targkey = os.path.join(targbucket, targfldr, yr, yr + mth, 'R' + yr + mth + dy + '_' + id + '.csv')
     targfile = os.path.join(tmpfldr, 'R' + yr + mth + dy + '_' + id + '.csv')
 
     outf = open(targfile, 'w+')
@@ -54,10 +52,8 @@ def ConvertToCsv(yr, mth, dy, tmpfldr, targbucket, targfldr, s3):
                 s = s + "{:s},{:f},{:f},{:f},{:d}\n".format(id, lng, lat, alt, tz)
                 outf.write(s)
     outf.close
-    # now upload the file
-    print(f'uploading to {targkey}')
-    extraargs = {'ContentType': 'text/csv'}
-    s3.meta.client.upload_file(targfile, targbucket, targkey, ExtraArgs=extraargs) 
+
+    return targfile
 
 
 def heatmap(data, row_labels, col_labels, ax=None,
@@ -185,34 +181,12 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-def makeColorGram(srcbucket, srckey):
-    s3 = boto3.resource('s3')
-    targbucket = 'mjmm-data'
-    targfldr = 'Radio/'
-
-    tmpfldr = tempfile.mkdtemp()
-    _, rmobname = os.path.split(srckey)
-    # download the config file
-    cfgfile = os.path.join(tmpfldr, 'radiostation.ini')
-    s3.meta.client.download_file(srcbucket, 'radiostation.ini', cfgfile)
-
-    # download the RMOB file and event-log file 
-    rmobfile = os.path.join(tmpfldr, rmobname)
-    print(f'retrieving {srckey}')
-    s3.meta.client.download_file(srcbucket, srckey, rmobfile)
+def readRMOBFile(rmobfile):
+    _, rmobname = os.path.split(rmobfile)
     spls = rmobname.split('-')
     tod = spls[1]
     tod = tod[:6]
-    evtlog = os.path.join(tmpfldr, f'event_log_{tod}.csv')
-    evtkey = 'raw/' + f'event_log_{tod}.csv'
-    print(f'retrieving {evtkey}')
-    s3.meta.client.download_file(srcbucket, evtkey, evtlog)
-
-    # create heatmap for this month
-    # named yyyymm.jpg eg 200206.jpg
     mthdays = calendar.monthrange(int(tod[:4]), int(tod[4:6]))[1]
-
-    # read the RMOB file
     myarray = np.zeros((24, mthdays), dtype=int)
     with open(rmobfile) as myfile:
         mydata = csv.reader(myfile, delimiter=',')
@@ -221,19 +195,82 @@ def makeColorGram(srcbucket, srckey):
             if len(row) <1:
                 continue
             yr = row[0]
-            yyyy = yr[0:6]
+            ym = yr[0:6]
             dy = int(yr[6:8])
             hr = int(row[1])
             val = int(row[2])
-            # print(f'\t year {yyyy} day {dy} hour {row[1]} value {row[2]}')
             myarray[hr, dy - 1] = val
             line_count += 1
         print(f'Processed {line_count} lines.')
-    hrs = range(1, 25)
     cnts = myarray[:, dy - 1]
     dys = "{:02d}".format(dy)
 
-    fig, ax = plt.subplots()
+    return myarray, cnts, dys, ym, mthdays
+
+
+def readEventLogFile(evtfile, coloffset=0, inparray=None):
+    _, evtname = os.path.split(evtfile)
+    spls = evtname.split('_')
+    tod = spls[2]
+    tod = tod[:6]
+    mthdays = calendar.monthrange(int(tod[:4]), int(tod[4:6]))[1]
+    if inparray is None:
+        myarray = np.zeros((24, mthdays), dtype=int)
+    else:
+        myarray = inparray
+    with open(evtfile) as myfile:
+        mydata = csv.reader(myfile, delimiter=',')
+        line_count = 0
+        for row in mydata:
+            if len(row) <1:
+                continue
+            ymd = datetime.datetime.strptime(row[0], '%Y/%m/%d')
+            ym = ymd.strftime('%Y%m')
+            hms = row[1]
+            hr = int(hms[:2])
+            myarray[hr, ymd.day - 1 + coloffset] = myarray[hr, ymd.day - 1 + coloffset] +1
+            line_count += 1
+        print(f'Processed {line_count} lines.')
+    cnts = myarray[:, ymd.day - 1 + coloffset]
+    dys = "{:02d}".format(ymd.day)
+
+    return myarray, cnts, dys, ym, mthdays
+
+
+def makeColorGram(srcbucket, srckey):
+    s3 = boto3.resource('s3')
+
+    tmpfldr = tempfile.mkdtemp()
+    # download the config file
+    cfgfile = os.path.join(tmpfldr, 'radiostation.ini')
+    s3.meta.client.download_file(srcbucket, 'radiostation.ini', cfgfile)
+
+    # download the event-log files
+    srcfldr, evtlogname = os.path.split(srckey)
+    evtlog = os.path.join(tmpfldr, evtlogname)
+    print(f'retrieving {srckey}')
+    s3.meta.client.download_file(srcbucket, srckey, evtlog)
+
+    spls = evtlogname.split('_')
+    thisdt = spls[2]
+    evtdt = datetime.datetime.strptime(thisdt,'%Y%m.csv')
+    back1 = (evtdt + datetime.timedelta(days=-25)).strftime('%Y%m')
+    back2 = (evtdt + datetime.timedelta(days=-55)).strftime('%Y%m')
+
+    key = f'{srcfldr}/event_log_{back1}.csv'
+    locback1 = f'{tmpfldr}/event_log_{back1}.csv'
+    s3.meta.client.download_file(srcbucket, key, locback1)
+
+    key = f'{srcfldr}/event_log_{back2}.csv'
+    locback2 = f'{tmpfldr}/event_log_{back2}.csv'
+    s3.meta.client.download_file(srcbucket, key, locback2)
+
+    hrs = range(1, 25)
+    # create heatmap for this month
+    # named yyyymm.jpg eg 200206.jpg
+
+    # read the event log file
+    myarray, cnts, dom, ym, mthdays = readEventLogFile(evtlog)
 
     # labels for axes
     col_lbl = ["0", "", "", "3", "", "", "6", "", "", "9", "", "", "12",
@@ -257,6 +294,7 @@ def makeColorGram(srcbucket, srckey):
 
     # generate  heatmap
     #
+    fig, ax = plt.subplots()
     im, _ = heatmap(myarray, col_lbl, row_lbl,
                     cmap="jet", cbarlabel="Meteors/hour")
     _ = annotate_heatmap(im, valfmt=" {x:.0f} ", fontsize=8, threshold=myarray.max() * 3 / 4)
@@ -264,20 +302,13 @@ def makeColorGram(srcbucket, srckey):
 
     plt.ylabel('Hour', labelpad=-2)
 
-    plt.text(0.5, 1.1, 'Heatmap for ' + str(yyyy), horizontalalignment='center', transform=ax.transAxes, fontsize=15)
+    plt.text(0.5, 1.1, f'Heatmap for {ym}', horizontalalignment='center', transform=ax.transAxes, fontsize=15)
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    fname = os.path.join(tmpfldr, str(yyyy) + '.jpg')
-    plt.savefig(fname, dpi=600, bbox_inches='tight')
+    heatmapname = os.path.join(tmpfldr, f'{ym}.jpg')
+    plt.savefig(heatmapname, dpi=600, bbox_inches='tight')
     plt.close()
-
-    # now upload the file
-    curryr = yr[:4]
-    key = targfldr + curryr + '/' + str(yyyy) + '.jpg'
-    extraargs = {'ContentType': 'image/jpeg'}
-    print(f'uploading heatmap to {key}')
-    s3.meta.client.upload_file(fname, targbucket, key, ExtraArgs=extraargs) 
 
     # now generate the text and bar graph for today
     # as per the RMOB graphs
@@ -320,110 +351,46 @@ def makeColorGram(srcbucket, srckey):
     stat = config['observer']['Station']
     plt.title(f'{obs:<30}{loc1:<30}\n{cntr:<30}{loc2:<30}\n{city:<30}{freq:<30}\n'
         + f'{antn:<30}{azim:<30}\n{rfpr:<30}{recv:<30}\n{obsm:<60}\n{comp:<60}\n\n'
-        + stat + ' Meteor Station\nCount of detections per hour ' + str(yyyy)
-        + '-' + dys, loc='left')
+        + stat + ' Meteor Station\nCount of detections per hour ' + ym
+        + '-' + dom, loc='left')
 
     plt.tight_layout()
 
-    fname2 = os.path.join(tmpfldr, str(yyyy) + dys + '.jpg')
-    plt.savefig(fname2, dpi=600, bbox_inches='tight')
+    barchartfile = os.path.join(tmpfldr, f'{ym}{dom}.jpg')
+    plt.savefig(barchartfile, dpi=600, bbox_inches='tight')
     plt.close()
-    # don't upload this file
-    #key = targfldr + str(yyyy) + dys + '.jpg'
-    #extraargs = {'ContentType': 'image/jpeg'}
-    #s3.meta.client.upload_file(fname2, targbucket, key, ExtraArgs=extraargs) 
-
 
     # create a single image combining the above two side by side
     # again as per the RMOB data
     # named RMOB_yyyymm.jpg
 
     ax = plt.subplot(1, 2, 2)
-    img1 = plt.imread(fname)
+    img1 = plt.imread(heatmapname)
     plt.axis('off')
     plt.imshow(img1)
     ax = plt.subplot(1, 2, 1)
-    img2 = plt.imread(fname2)
+    img2 = plt.imread(barchartfile)
     plt.axis('off')
     plt.imshow(img2)
 
     # save this as RMOB_yyyymmdd.jpg
     #
-    fname3 = os.path.join(tmpfldr, 'RMOB_' + str(yyyy) + dys + '.jpg')
-    plt.savefig(fname3, dpi=600, bbox_inches='tight')
+    rmoblatestfile = os.path.join(tmpfldr, 'RMOB_latest.jpg')
+    plt.savefig(rmoblatestfile, dpi=600, bbox_inches='tight')
     plt.close()
 
-    # now upload the file
-    key = targfldr + 'RMOB_latest.jpg'
-    extraargs = {'ContentType': 'image/jpeg'}
-    print(f'uploading "latest" file to {key}')
-    s3.meta.client.upload_file(fname3, targbucket, key, ExtraArgs=extraargs) 
-
     # generate three-month heatmap
-    #
-    mtod = date.today().strftime("%Y%m")
-    mthdays = calendar.monthrange(date.today().year, date.today().month)[1]
-    # m1=mthdays
-    d2 = date.today() - dateutil.relativedelta.relativedelta(months=1)
-    m2 = calendar.monthrange(d2.year, d2.month)[1]
-    mthdays = mthdays + m2
-    d3 = date.today() - dateutil.relativedelta.relativedelta(months=2)
-    m3 = calendar.monthrange(d3.year, d3.month)[1]
-    mthdays = mthdays + m3
+    mthdays = calendar.monthrange(int(thisdt[:4]), int(thisdt[4:6]))[1]
+    m2 = calendar.monthrange(int(back1[:4]), int(back1[4:6]))[1]
+    m3 = calendar.monthrange(int(back2[:4]), int(back2[4:6]))[1]
+    mthdays = mthdays + m2 + m3
     myarray = np.zeros((24, mthdays), dtype=int)
 
     # read in three months of data
     #
-    rmob1 = os.path.join(tmpfldr, 'RMOB-' + d3.strftime("%Y%m") + '.dat')
-    srckey = 'raw/RMOB-'+ d3.strftime("%Y%m") + '.dat'
-    s3.meta.client.download_file(srcbucket, srckey, rmob1)
-
-    with open(rmob1) as myfile:
-        mydata = csv.reader(myfile, delimiter=',')
-        line_count = 0
-        for row in mydata:
-            yr = row[0]
-            yyyy = yr[0:6]
-            dy = int(yr[6:8])
-            hr = int(row[1])
-            val = int(row[2])
-            myarray[hr, dy - 1] = val
-            line_count += 1
-        print(f'Processed {line_count} lines.')
-
-    rmob1 = os.path.join(tmpfldr, 'RMOB-' + d2.strftime("%Y%m") + '.dat')
-    srckey = 'raw/RMOB-'+ d2.strftime("%Y%m") + '.dat'
-    s3.meta.client.download_file(srcbucket, srckey, rmob1)
-    with open(rmob1) as myfile:
-        mydata = csv.reader(myfile, delimiter=',')
-        line_count = 0
-        for row in mydata:
-            yr = row[0]
-            yyyy = yr[0:6]
-            dy = int(yr[6:8]) + m3
-            hr = int(row[1])
-            val = int(row[2])
-            myarray[hr, dy - 1] = val
-            line_count += 1
-        print(f'Processed {line_count} lines.')
-
-    rmob1 = os.path.join(tmpfldr, 'RMOB-' + mtod + '.dat')
-    srckey = 'raw/RMOB-'+ mtod + '.dat'
-    s3.meta.client.download_file(srcbucket, srckey, rmob1)
-    with open(rmob1) as myfile:
-        mydata = csv.reader(myfile, delimiter=',')
-        line_count = 0
-        for row in mydata:
-            yr = row[0]
-            yyyy = yr[0:6]
-            dy = int(yr[6:8]) + m2 + m3
-            hr = int(row[1])
-            val = int(row[2])
-            myarray[hr, dy - 1] = val
-            line_count += 1
-        print(f'Processed {line_count} lines.')
-    hrs = range(1, 25)
-    cnts = myarray[:, dy - 1]
+    myarray, _, _, _, _ = readEventLogFile(locback2, 0, myarray)
+    myarray, _, _, _, _ = readEventLogFile(locback1, m3, myarray)
+    myarray, _, _, _, _ = readEventLogFile(evtlog, m2 + m3, myarray)
 
     fig, ax = plt.subplots()
 
@@ -446,33 +413,82 @@ def makeColorGram(srcbucket, srckey):
     plt.xlabel('Day of Month')
     plt.tight_layout()
 
-    fname2 = os.path.join(tmpfldr, '3months_latest.jpg')
-    plt.savefig(fname2, dpi=600, bbox_inches='tight')
+    threemthfile = os.path.join(tmpfldr, '3months_latest.jpg')
+    plt.savefig(threemthfile, dpi=600, bbox_inches='tight')
     plt.close()
 
-    # now upload the file
-    key = targfldr + '3months_latest.jpg'
-    extraargs = {'ContentType': 'image/jpeg'}
-    print(f'uploading to {key}')
-    s3.meta.client.upload_file(fname2, targbucket, key, ExtraArgs=extraargs) 
-
     # now make the CSV files
-    ConvertToCsv(tod[:4], tod[4:6], dys, tmpfldr, targbucket, targfldr, s3)
+    csvfile = ConvertToCsv(thisdt[:4], thisdt[4:6], dom, tmpfldr)
+    return s3, heatmapname, rmoblatestfile, threemthfile, csvfile, tmpfldr
 
-    shutil.rmtree(tmpfldr)
-    return dys
+
+def uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile):
+    targbucket = 'mjmm-data'
+    targfldr = 'Radio/'
+    extraargs = {'ContentType': 'image/jpeg'}
+
+    # now upload the heatmap to Radio/yyyy/yyyymm.jpg
+    _, fname = os.path.split(heatmapname)
+    curryr = fname[:4]
+    key = targfldr + curryr + '/' + fname
+    print(f'uploading to {key}')
+    s3.meta.client.upload_file(heatmapname, targbucket, key, ExtraArgs=extraargs) 
+
+    # full barchart plus heatmap
+    _, fname = os.path.split(rmoblatestfile)
+    key = targfldr + fname
+    print(f'uploading to {key}')
+    s3.meta.client.upload_file(rmoblatestfile, targbucket, key, ExtraArgs=extraargs) 
+
+    # now 3 month heatmap
+    _, fname = os.path.split(threemthfile)
+    key = targfldr + fname
+    print(f'uploading to {key}')
+    s3.meta.client.upload_file(threemthfile, targbucket, key, ExtraArgs=extraargs) 
+
+    # now upload the CSV file
+    _, fname = os.path.split(csvfile)
+    ymd=fname[1:9]
+    targkey = targfldr + ymd[:4] + '/' + ymd[:6] + '/' + fname
+    print(f'uploading to {targkey}')
+    extraargs = {'ContentType': 'text/csv'}
+    s3.meta.client.upload_file(csvfile, targbucket, targkey, ExtraArgs=extraargs) 
+
+    # and then upload it to the ukmon-shared bucket too, using suitable creds
+    sts_client = boto3.client('sts')
+
+    try: 
+        assumed_role_object=sts_client.assume_role(
+            RoleArn="arn:aws:iam::822069317839:role/service-role/S3FullAccess",
+            RoleSessionName="AssumeRoleSession1")
+        credentials=assumed_role_object['Credentials']
+        s3u = boto3.resource('s3',
+            aws_access_key_id=credentials['AccessKeyId'],
+            aws_secret_access_key=credentials['SecretAccessKey'],
+            aws_session_token=credentials['SessionToken'])
+        print('about to push file')
+        targkey =f'archive/Tackley/Radio/{ymd[:4]}/{ymd[:6]}/{fname}'
+        s3u.meta.client.upload_file(csvfile, 'ukmon-shared', targkey, ExtraArgs=extraargs) 
+    except: 
+        print('unable to assume role')
+
+    return 
 
 
 if __name__ == '__main__':
     s3bucket = 'mjmm-rawradiodata'
-    s3object = 'raw/RMOB-202204.dat'
-    makeColorGram(s3bucket, s3object)
-    
+    s3object = 'raw/event_log_202202.csv'
+    s3, heatmapname, rmoblatestfile, threemthfile, csvfile, tmpfldr = makeColorGram(s3bucket, s3object)
+    #uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile)
+    print(f'files stored in {tmpfldr}')
+
 
 def lambda_handler(event, context):
     record = event['Records'][0]
     s3bucket = record['s3']['bucket']['name']
     s3object = record['s3']['object']['key']
-    print(s3object, s3bucket, 'hello')
 
-    makeColorGram(s3bucket, s3object)
+    s3, heatmapname, rmoblatestfile, threemthfile, csvfile, tmpfldr = makeColorGram(s3bucket, s3object)
+    uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile)
+    shutil.rmtree(tmpfldr)
+            

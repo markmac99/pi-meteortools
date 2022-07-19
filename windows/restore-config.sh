@@ -38,10 +38,13 @@ ssh ${hn} "chmod 0644 ~/.ssh/known_hosts"
 
 # keys used by other processes
 scp .ssh/config ${hn}:.ssh/
-scp .ssh/gmailpass ${hn}:.ssh/
+scp .ssh/gmail*.json ${hn}:.ssh/
 scp .ssh/markskey.pem ${hn}:.ssh/
 scp .ssh/mjmm-data.key ${hn}:.ssh/
 ssh ${hn} "chmod 0644 ~/.ssh/config"
-ssh ${hn} "chmod 0600 ~/.ssh/gmailpass"
+ssh ${hn} "chmod 0600 ~/.ssh/gmail*.json"
 ssh ${hn} "chmod 0600 ~/.ssh/markskey.pem"
 ssh ${hn} "chmod 0600 ~/.ssh/mjmm-data.key"
+
+ansible-playbook /mnt/e/dev/meteorhunting/pi-meteortools/deploy-pi.yml --extra-vars "host=${hn}"
+scp token.pickle $hn:mjmm

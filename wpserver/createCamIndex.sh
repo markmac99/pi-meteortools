@@ -63,3 +63,7 @@ if [ $? -gt 0 ] ; then
 else
     echo nothing changed
 fi
+
+export PYLIB=~/prod/ukmon_pylib
+source ~/venvs/wmpl/bin/activate
+python $PYLIB/utils/getNextBatchStart.py 120 createCamIndex

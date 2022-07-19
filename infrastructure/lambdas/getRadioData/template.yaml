@@ -19,8 +19,10 @@ Resources:
       Description: creates colorgram and heatmaps from RMOB dat file
       Handler: processRadioData.lambda_handler
       Runtime: python3.8
-      Timeout: 60
+      Timeout: 120
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Tags:
+        billingtag: "MarksWebsite"
       Environment:
         Variables:
           MPLCONFIGDIR: /tmp/mpl
@@ -34,13 +36,44 @@ Resources:
               S3Key:
                 Rules:
                 - Name: prefix
-                  Value: raw/
+                  Value: raw/event_log
                 - Name: suffix
-                  Value: .dat
+                  Value: .csv
     Metadata:
       BuildMethod: python3.8
       
+  processRadioJpgs:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: processRadioJpgs
+      CodeUri: ./processRadioJpgs
+      Description: uploads latest interesting jpgs
+      Handler: processRadioJpgs.lambda_handler
+      Runtime: python3.8
+      Timeout: 30
+      Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Tags:
+        billingtag: "MarksWebsite"
+      Events:
+        createNewJpg:
+          Type: S3
+          Properties:
+            Bucket: !Ref mjmmrawradiodata
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                - Name: prefix
+                  Value: raw/
+                - Name: suffix
+                  Value: .jpg
+#    Metadata:
+#      BuildMethod: python3.8
+
   mjmmrawradiodata:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: mjmm-rawradiodata
+      Tags:
+      - Key: "billingtag"
+        Value: "MarksWebsite"

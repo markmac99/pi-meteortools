@@ -31,7 +31,7 @@ FormStyle=-9999
 ShowWindowsInTaskBar=0
 MinimizeToSystemTray=0
 BottomCtrls=0
-LeftCtrls=0
+LeftCtrls=1
 LeftCtrlWidth=128
 LeftCtrlVSplit=190
 HideBorderAndMenus=0
@@ -368,7 +368,7 @@ MaxFileSize=1400
 Flags=5
 Source=3
 FileIndex=0
-TrigRecorderFile=c:\spectrum\sounds\event20220413_162753_4.wav
+TrigRecorderFile=c:\spectrum\sounds\event20220419_130502_6.wav
 TrigRecorderFileMode=0
 PreTrigSeconds=5
 PostTrigSeconds=5
@@ -1466,7 +1466,7 @@ THEN19=# Upload_Directory - the location to upload to, either a directory or an 
 IF20=never
 THEN20=# Hostname_Bucket - the host name or S3 bucket to upload your files to e.g. ftp.example.com or meteorbucket
 IF21=initialising
-THEN21=Upload_Capture = 1 : Upload_Log = 1 : Upload_Threshold = 30 : Upload_Limit = 30 : Upload_Method = "s3" : Upload_Directory = "/rawradiodata/" : Hostname_Bucket = "mjmm-data"
+THEN21=Upload_Capture = 1 : Upload_Log = 1 : Upload_Threshold = 30 : Upload_Limit = 30 : Upload_Method = "s3" : Upload_Directory = "/raw/" : Hostname_Bucket = "mjmm-rawradiodata"
 IF22=never
 THEN22=# ====== User definable options for FTP and SFTP upload - see comments in upload_ftp.bat and upload_sftp.bat files! ======
 IF23=never
@@ -1504,7 +1504,7 @@ THEN38=Meteor_Max_Signal = 0 : Meteor_Max_Noise = 0 : Meteor_Max_SNR = 0: Meteor
 IF39=initialising
 THEN39=Intermediate_Capture = Waterfall_Length : State = "Waiting" : Queued = 0
 IF40=initialising
-THEN40=Current_Upload = 1 : Queued_Interesting_Capture = 0 : Do_Interesting_Capture = 0 : Do_Log_Upload = 0
+THEN40=Current_Upload = 1 : Queued_Interesting_Capture = 0 : Do_Interesting_Capture = 0 : Do_Log_Upload = 0 : Do_ThisLog_Upload = 0
 IF41=initialising
 THEN41=Upload_Command = SpecLab_Path + "upload_" + Upload_Method + ".bat " : Capture_Name = ""
 IF42=initialising
@@ -1548,7 +1548,7 @@ THEN60=##### STATE: LOG ########################################################
 IF61=never
 THEN61=# Log last meteor event
 IF62=State="Log" & (Meteor_End_Time - Meteor_Start_Time)>=Log_Threshold & Logging
-THEN62=Daily_Meteor_Count = Daily_Meteor_Count + 1 : Hourly_Meteor_Count = Hourly_Meteor_Count + 1 : Hourly_Meteor_Duration = Hourly_Meteor_Duration + (Meteor_End_Time - Meteor_Start_Time)
+THEN62=Daily_Meteor_Count = Daily_Meteor_Count + 1 : Hourly_Meteor_Count = Hourly_Meteor_Count + 1 : Hourly_Meteor_Duration = Hourly_Meteor_Duration + (Meteor_End_Time - Meteor_Start_Time) :Do_ThisLog_Upload = Current_Time
 IF63=continuation
 THEN63=sp.print(t=sp.time, fn="Courier New", fs=14, fc=0xFFFFFF, fa=0, "                         Event: " + str(Daily_Meteor_Count) + "  Start: " + str("hh : mm : ss", Meteor_Start_Time) + " UTC  Dur: " + str(Meteor_End_Time - Meteor_Start_Time) + "s  Peak SNR: " + Meteor_Max_SNR + "dB")
 IF64=continuation
@@ -1560,7 +1560,7 @@ THEN66=fp(str("YYYY/MM/DD",Meteor_Start_Time) + "," + str("hh:mm:ss",Meteor_Star
 IF67=continuation
 THEN67=fclose
 IF68=continuation
-THEN68=exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+THEN68=exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_ThisLog_Upload) + ".csv\"" + Upload_Parameters)
 IF69=never
 THEN69=# Last meteor event is "interesting" so flag for an extra capture (only works for first event if multiple are queued)
 IF70=State="Log" & Meteor_Max_SNR>=Upload_Threshold & Logging & Upload_Capture
@@ -1586,7 +1586,7 @@ THEN79=# Capture a second screenshot of the display for upload
 IF80=never
 THEN80=# Upload command format: upload_<Upload_Method>.bat <upload path> <upload filename> <Hostname_Bucket> <Upload_Directory> <FTP_Username> <FTP_Password> <SFTP_Hostkey> <SFTP_PrivateKey> <S3_ACL>
 IF81=Do_Interesting_Capture=1
-THEN81=Capture_Name="interesting_" + str(Current_Upload) + ".jpg" : capture(Capture_Path + Capture_Name, 100) : Do_Interesting_Capture = 0 : Queued_Interesting_Capture = 0
+THEN81=Capture_Name="interesting_" + str(Current_Upload) + ".jpg" : capture(Capture_Path + Capture_Name, 100) : Do_Interesting_Capture = 0 : Queued_Interesting_Capture = 0 
 IF82=continuation
 THEN82=exec(Upload_Command + "\"" + Capture_Path + "\" \"" + Capture_Name + "\"" + Upload_Parameters) : Current_Upload = Current_Upload + 1
 IF83=never
@@ -1618,59 +1618,59 @@ THEN95=fp5(str("YYYYMMDDhh", Current_Time) + "," + str("hh", Current_Time) + ","
 IF96=continuation
 THEN96=fclose5
 IF97=continuation
-THEN97=Hourly_Meteor_Count = 0 : Hourly_Meteor_Duration = 0 : Hourly_Meteor_Longest = 0
+THEN97=Hourly_Meteor_Count = 0 : Hourly_Meteor_Duration = 0 : Hourly_Meteor_Longest = 0 : Do_Log_Upload = Current_Time
 IF98=continuation
 THEN98=exec(Upload_Command + "\"" + Log_Path + "\" \"hourly_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
-IF99=never
-THEN99=# If the current time is on the hour, reset the hourly flag ready to trigger again at the end of the next hour
-IF100=str("mmss", Current_Time)="0000"
-THEN100=Hourly_Flag = 0
+IF99=continuation
+THEN99=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
+IF100=never
+THEN100=# If the current time is on the hour, reset the hourly flag ready to trigger again at the end of the next hour
 IF101=never
-THEN101=##### TIMED ACTION TRIGGERED: DAILY ###################################################################################################################
-IF102=never
-THEN102=# Increment the midnight flag (this will happen multiple times during the last five seconds of the day)
-IF103=str("hhmmss", Current_Time)="235955"
-THEN103=Midnight_Flag = Midnight_Flag + 1
+THEN101=was if( str("mmss", Current_Time)="0000" ) then Hourly_Flag = 0
+IF102=Hourly_Flag=1
+THEN102=Hourly_Flag = 0
+IF103=never
+THEN103=##### TIMED ACTION TRIGGERED: DAILY ###################################################################################################################
 IF104=never
-THEN104=# If the midnight flag has just been triggered, log and then reset the meteor count to zero for the new day, if the midnight flag has been triggered already, do nothing
-IF105=Midnight_Flag=1
-THEN105=fopen3(Log_Path + "daily_log_" + str("YYYYMM", Current_Time) + ".csv",a,r)
-IF106=continuation
-THEN106=fp3(str("YYYY/MM/DD", Current_Time) + "," + str(Daily_Meteor_Count))
-IF107=continuation
-THEN107=fclose3
+THEN104=# Increment the midnight flag (this will happen multiple times during the last five seconds of the day)
+IF105=str("hhmmss", Current_Time)="235955"
+THEN105=Midnight_Flag = Midnight_Flag + 1
+IF106=never
+THEN106=# If the midnight flag has just been triggered, log and then reset the meteor count to zero for the new day, if the midnight flag has been triggered already, do nothing
+IF107=Midnight_Flag=1
+THEN107=fopen3(Log_Path + "daily_log_" + str("YYYYMM", Current_Time) + ".csv",a,r)
 IF108=continuation
-THEN108=Daily_Meteor_Count = 0 : Do_Log_Upload = Current_Time
-IF109=never
-THEN109=# We have a set of logs to upload (by reference to their date in Do_Log_Upload) and upload logs is true, upload them and then reset flag
-IF110=Do_Log_Upload<>0 && Upload_Log=1
-THEN110=exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
-IF111=continuation
-THEN111=exec(Upload_Command + "\"" + Log_Path + "\" \"hourly_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
-IF112=continuation
-THEN112=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
+THEN108=fp3(str("YYYY/MM/DD", Current_Time) + "," + str(Daily_Meteor_Count))
+IF109=continuation
+THEN109=fclose3
+IF110=continuation
+THEN110=Daily_Meteor_Count = 0 : Do_Log_Upload = Current_Time
+IF111=never
+THEN111=# We have a set of logs to upload (by reference to their date in Do_Log_Upload) and upload logs is true, upload them and then reset flag
+IF112=Do_Log_Upload<>0 && Upload_Log=1
+THEN112=exec(Upload_Command + "\"" + Log_Path + "\" \"event_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
 IF113=continuation
-THEN113=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB_Dur-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
+THEN113=exec(Upload_Command + "\"" + Log_Path + "\" \"hourly_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
 IF114=continuation
-THEN114=exec(Upload_Command + "\"" + Log_Path + "\" \"daily_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+THEN114=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
 IF115=continuation
-THEN115=Do_Log_Upload=0
-IF116=never
-THEN116=# We have a set of logs to upload but upload logs is false so reset flag only
-IF117=Do_Log_Upload<>0 && Upload_Log=0
+THEN115=exec(Upload_Command + "\"" + Log_Path + "\" \"RMOB_Dur-" + str("YYYYMM", Do_Log_Upload) + ".dat\"" + Upload_Parameters)
+IF116=continuation
+THEN116=exec(Upload_Command + "\"" + Log_Path + "\" \"daily_log_" + str("YYYYMM", Do_Log_Upload) + ".csv\"" + Upload_Parameters)
+IF117=continuation
 THEN117=Do_Log_Upload=0
 IF118=never
-THEN118=# If the current time is midnight, reset the midnight flag ready to trigger again at the end of the next day
-IF119=str("hhmmss", Current_Time)="000000"
-THEN119=Midnight_Flag = 0
+THEN118=# We have a set of logs to upload but upload logs is false so reset flag only
+IF119=Do_Log_Upload<>0 && Upload_Log=0
+THEN119=Do_Log_Upload=0
 IF120=never
-THEN120=#######################################################################################################################################################
-IF121=
-THEN121=
-IF122=
-THEN122=
-IF123=
-THEN123=
+THEN120=# If the current time is midnight, reset the midnight flag ready to trigger again at the end of the next day
+IF121=never
+THEN121=was if( str("hhmmss", Current_Time)="000000" ) then Midnight_Flag = 0
+IF122=Midnight_Flag=1
+THEN122=Midnight_Flag = 0
+IF123=never
+THEN123=#######################################################################################################################################################
 IF124=
 THEN124=
 IF125=

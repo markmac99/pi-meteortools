@@ -20,3 +20,6 @@ rsync ${hn}:source/ukmon-pitools/.firstrun $hn > /dev/null 2>&1
 rsync ${hn}:source/ukmon-pitools/domp4s $hn > /dev/null 2>&1
 rsync ${hn}:source/ukmon-pitools/dotimelapse $hn > /dev/null 2>&1
 rsync ${hn}:source/ukmon-pitools/extrascript $hn > /dev/null 2>&1
+
+# mjmm settings
+scp $hn:mjmm/*.pickle $hn/ > /dev/null 2>&1

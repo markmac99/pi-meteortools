@@ -3,7 +3,7 @@ $now=(get-date -uformat '%Y%m%d')
 $logf="..\logs\"+$now+".log"
 
 Write-Output "starting to get all data" | tee-object $logf -append
-.\getDataFromCamera.ps1 .\tackley_ne.ini | tee-object $logf -append
+#.\getDataFromCamera.ps1 .\tackley_ne.ini | tee-object $logf -append
 .\getDataFromCamera.ps1 .\UK0006.ini | tee-object $logf -append
 .\getDataFromCamera.ps1 .\UK000F.ini | tee-object $logf -append
 .\getDataFromCamera.ps1 .\UK001L.ini | tee-object $logf -append

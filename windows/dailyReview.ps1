@@ -24,6 +24,7 @@ $RMS_INSTALLED=$ini['rms']['rms_installed']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 $upload_rej=$ini['cleaning']['uploadtogmn']
+$pylib=$ini['ukmon']['ukmon_pylib']
 
 # copy the latest data from the Pi
 $srcpath='\\'+$hostname+'\RMS_data\ArchivedFiles'
@@ -50,19 +51,32 @@ else {
 }
 
 # get the FR files
-Write-Output "Copying FR files where available"
+Write-Output "Copying mp4 and FR files where available"
 $conff = $localfolder+'\ConfirmedFiles\' + $path
 $fflist=(Get-ChildItem $conff\FF*.fits).name
-$fflist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
-foreach ($frfile in $fflist)
+if ($fflist.count -gt 0)
 {
-    $srcfile = $srcpath + '/'+ $path + '/' + $frfile
-    $srcfile = $srcfile.replace('/','\')
-    if ((test-path $srcfile) -eq 1){
-        Copy-Item "$srcfile" "$conff"
+    $frlist=$fflist.replace('FF_','FR_').replace('.fits','.bin')
+    foreach ($frfile in $frlist)
+    {
+        $srcfile = $srcpath + '/'+ $path + '/' + $frfile
+        $srcfile = $srcfile.replace('/','\')
+        if ((test-path $srcfile) -eq 1){
+            Copy-Item "$srcfile" "$conff"
+        }
     }
+    $mp4list=$fflist.replace('.fits','.mp4')
+    foreach ($mp4file in $mp4list)
+    {
+        $srcfile = $srcpath + '/'+ $path + '/' + $mp4file
+        $srcfile = $srcfile.replace('/','\')
+        if ((test-path $srcfile) -eq 1){
+            Copy-Item "$srcfile" "$conff"
+        }
+    }
+}else {
+    write-output "No FF/FR files today"
 }
-
 set-location $PSScriptRoot
 $regex="userej"
 switch -regex -file $bcfg { 
@@ -75,6 +89,8 @@ if ($tst -eq "1" -and $upload_rej -eq "True"){
 else {
     write-output "Skipping GMN ML upload"
 }
+
+$env:pythonpath=$pylib
 # switch RMS environment to do some post processing
 if ($RMS_INSTALLED -eq 1){
     # reprocess the ConfirmedFiles folder to generate JPGs, shower maps, etc
@@ -96,13 +112,24 @@ if ($RMS_INSTALLED -eq 1){
             $flat = $localfolder + '\ArchivedFiles\' + $path + '\flat.bmp'
             copy-item $mask $myf
             copy-item $flat $myf
-            python -m Utils.ShowerAssociation $ftpfil -x
+            python -m Utils.ShowerAssociation $ftpfil -x -p gist_ncar
             python -m Utils.StackFFs $myf -x -b jpg -f $myf\flat.bmp -m $myf\mask.bmp
             python -m Utils.TrackStack $myf -c $myf\.config -x
             python -m Utils.BatchFFtoImage $myf jpg -t
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
-            copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks
+
+            $li = (get-content $ftpfil | select-object -first 1)
+            $metcount = [int]$li.split(' ')[3]
+            $ts=(Get-ChildItem $myf\*track_stack.jpg).name
+            if ($ts.count -ne 0){
+                $ymd=$ts.substring(7,8)
+                python -m utils.annotateImage $myf\$ts $hostname $metcount $ymd
+                $newn=$ts.substring(0,15)+".jpg"
+                copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
+            }else {
+                write-output "No trackstack today"
+            }
         }
         else{
             write-output skipping' '$myf
@@ -113,10 +140,4 @@ set-location $PSScriptRoot
 .\createMonthlyStack.ps1 $inifname
 
 .\uploadTrackStacks.ps1 $inifname 
-
-#$dtstr=((get-date).adddays(-1)).tostring('yyyyMMdd')
-#.\getPossibles $inifname $dtstr
-
-# .\reorgByYMD.ps1 $args[0]
-# .\UploadToUkMon.ps1 $args[0]
 
