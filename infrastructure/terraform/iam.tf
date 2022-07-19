@@ -20,10 +20,10 @@ data "aws_iam_policy_document" "MMS3BucketAccessRW-policy-doc" {
     actions = ["s3:ListBucket"]
     effect  = "Allow"
     resources = [
-      "arn:aws:s3:::mlm-website-backups",
-      "arn:aws:s3:::mjmm-website-backups",
-      "arn:aws:s3:::mjmm-meteor-uploads",
-      "arn:aws:s3:::mjmm-data",
+      "arn:aws:s3:::${var.mlmwebsitebackupbucket}",
+      "arn:aws:s3:::${var.websitebackupbucket}",
+      "arn:aws:s3:::${var.meteoruploadbucket}",
+      "arn:aws:s3:::${var.databucket}",
     ]
     sid = "VisualEditor0"
   }
@@ -35,10 +35,10 @@ data "aws_iam_policy_document" "MMS3BucketAccessRW-policy-doc" {
     ]
     effect = "Allow"
     resources = [
-      "arn:aws:s3:::mjmm-data/*",
-      "arn:aws:s3:::mjmm-meteor-uploads/*",
-      "arn:aws:s3:::mlm-website-backups/*",
-      "arn:aws:s3:::mjmm-website-backups/*",
+      "arn:aws:s3:::${var.mlmwebsitebackupbucket}/*",
+      "arn:aws:s3:::${var.websitebackupbucket}/*",
+      "arn:aws:s3:::${var.meteoruploadbucket}/*",
+      "arn:aws:s3:::${var.databucket}/*",
     ]
     sid = "VisualEditor1"
   }
@@ -46,7 +46,7 @@ data "aws_iam_policy_document" "MMS3BucketAccessRW-policy-doc" {
 
 resource "aws_iam_user_policy_attachment" "s3user-pol-attachment" {
   user       = aws_iam_user.s3user.name
-  policy_arn = "arn:aws:iam::317976261112:policy/MMS3BucketAccessRW"
+  policy_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/MMS3BucketAccessRW"
 }
 
 #inline policy used by s3user
@@ -64,9 +64,9 @@ resource "aws_iam_user_policy" "Ukmon-shared-access" {
           ]
           Effect = "Allow"
           Resource = [
-            "arn:aws:s3:::ukmon-shared/*",
-            "arn:aws:s3:::ukmon-live/*",
-            "arn:aws:s3:::ukmeteornetworkarchive/*",
+            "arn:aws:s3:::${var.ukmonsharedbucket}/*",
+            "arn:aws:s3:::${var.ukmonlivebucket}/*",
+            "arn:aws:s3:::${var.ukmonwebbucket}/*",
           ]
         },
       ]
