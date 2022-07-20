@@ -20,7 +20,7 @@ Resources:
       Handler: processRadioData.lambda_handler
       Runtime: python3.8
       Timeout: 120
-      Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Role: arn:aws:iam::${AWS::AccountId}:role/lambda-s3-full-access-role
       Tags:
         billingtag: "MarksWebsite"
       Environment:
@@ -51,7 +51,7 @@ Resources:
       Handler: processRadioJpgs.lambda_handler
       Runtime: python3.8
       Timeout: 30
-      Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
+      Role: arn:aws:iam::${AWS::AccountId}:role/lambda-s3-full-access-role
       Tags:
         billingtag: "MarksWebsite"
       Events:
