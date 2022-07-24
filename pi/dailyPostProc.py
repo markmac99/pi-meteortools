@@ -217,6 +217,10 @@ def rmsExternal(cap_dir, arch_dir, config):
         # only remove this if we are finished with processing
         os.remove(rebootlockfile)
         log.info('not doing istream')
+
+    # clear log handlers again
+    while len(log.handlers) > 0:
+        log.removeHandler(log.handlers[0])
     return
 
 
