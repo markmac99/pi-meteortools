@@ -106,7 +106,7 @@ if ($RMS_INSTALLED -eq 1){
         $unffil=$myf+'\FTPdetectinfo_'+$path+'_unfiltered.txt'
         if ((test-path $unffil) -eq 0) 
         {
-            python -m utils.compareMLtoManual $myf -t 0.925
+            python -m utils.compareMLtoManual $myf -t 0.85
         }
     }
     $destpath=$localfolder+'\ConfirmedFiles'
