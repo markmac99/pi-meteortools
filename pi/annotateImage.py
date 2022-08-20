@@ -7,7 +7,7 @@ import sys
 import datetime
 
 
-def annotateImage(img_path, title, metcount):
+def annotateImage(img_path, title, metcount = None, color='#FF0000'):
     my_image = Image.open(img_path)
     width, height = my_image.size
     image_editable = ImageDraw.Draw(my_image)
@@ -17,9 +17,10 @@ def annotateImage(img_path, title, metcount):
     except:
         fnt = ImageFont.truetype("DejaVuSans.ttf", fntheight)
     #fnt = ImageFont.load_default()
-    image_editable.text((15,height-fntheight-15), title, font=fnt, fill=(255))
-    metmsg = 'meteors: {:04d}'.format(metcount)
-    image_editable.text((width-7*fntheight-15,height-fntheight-15), metmsg, font=fnt, fill=(255))
+    image_editable.text((15,height-fntheight-15), title, font=fnt, fill=color)
+    if metcount is not None:
+        metmsg = 'meteors: {:04d}'.format(metcount)
+        image_editable.text((width-7*fntheight-15,height-fntheight-15), metmsg, font=fnt, fill=color)
     my_image.save(img_path)
 
 
