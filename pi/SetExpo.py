@@ -12,17 +12,22 @@ if len(sys.argv) > 3:
 else:
     nightgain = 60
 
+daycmode = '0x00000001'
+nightcmode = '0x00000002'
+if host_ip == '192.168.1.40':
+    nightcmode = daycmode
+
 daynight=sys.argv[2]
 if daynight == 'DAY':
     expo = 30
     gain = 30
-    cmode = '0x00000001'
+    cmode = daycmode
     minexp = '0x00000064'
     maxexp = '0x00009C40'
 else:
     expo = 100
     gain = nightgain
-    cmode = '0x00000002'
+    cmode = nightcmode
     minexp = '0x00009C40'
     maxexp = '0x00009C40'
 

@@ -8,7 +8,12 @@ import datetime
 
 
 def annotateImage(img_path, title, metcount = None, color='#FF0000'):
-    my_image = Image.open(img_path)
+    try:
+        my_image = Image.open(img_path)
+    except:
+        print('temporarily unable to open image')
+        return 
+
     width, height = my_image.size
     image_editable = ImageDraw.Draw(my_image)
     fntheight=30

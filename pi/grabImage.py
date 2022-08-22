@@ -10,6 +10,9 @@ from annotateImage import annotateImage
 import boto3 
 
 
+pausetime = 2 # time to wait between capturing frames 
+
+
 def getStartEndTimes():
     starttime, dur=captureDuration(51.88,-1.31,80) 
     if starttime is True:
@@ -25,7 +28,13 @@ def grabImage(ipaddress, fnam, camid, now):
     # print(capstr)
     cap = cv2.VideoCapture(capstr)
     ret, frame = cap.read()
-    cv2.imwrite(fnam, frame)
+    x = 0
+    while x < 5:
+        try:
+            cv2.imwrite(fnam, frame)
+            x = 5
+        except:
+            x = x + 1
     cap.release()
     cv2.destroyAllWindows()
     title = f'{camid} {now.strftime("%Y-%m-%d %H:%M:%S")}'
@@ -33,18 +42,25 @@ def grabImage(ipaddress, fnam, camid, now):
     return 
 
 
-def makeTimelapse(dirnam, s3, camname):
-    dirnam = os.path.normpath(os.path.expanduser(dirnam))
-    _, mp4shortname = os.path.split(dirnam)
-    mp4name = os.path.join(dirnam, mp4shortname + '.mp4')
+def makeTimelapse(dirname, s3, camname):
+    dirname = os.path.normpath(os.path.expanduser(dirname))
+    _, mp4shortname = os.path.split(dirname)
+    mp4name = os.path.join(dirname, mp4shortname + '.mp4')
+    print(f'{mp4name}')
+    fps = int(250/pausetime)
     if os.path.isfile(mp4name):
         os.remove(mp4name)
-    cmdline = f'ffmpeg -v quiet -r 25 -pattern_type glob -i "{dirnam}/*.jpg"  {mp4name}'
-    print(f'making timelapse of {dirnam}')
-    print(cmdline)
+    cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
+        + " -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf \"hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)\" " \
+        +  {mp4name}'
+    print(f'making timelapse of {dirname}')
     subprocess.call([cmdline], shell=True)
+    print('done')
     targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}.mp4'
-    s3.meta.client.upload_file(mp4name, 'mjmm-data', targkey, ExtraArgs = {'ContentType': 'video/mp4'})
+    try:
+        s3.meta.client.upload_file(mp4name, 'mjmm-data', targkey, ExtraArgs = {'ContentType': 'video/mp4'})
+    except:
+        print('unable to upload mp4')
     return 
 
 
@@ -72,6 +88,7 @@ if __name__ == '__main__':
     else:
         isnight = True
 
+    uploadcounter = 0
     while True:
         now = datetime.datetime.now()
         # if force_day then save a dated file for the daytime 
@@ -84,10 +101,11 @@ if __name__ == '__main__':
         elif now > et or now < st:
             fnam = os.path.expanduser(os.path.join('~/RMS_data', 'live.jpg'))
             grabImage(ipaddress, fnam, camid, now)
-            if isnight is True:
-                makeTimelapse(dateddirnam, s3, 'UK9999')
-                isnight = False
             print(f'grabbed {fnam}')
+            if isnight is True:
+                print('switched to daytime mode')
+                makeTimelapse(dirnam, s3, 'UK9999')
+                isnight = False
 
         # otherwise its night time so save a dated file
         else:
@@ -95,6 +113,10 @@ if __name__ == '__main__':
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             grabImage(ipaddress, fnam, camid, now)
             print(f'grabbed {fnam}')
-        
-        s3.meta.client.upload_file(fnam, 'mjmm-data', f'{camid}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
-        time.sleep(10)
+
+        uploadcounter += pausetime
+        if uploadcounter > 9:
+            print('uploading live image')
+            s3.meta.client.upload_file(fnam, 'mjmm-data', f'{camid}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
+            uploadcounter = 0
+        time.sleep(pausetime)
