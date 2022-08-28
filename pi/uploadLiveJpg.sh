@@ -18,4 +18,4 @@ else
     targ=$hn
 fi 
 source ~/vRMS/bin/activate
-python $here/grabImage.py $ip ~/RMS_data $targ
+python $here/grabImage.py $ip $targ
