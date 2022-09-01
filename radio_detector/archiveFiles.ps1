@@ -1,7 +1,7 @@
 $curloc=get-location
 set-location $PSScriptRoot
 . .\helperfunctions.ps1
-$inifname = './station.ini'
+$inifname = './radiostation.ini'
 if ((test-path $inifname) -eq $false) {
     write-output "station.ini file missing or invalid, can't continue"
     exit 1
