@@ -20,6 +20,7 @@ variable "databucket" { default = "mjmm-data" }
 variable "meteoruploadbucket" { default = "mjmm-meteor-uploads" }
 variable "websitebackupbucket" { default = "mjmm-website-backups" }
 variable "mlmwebsitebackupbucket" { default = "mlm-website-backups" }
+variable "satdatabucket" { default = "mjmm-rawsatdata" }
 
 variable "ukmonsharedbucket" { default = "ukmon-shared"}
 variable "ukmonlivebucket" { default = "ukmon-live"}
