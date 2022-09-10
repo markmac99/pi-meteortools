@@ -19,7 +19,9 @@ echo "header.className = \"h4\"; " >> $idxfile
 
 camlist=$(ls -1d UK* allsky)
 mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
+if [[ $mthlist != *"$currmth"* ]] ; then mthlist=$(echo $currmth $mthlist ) ; fi
 mthlist=$(echo stacks trackstacks $mthlist)
+
 for mth in $mthlist ; do 
     echo "var row = table.insertRow(-1);" >> $idxfile
     for cam in $camlist; do
