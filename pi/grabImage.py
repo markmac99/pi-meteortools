@@ -19,10 +19,9 @@ log = logging.getLogger("logger")
 def getStartEndTimes():
     starttime, dur=captureDuration(51.88,-1.31,80) 
     if starttime is True:
-        # the batch took too long to run so just quit
+        # the batch took too long to run so just set starttime to now
         log.info(f'after overnight start time, {dur}')
         starttime = datetime.datetime.now()
-
     endtime = starttime + datetime.timedelta(seconds=dur)
     return starttime, endtime
 
@@ -128,6 +127,8 @@ if __name__ == '__main__':
     uploadcounter = 0
     while True:
         now = datetime.datetime.now()
+        if now < dawn and now > dusk:
+            isnight = True
         # if force_day then save a dated file for the daytime 
         if force_day is True:
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
@@ -150,7 +151,7 @@ if __name__ == '__main__':
                 os.makedirs(dirnam, exist_ok=True)
                 log.info('switched to daytime mode, now rebooting')
                 isnight = False
-                os.system('sudo reboot')
+                os.system('/usr/bin/sudo /usr/sbin/shutdown -r now')
 
         # otherwise its night time so save a dated file
         else:
@@ -168,8 +169,10 @@ if __name__ == '__main__':
                 try:
                     s3.meta.client.upload_file(fnam, 'mjmm-data', f'{camid}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
                 except:
+                    log.info('unable to upload live image')
                     pass
                 uploadcounter = 0
             else:
                 uploadcounter -= pausetime
+        log.info(f'sleeping for {pausetime} seconds')
         time.sleep(pausetime)
