@@ -1,0 +1,12 @@
+Meteor "Radio Station Frequency List" for Spectrum Lab .
+Date: 2018-05-03 (YYYY-MM-DD)
+ Keep the following headline and the data columns aligned,
+ and the list sorted by ascending frequency - otherwise
+ Spectrum Lab will not be able to load (parse) the list .
+ The column titles are explained in readme_freqlist.txt .
+
+MHz        Call      ITU   Act Station               
+=======================================================
+
+143.050    GRAVES    F     Y   Graves CW
+144.430    GB3VHF    G     Y   GB3 VHF Test Beacon

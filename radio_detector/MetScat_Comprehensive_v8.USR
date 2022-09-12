@@ -22,16 +22,16 @@ RigControlFlags=0
 CATMonitorFlags=0
 
 [MAIN_WINDOW]
-Left=-8
-Top=-8
+Left=-7
+Top=0
 Width=1367
-Height=767
+Height=735
 Visible=-9999
 FormStyle=-9999
 ShowWindowsInTaskBar=0
 MinimizeToSystemTray=0
 BottomCtrls=0
-LeftCtrls=1
+LeftCtrls=0
 LeftCtrlWidth=128
 LeftCtrlVSplit=190
 HideBorderAndMenus=0
@@ -56,8 +56,8 @@ FSliderMin=0
 FSliderMax=5512
 
 [FilterControlForm]
-Left=343
-Top=166
+Left=296
+Top=145
 Width=640
 Height=433
 Visible=0
@@ -134,15 +134,6 @@ Height=470
 Visible=-9999
 FormStyle=0
 
-[HTTP_SRV_WINDOW]
-Left=-9999
-Top=-9999
-Width=-9999
-Height=-9999
-Visible=0
-FormStyle=-9999
-ActivePage=0
-
 [PaletteEditorForm]
 Left=-9999
 Top=-9999
@@ -177,8 +168,8 @@ Visible=-9999
 FormStyle=-9999
 
 [SecondSpectrogram]
-Left=407
-Top=66
+Left=351
+Top=59
 Width=561
 Height=368
 Visible=1
@@ -368,7 +359,7 @@ MaxFileSize=1400
 Flags=5
 Source=3
 FileIndex=0
-TrigRecorderFile=c:\spectrum\sounds\event20220419_130502_6.wav
+TrigRecorderFile=c:\spectrum\sounds\event20220912_195442_101.wav
 TrigRecorderFileMode=0
 PreTrigSeconds=5
 PostTrigSeconds=5
@@ -1076,9 +1067,9 @@ TriggerLevel=0
 TriggerSyncTime=0.07499
 DispPhaseRange=360
 BkgndColor=0
-ScaleColor=13619151
-LabelColor=13619151
 GridColor=13619151
+LabelColor=13619151
+ScaleColor=13619151
 GridVisible=0
 
 [TDScope_Chn0]
@@ -1586,7 +1577,7 @@ THEN79=# Capture a second screenshot of the display for upload
 IF80=never
 THEN80=# Upload command format: upload_<Upload_Method>.bat <upload path> <upload filename> <Hostname_Bucket> <Upload_Directory> <FTP_Username> <FTP_Password> <SFTP_Hostkey> <SFTP_PrivateKey> <S3_ACL>
 IF81=Do_Interesting_Capture=1
-THEN81=Capture_Name="interesting_" + str(Current_Upload) + ".jpg" : capture(Capture_Path + Capture_Name, 100) : Do_Interesting_Capture = 0 : Queued_Interesting_Capture = 0 
+THEN81=Capture_Name="interesting_" + str(Current_Upload) + ".jpg" : capture(Capture_Path + Capture_Name, 100) : Do_Interesting_Capture = 0 : Queued_Interesting_Capture = 0
 IF82=continuation
 THEN82=exec(Upload_Command + "\"" + Capture_Path + "\" \"" + Capture_Name + "\"" + Upload_Parameters) : Current_Upload = Current_Upload + 1
 IF83=never
@@ -2475,10 +2466,10 @@ Options5=0
 Hotkey5=0
 
 [WatchWindow]
-Left=9
+Left=11
 Top=0
-Width=1367
-Height=735
+Width=639
+Height=479
 Visible=0
 FormStyle=0
 HideBorderAndMenus=0
@@ -3349,4 +3340,13 @@ AxisLabel7=
 PenWidth1=3
 PenWidth2=3
 PenWidth3=3
+
+[HTTP_SRV_WINDOW]
+Left=-9999
+Top=-9999
+Width=-9999
+Height=-9999
+Visible=0
+FormStyle=-9999
+ActivePage=0
 
