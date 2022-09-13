@@ -23,6 +23,20 @@ $DatetoDelete = $CurrentDate.AddDays($Daysback)
 $yr = [int](get-date -uformat '%Y')
 $syr=$yr-3
 
+write-output "archiving derived data"
+foreach ($x in $xl)
+{
+    write-output "$x"
+    $ssrc=$src + $x
+    $sdest=$dest + $x
+    if ($x -eq "mthlystacks") {
+        robocopy $ssrc $sdest /dcopy:DAT /m /z /r:3
+    }else {
+        robocopy $ssrc $sdest /dcopy:DAT /m /s /z /r:3
+    }
+    
+}
+pause
 write-output "archiving camera data"
 foreach ($cam in $cl)
 {    
@@ -60,11 +74,3 @@ foreach ($cam in $cl)
     }
 }
 pause
-write-output "archiving additional data"
-foreach ($x in $xl)
-{
-    write-output "$x"
-    $ssrc=$src + $x
-    $sdest=$dest + $x
-    robocopy $ssrc $sdest /dcopy:DAT /m /s /z /r:3
-}
