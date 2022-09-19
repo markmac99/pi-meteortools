@@ -36,7 +36,7 @@ foreach ($x in $xl)
     }
     
 }
-pause
+
 write-output "archiving camera data"
 foreach ($cam in $cl)
 {    
