@@ -14,6 +14,7 @@ ip=$(grep device ~/source/RMS/.config  |awk -F "rtsp://" '{ print $2 }' | awk -F
 
 if [ "$hn" == "testpi4" ] ; then 
     targ=auroracam
+    ip=192.168.1.40
 else
     targ=$hn
 fi 
