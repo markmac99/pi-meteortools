@@ -2,6 +2,7 @@
 import cv2
 import sys
 import os
+import shutil
 from RMS.CaptureDuration import captureDuration
 import datetime 
 import time 
@@ -32,6 +33,7 @@ def grabImage(ipaddress, fnam, camid, now):
     try:
         cap = cv2.VideoCapture(capstr)
         ret, frame = cap.read()
+        cap.release()
     except:
         log.info('unable to grab frame')
         return 
@@ -161,6 +163,9 @@ if __name__ == '__main__':
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             grabImage(ipaddress, fnam, camid, now)
             log.info(f'grabbed {fnam}')
+            fnam2 = os.path.expanduser(os.path.join('~/RMS_data', 'live.jpg'))
+            shutil.copy(fnam, fnam2)
+            log.info('updated live copy')
 
         uploadcounter += pausetime
         if uploadcounter > 9:
