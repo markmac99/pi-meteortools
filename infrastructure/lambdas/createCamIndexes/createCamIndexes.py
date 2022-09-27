@@ -130,4 +130,4 @@ if __name__ == '__main__':
     # createNewIndex('mjmm-data','UK9999/202204/UK9999_20220414_193555_627612.mp4')
     #createNewIndex('mjmm-data','UK000F/stacks/UK000F_202102.jpg')
     #createNewIndex('mjmm-data','UK000F/trackstacks/UK000F_20220414.jpg')
-    createNewIndex('mjmm-data', 'allsky/startrails/202001/startrails-20220924.jpg')    
+    createNewIndex('mjmm-data', 'allsky/startrails/202209/startrails-20220924.jpg')    
