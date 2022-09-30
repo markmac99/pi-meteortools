@@ -28,6 +28,8 @@ def createHtmlIdx(vid_or_img, ym, cam, fldr, buck, s3):
         outf.write('<script src="./cameraindex.js"></script>\n')
         if (vid_or_img == 'stacks') or (vid_or_img == 'trackstacks'):
             outf.write(f'<h2>List of {vid_or_img} available for {cam}</h2>\n')
+        elif (vid_or_img == 'startrails'):
+            outf.write(f'<h2>List of {vid_or_img} available for {ym}</h2>\n')
         else:
             outf.write(f'<h2>List of videos available for {cam} for this month</h2>\n')
         outf.write('<p><a href="https://markmcintyreastro.co.uk/cameradata/">Back to index</a></p><hr>\n')
@@ -95,7 +97,10 @@ def createNewIndex(buck, obj):
                 outf.write('var row = table.insertRow(-1);\n')
                 colc=0
             outf.write('var cell = row.insertCell(-1);\n')
-            outf.write(f'cell.innerHTML = "\\<a href=\\"/data/mjmm-data/{cn}\\"\\>{shorname}\\</a\\>";\n')
+            if 'startrails' not in cn and 'stacks' not in cn:
+                outf.write(f'cell.innerHTML = "\\<a href=\\"/data/mjmm-data/{cn}\\"\\>{shorname}\\</a\\>";\n')
+            else:
+                outf.write(f'cell.innerHTML = "\\<a href=\\"/data/mjmm-data/{cn}\\"\\>\\<img src={shorname} width=100\\%\\>\\</a\\>";\n')
             colc = colc + 1
         outf.write('var outer_div = document.getElementById("mthindex");\n')
         outf.write('outer_div.appendChild(table);\n')
@@ -123,6 +128,6 @@ def lambda_handler(event, context):
 
 if __name__ == '__main__':
     # createNewIndex('mjmm-data','UK9999/202204/UK9999_20220414_193555_627612.mp4')
-    # createNewIndex('mjmm-data','UK0006/stacks/UK0006_202102.jpg')
-    # createNewIndex('mjmm-data','UK0006/trackstacks/UK0006_20220414.jpg')
-    createNewIndex('mjmm-data', 'allsky/videos/202204/allsky-20220415.mp4')    
+    #createNewIndex('mjmm-data','UK000F/stacks/UK000F_202102.jpg')
+    #createNewIndex('mjmm-data','UK000F/trackstacks/UK000F_20220414.jpg')
+    createNewIndex('mjmm-data', 'allsky/startrails/202209/startrails-20220924.jpg')    

@@ -97,6 +97,18 @@ if ($RMS_INSTALLED -eq 1){
     conda activate $RMS_ENV
     set-location $RMS_LOC
     $mindt = (get-date).AddDays(-$age)
+
+    # run the ML module
+    $destpath=$localfolder+'\ArchivedFiles'
+    $dlist = (Get-ChildItem  -directory $destpath | Where-Object { $_.creationtime -gt $mindt }).name
+    foreach ($path in $dlist) {
+        $myf = $destpath + '\'+$path
+        $unffil=$myf+'\FTPdetectinfo_'+$path+'_unfiltered.txt'
+        if ((test-path $unffil) -eq 0) 
+        {
+            python -m utils.compareMLtoManual $myf -t 0.85
+        }
+    }
     $destpath=$localfolder+'\ConfirmedFiles'
     $dlist = (Get-ChildItem  -directory $destpath | Where-Object { $_.creationtime -gt $mindt }).name
     foreach ($path in $dlist) {

@@ -1,7 +1,9 @@
 $curloc=get-location
 set-location $PSScriptRoot
 . .\helperfunctions.ps1
-$inifname = './station.ini'
+aws s3 cp s3://mjmm-rawradiodata/radiostation.ini .
+
+$inifname = './radiostation.ini'
 if ((test-path $inifname) -eq $false) {
     write-output "station.ini file missing or invalid, can't continue"
     exit 1

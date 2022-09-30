@@ -9,7 +9,7 @@ import shutil
 import configparser as cfg
 import tempfile
 import datetime
-
+#from matplotlib.ticker import MultipleLocator
 
 interval = 100  # millisecs between loops in Colorlab
 
@@ -257,6 +257,10 @@ def makeColorGram(srcbucket, srckey):
     back1 = (evtdt + datetime.timedelta(days=-25)).strftime('%Y%m')
     back2 = (evtdt + datetime.timedelta(days=-55)).strftime('%Y%m')
 
+    bmth0 = evtdt.strftime('%b')
+    bmth1 = (evtdt + datetime.timedelta(days=-25)).strftime('%b')
+    bmth2 = (evtdt + datetime.timedelta(days=-55)).strftime('%b')
+
     key = f'{srcfldr}/event_log_{back1}.csv'
     locback1 = f'{tmpfldr}/event_log_{back1}.csv'
     s3.meta.client.download_file(srcbucket, key, locback1)
@@ -398,11 +402,11 @@ def makeColorGram(srcbucket, srckey):
     for i in range(mthdays):
         if not (i % 10):
             if i >= (m3 + m2):
-                row_lbl[i] = str(i - m2 - m3)
+                row_lbl[i] = bmth0 + '\n' + str(i - m2 - m3 + 1)
             elif i >= m3:
-                row_lbl[i] = str(i - m3)
+                row_lbl[i] = bmth1 + '\n' + str(i - m3 + 1)
             else:
-                row_lbl[i] = str(i)
+                row_lbl[i] = bmth2 + '\n' + str(i + 1)
 
     im, _ = heatmap(myarray, col_lbl, row_lbl,
                     cmap="jet", cbaron=0, cbarlabel="Meteors/hour")
@@ -411,6 +415,8 @@ def makeColorGram(srcbucket, srckey):
     plt.ylabel('Hour', labelpad=-2)
     plt.text = ""
     plt.xlabel('Day of Month')
+    #_, ax = plt.subplots()
+    #ax.xaxis.set_major_locator(MultipleLocator(10))
     plt.tight_layout()
 
     threemthfile = os.path.join(tmpfldr, '3months_latest.jpg')
@@ -477,7 +483,8 @@ def uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile):
 
 if __name__ == '__main__':
     s3bucket = 'mjmm-rawradiodata'
-    s3object = 'raw/event_log_202202.csv'
+    s3object = 'raw/event_log_202209.csv'
+    print('calling makeColorGram')
     s3, heatmapname, rmoblatestfile, threemthfile, csvfile, tmpfldr = makeColorGram(s3bucket, s3object)
     #uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile)
     print(f'files stored in {tmpfldr}')

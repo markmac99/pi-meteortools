@@ -24,6 +24,7 @@ data "aws_iam_policy_document" "MMS3BucketAccessRW-policy-doc" {
       "arn:aws:s3:::${var.websitebackupbucket}",
       "arn:aws:s3:::${var.meteoruploadbucket}",
       "arn:aws:s3:::${var.databucket}",
+      "arn:aws:s3:::${var.satdatabucket}",
     ]
     sid = "VisualEditor0"
   }
@@ -39,6 +40,7 @@ data "aws_iam_policy_document" "MMS3BucketAccessRW-policy-doc" {
       "arn:aws:s3:::${var.websitebackupbucket}/*",
       "arn:aws:s3:::${var.meteoruploadbucket}/*",
       "arn:aws:s3:::${var.databucket}/*",
+      "arn:aws:s3:::${var.satdatabucket}/*",
     ]
     sid = "VisualEditor1"
   }

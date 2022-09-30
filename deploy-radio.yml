@@ -1,0 +1,17 @@
+---
+- hosts: astro3
+  #gather_facts: no
+  vars:
+    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/radio_detector
+    destdir: c:/spectrum
+    
+  tasks:
+  - name: Copy files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    #delegate_to: localhost
+    with_items:
+    - {src: '{{srcdir}}/upload_s3.bat', dest: '{{destdir}}/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/archiveFiles.ps1', dest: '{{destdir}}/scripts/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/helperfunctions.ps1', dest: '{{destdir}}/scripts/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/MetScat_Comprehensive_v8.USR', dest: '{{destdir}}/scripts/', 'mode': '644', backup: no }
+    - {src: '{{srcdir}}/Meteor_freqlist.txt', dest: '{{destdir}}/scripts/', 'mode': '644', backup: no }

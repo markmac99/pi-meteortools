@@ -40,7 +40,7 @@ cd %~1
 
 :: Now call the AWS CLI to do the upload.
 aws s3 cp %~1%~2 s3://%~3%~4 --acl %~9 
-echo Command Exectuted: aws s3 cp %~1%~2 s3://%~3%~4 --acl %~9 >> s3log.txt
+echo %date% %time% Command Executed: aws s3 cp %~1%~2 s3://%~3%~4 --acl %~9 > s3log.txt
 :: Results from last run may be found in s3log.txt
 :: Note the AWS CLI doesn't output errors to the console so add a temporary pause command below to review them interactively.
 :End
