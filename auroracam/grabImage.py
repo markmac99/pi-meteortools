@@ -11,19 +11,35 @@ from annotateImage import annotateImage
 import boto3 
 import logging 
 import logging.handlers
+from setExpo import setCameraExposure
 
 
 pausetime = 2 # time to wait between capturing frames 
 log = logging.getLogger("logger")
 
 
-def getStartEndTimes():
+def getStartEndTimes(datadir):
     starttime, dur=captureDuration(51.88,-1.31,80) 
     if starttime is True:
-        # the batch took too long to run so just set starttime to now
-        log.info(f'after overnight start time, {dur}')
+        # we are starting after dusk so find out if there's already a folder
+        # and use that instead
+        log.info('after overnight start time')
         starttime = datetime.datetime.now()
-    endtime = starttime + datetime.timedelta(seconds=dur)
+        endtime = starttime + datetime.timedelta(seconds=dur)
+        dirs=[]
+        flist = os.listdir(datadir)
+        for fl in flist:
+            if os.path.isdir(os.path.join(datadir, fl)):
+                dirs.append(fl)
+        dirs.sort()
+        laststart = datetime.datetime.strptime(dirs[-1], '%Y%m%d_%H%M%S')
+        if starttime.hour > 12 and laststart.day == starttime.day:
+            starttime = laststart
+        elif starttime.hour <= 12 and (starttime.day - laststart.day == 1):
+            starttime = laststart
+    else:
+        endtime = starttime + datetime.timedelta(seconds=dur)
+    log.info(f'night starts at {starttime} and ends at {endtime}')
     return starttime, endtime
 
 
@@ -74,14 +90,10 @@ def makeTimelapse(dirname, s3, camname):
 
 
 def setupLogging():
-    srcdir = os.path.dirname(os.path.abspath(__file__))
     print('about to initialise logger')
-    with open(os.path.join(srcdir, 'config.ini'),'r') as inf:
-        for li in inf.readlines():
-            if 'LOGDIR' in li:
-                logdir = li.split('=')[1].strip()
-            if 'DATADIR' in li:
-                datadir = li.split('=')[1].strip()
+    logdir = os.getenv('LOGDIR', default=os.path.expanduser('~/RMS_data/logs'))
+    os.makedirs(logdir, exist_ok=True)
+
     logfilename = os.path.join(logdir, 'auroracam_' + datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S.%f') + '.log')
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
     handler.setLevel(logging.INFO)
@@ -99,7 +111,7 @@ def setupLogging():
     log.setLevel(logging.INFO)
     log.setLevel(logging.DEBUG)
     log.info('logging initialised')
-    return datadir
+    return 
 
 
 if __name__ == '__main__':
@@ -111,19 +123,25 @@ if __name__ == '__main__':
         force_day = False
 
     s3 = boto3.resource('s3')
-    datadir = setupLogging()
+    setupLogging()
+
+    nightgain = int(os.getenv('NIGHTGAIN', default='70'))
+
+    datadir = os.getenv('DATADIR', default=os.path.expanduser('~/RMS_data/logs'))
     os.makedirs(datadir, exist_ok=True)
 
     # get todays dusk and tomorrows dawn times
-    dusk, dawn = getStartEndTimes()
-    dirnam = os.path.join(datadir, camid, dusk.strftime('%Y%m%d_%H%M%S'))
+    dusk, dawn = getStartEndTimes(datadir)
+    dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
     os.makedirs(dirnam, exist_ok=True)
 
     now = datetime.datetime.now()
     if now > dawn or now < dusk:
         isnight = False
+        setCameraExposure(ipaddress, 'DAY', nightgain, True)
     else:
         isnight = True
+        setCameraExposure(ipaddress, 'NIGHT', nightgain, True)
 
     log.info(f'now {now}, night start {dusk}, end {dawn}')
     uploadcounter = 0
@@ -131,6 +149,7 @@ if __name__ == '__main__':
         now = datetime.datetime.now()
         if now < dawn and now > dusk:
             isnight = True
+            setCameraExposure(ipaddress, 'NIGHT', nightgain, True)
         # if force_day then save a dated file for the daytime 
         if force_day is True:
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
@@ -148,9 +167,10 @@ if __name__ == '__main__':
                 # make the mp4
                 makeTimelapse(dirnam, s3, 'UK9999')
                 # refresh the dusk/dawn times for tomorrow
-                dusk, dawn = getStartEndTimes()
-                dirnam = os.path.join(datadir, camid, dusk.strftime('%Y%m%d_%H%M%S'))
+                dusk, dawn = getStartEndTimes(datadir)
+                dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
                 os.makedirs(dirnam, exist_ok=True)
+                setCameraExposure(ipaddress, 'DAY', nightgain, True)
                 log.info('switched to daytime mode, now rebooting')
                 isnight = False
                 os.system('/usr/bin/sudo /usr/sbin/shutdown -r now')
@@ -158,7 +178,7 @@ if __name__ == '__main__':
         # otherwise its night time so save a dated file
         else:
             isnight = True
-            dirnam = os.path.join(datadir, camid, dusk.strftime('%Y%m%d_%H%M%S'))
+            dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
             os.makedirs(dirnam, exist_ok=True)
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             grabImage(ipaddress, fnam, camid, now)
@@ -168,7 +188,8 @@ if __name__ == '__main__':
             log.info('updated live copy')
 
         uploadcounter += pausetime
-        if uploadcounter > 9:
+        testmode = int(os.getenv('TESTMODE', default=0))
+        if uploadcounter > 9 and testmode == 0:
             log.info('uploading live image')
             if os.path.isfile(fnam):
                 try:
@@ -179,5 +200,7 @@ if __name__ == '__main__':
                 uploadcounter = 0
             else:
                 uploadcounter -= pausetime
+        if testmode == 1:
+            log.info(f'would have uploaded {fnam}')
         log.info(f'sleeping for {pausetime} seconds')
         time.sleep(pausetime)
