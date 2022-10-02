@@ -17,7 +17,7 @@ $pylib=$ini['ukmon']['ukmon_pylib']
 $webserver=$ini['website']['webserver']
 
 if ($args.count -eq 2){
-    $ym = [int]$args[1]
+    $ym = ([string]$args[1]).substring(0,6)
 }else {
     $ym = (get-date -uformat '%Y%m')
 }
@@ -34,7 +34,7 @@ Remove-Item $destpath\$ffpatt
 
 $dlist = (Get-ChildItem  -directory "$srcpath\*_$ym*" ).name
 foreach ($path in $dlist) {
-    robocopy $srcpath\$path $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /np
+    robocopy $srcpath\$path $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /np /v
 }
 
 conda activate $RMS_ENV

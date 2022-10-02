@@ -149,7 +149,7 @@ if ($RMS_INSTALLED -eq 1){
     }    
 }
 set-location $PSScriptRoot
-.\createMonthlyStack.ps1 $inifname
+.\createMonthlyStack.ps1 $inifname $path.substring(7,8)
 
 .\uploadTrackStacks.ps1 $inifname 
 
