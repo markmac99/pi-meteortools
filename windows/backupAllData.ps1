@@ -17,8 +17,8 @@ $xl = $extras.split(',')
 $cf = $camfldrs.split(',')
 
 $CurrentDate = Get-Date
-$daysback=-190
-$DatetoDelete = $CurrentDate.AddDays($Daysback)
+$daysback=190
+$DatetoDelete = $CurrentDate.AddDays(-$Daysback)
 
 $yr = [int](get-date -uformat '%Y')
 $syr=$yr-3
@@ -48,11 +48,13 @@ foreach ($cam in $cl)
         Write-Output $ssrc $sdest
         if (test-path $ssrc)
         {
-            robocopy $ssrc $sdest /dcopy:DAT /s /z /r:3
-            if ( $? )
-            {
-                write-output "would have deleted $ssrc"
-                #Get-ChildItem $ssrc -Recurse | Where-Object { $_.LastWriteTime -lt $DatetoDelete } | Remove-Item -recurse
+            robocopy $ssrc $sdest /dcopy:DAT /move /s /z /r:3 /minage:$daysback
+            $fldrs = (get-item $ssrc\*)
+            foreach ($fldr in $fldrs) {
+                if (get-item $fldr | where-object { $_.creationtime -lt $DatetoDelete }) { 
+                    write-output "removing $fldr" 
+                    rmdir $fldr -recurse -force
+                }
             }
         }
     }
@@ -64,11 +66,13 @@ foreach ($cam in $cl)
         Write-Output $ssrc $sdest
         if (test-path $ssrc)
         {
-            robocopy $ssrc $sdest /dcopy:DAT /m /s /z /r:3
-            if ( $? )
-            {
-                write-output "deleting $ssrc"
-                Get-ChildItem $ssrc -Recurse | Where-Object { $_.LastWriteTime -lt $DatetoDelete } | Remove-Item -recurse
+            robocopy $ssrc $sdest /dcopy:DAT /move /s /z /r:3 /minage:$daysback
+            $fldrs = (get-item $ssrc\*)
+            foreach ($fldr in $fldrs) {
+                if (get-item $fldr | where-object { $_.creationtime -lt $datetodelete }) {
+                    write-output "removing $fldr" 
+                    rmdir $fldr -recurse -force
+                }
             }
         }
     }
