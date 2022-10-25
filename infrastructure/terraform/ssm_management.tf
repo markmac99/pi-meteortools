@@ -28,7 +28,7 @@ resource "aws_cloudwatch_metric_alarm" "webserverDiskspace" {
   namespace   = "CWAgent"
   period      = 60
   statistic   = "Average"
-  threshold   = 72
+  threshold   = 90
   tags = {
     billingtag = "MarksWebsite"
   }
