@@ -43,8 +43,8 @@
       regexp: 'LOGDIR='
       line: 'LOGDIR=~/RMS_data/logs'
   - name: make sure modules are downloaded
-    #shell: source ~/venvs/vRMS/bin/activate && pip install -r {{destdir}}/requirements.txt
-    shell: /home/mark/miniconda3/condabin/conda activate RMS && pip install -r {{destdir}}/requirements.txt
+    shell: source ~/venvs/vRMS/bin/activate && pip install -r {{destdir}}/requirements.txt
+    # also need sudo apt-get install python3-opencv ffmpeg
     args:
       executable: /bin/bash
 
