@@ -10,7 +10,7 @@ set-location $PSScriptRoot
 
 # read the inifile
 $ini=get-inicontent 'live.ini'
-$keyfile=$ini['live']['keyfile'] 
+$awsprofile = $ini['live']['awsprofile']
 $remotefolder=$ini['live']['remotefolder'] 
 $localfolder=$ini['live']['localfolder'] 
 $remotebad=$ini['live']['remotebad'] 
@@ -21,18 +21,11 @@ $fbonly=$ini['live']['fbonly']
 $convfb=$ini['live']['convertfbs'] 
 
 
-$oldkey = $Env:AWS_ACCESS_KEY_ID
-$oldsec = $env:AWS_SECRET_ACCESS_KEY
-
-$keys=((Get-Content $keyfile)[1]).split(',')
-$Env:AWS_ACCESS_KEY_ID = $keys[2]
-$env:AWS_SECRET_ACCESS_KEY = $keys[3]
-
 if ($fbonly -eq 'False') 
 {
-    aws s3 sync $remotefolder $localfolder --exclude "*" --include "*.jpg" --include "*.xml" --include "*.csv" --exclude "*temp*"
-    aws s3 sync $remotebad $badfolder --exclude "*" --include "*.jpg" --include "*.xml" --exclude "*temp*"
-    aws s3 sync $remotefolder $fbfolder --exclude "*" --include "*.mp4" --exclude "*temp*"
+    aws s3 sync $remotefolder $localfolder --exclude "*" --include "*.jpg" --include "*.xml" --include "*.csv" --exclude "*temp*" --profile $awsprofile
+    aws s3 sync $remotebad $badfolder --exclude "*" --include "*.jpg" --include "*.xml" --exclude "*temp*" --profile $awsprofile
+    aws s3 sync $remotefolder $fbfolder --exclude "*" --include "*.mp4" --exclude "*temp*" --profile $awsprofile
 }else {
     $mthtoget=read-host -prompt 'Enter month to retrieve eg 202007'
     $incl='M' + $mthtoget + '*.mp4'
@@ -55,9 +48,6 @@ if ($fbonly -eq 'False')
         }
     }
 }
-
-$Env:AWS_ACCESS_KEY_ID = $oldkey
-$env:AWS_SECRET_ACCESS_KEY = $oldsec
 Write-Output "Done"
 set-location $curloc
 pause

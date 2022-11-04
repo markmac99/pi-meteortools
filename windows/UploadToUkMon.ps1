@@ -14,8 +14,7 @@ $inifname = $args[0]
 $ini=get-inicontent $inifname
 
 $ukmon_member=$ini['ukmon']['ukmon_member']
-$ukmon_keyfile=$ini['ukmon']['ukmon_keyfile']
-$ukmon_camname=$ini['ukmon']['ukmon_camname']
+$awsprofile=$ini['aws']['awsprofile']
 $localfolder=$ini['camera']['localfolder']
 $UFO=$ini['camera']['UFO']
 
@@ -25,13 +24,6 @@ $UFO=$ini['camera']['UFO']
 $ismember=$UKMON_member
 if ($ismember -eq 'Yes')
 {
-    $keyfile=$UKMON_keyfile
-    $ukmoncam=$UKMON_camname
-
-    $keys=((Get-Content $keyfile)[1]).split(',')
-    $Env:AWS_ACCESS_KEY_ID = $keys[2]
-    $env:AWS_SECRET_ACCESS_KEY = $keys[3]
-
     $yr = (get-date).tostring("yyyy")
     $ym = (get-date).tostring("yyyyMM")
     $ym2 = (get-date).addmonths(-1).tostring("yyyyMM")
@@ -43,9 +35,9 @@ if ($ismember -eq 'Yes')
     $targ= 's3://ukmon-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym + '/'
 
     if ($UFO -eq 0){
-        aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4
+        aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4 --profile $awsprofile
     } else {
-        aws s3 sync $srcpath $targ --exclude * --include *.csv --include *P.jpg --include *.txt --include *.xml --include *.json --exclude *detlog.csv
+        aws s3 sync $srcpath $targ --exclude * --include *.csv --include *P.jpg --include *.txt --include *.xml --include *.json --exclude *detlog.csv  --profile $awsprofile
     }
     if ($ym2 -ne $ym){ 
 
@@ -53,9 +45,9 @@ if ($ismember -eq 'Yes')
         write-output "Syncing $srcpath"
         $targ= 's3://ukmon-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym2 + '/'
         if ($UFO -eq 0){
-            aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4
+            aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4  --profile $awsprofile
         } else {
-            aws s3 sync $srcpath $targ --exclude * --include *.csv --include *P.jpg --include *.txt --include *.xml --include *.json --exclude *detlog.csv
+            aws s3 sync $srcpath $targ --exclude * --include *.csv --include *P.jpg --include *.txt --include *.xml --include *.json --exclude *detlog.csv  --profile $awsprofile
         }
     }
     if ($ym3 -ne $ym2){ 
@@ -64,9 +56,9 @@ if ($ismember -eq 'Yes')
         write-output "Syncing $srcpath"
         $targ= 's3://ukmon-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym3 + '/'
         if ($UFO -eq 0){
-            aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4
+            aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4  --profile $awsprofile
         } else {
-            aws s3 sync $srcpath $targ --exclude * --include *.csv --include *P.jpg --include *.txt --include *.xml --include *.json --exclude *detlog.csv
+            aws s3 sync $srcpath $targ --exclude * --include *.csv --include *P.jpg --include *.txt --include *.xml --include *.json --exclude *detlog.csv  --profile $awsprofile
         }
     }
 
