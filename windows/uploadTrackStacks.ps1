@@ -16,11 +16,12 @@ $ini=get-inicontent $inifname
 $hostname=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 
+$awsprofile=$ini['mjmm']['awsprofile']
+
 $srcpath=$localfolder + '\..\trackstacks\'
 $hnu = $hostname.toupper()
 $dirname = "s3://mjmm-data/" + $hnu + "/trackstacks/"
-. $ini['website']['awskey']
-aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*"
+aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*" --profile $awsprofile
 
 set-location $loc
 

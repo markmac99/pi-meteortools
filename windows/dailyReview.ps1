@@ -106,7 +106,7 @@ if ($RMS_INSTALLED -eq 1){
         $unffil=$myf+'\FTPdetectinfo_'+$path+'_unfiltered.txt'
         if ((test-path $unffil) -eq 0) 
         {
-            python -m utils.compareMLtoManual $myf -t 0.85
+            python -m usertools.compareMLtoManual $myf -t 0.85
         }
     }
     $destpath=$localfolder+'\ConfirmedFiles'
@@ -124,7 +124,7 @@ if ($RMS_INSTALLED -eq 1){
             $flat = $localfolder + '\ArchivedFiles\' + $path + '\flat.bmp'
             copy-item $mask $myf
             copy-item $flat $myf
-            python -m Utils.ShowerAssociation $ftpfil -x -p gist_ncar
+            python -m Utils.ShowerAssociation $ftpfil -x -p gist_ncar -c $myf\.config
             python -m Utils.StackFFs $myf -x -b jpg -f $myf\flat.bmp -m $myf\mask.bmp
             python -m Utils.TrackStack $myf -c $myf\.config -x
             python -m Utils.BatchFFtoImage $myf jpg -t

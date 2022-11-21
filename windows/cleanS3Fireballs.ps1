@@ -8,16 +8,9 @@ set-location $PSScriptRoot
 
 # read the inifile
 $ini=get-inicontent 'live.ini'
-$keyfile=$ini['live']['keyfile'] 
 $remotefolder=$ini['live']['remotefolder'] 
 $fbfolder=$ini['live']['fbfolder'] 
-
-$oldkey = $Env:AWS_ACCESS_KEY_ID
-$oldsec = $env:AWS_SECRET_ACCESS_KEY
-
-$keys=((Get-Content $keyfile)[1]).split(',')
-$Env:AWS_ACCESS_KEY_ID = $keys[2]
-$env:AWS_SECRET_ACCESS_KEY = $keys[3]
+$awsprofile = $ini['aws']['awsprofile']
 
 set-location $fbfolder
 set-location .\mp4s
@@ -26,7 +19,7 @@ $mthtoget=read-host -prompt 'Enter month to purge eg 202007'
 $incl='M' + $mthtoget + '*.mp4'
 
 Write-Output "purging MP4s"
-aws s3 sync . $remotefolder --exclude "*" --include $incl --delete
+aws s3 sync . $remotefolder --exclude "*" --include $incl --delete --profile $awsprofile
 
 Write-Output "purging AVIs, if any"
 $flist=(Get-ChildItem ..\*.avi)
@@ -41,6 +34,4 @@ for($i=0;$i -lt $flist.count ; $i++ ){
 }
 Write-Output "Done"
 set-location $curloc
-$Env:AWS_ACCESS_KEY_ID = $oldkey
-$env:AWS_SECRET_ACCESS_KEY = $oldsec
 pause

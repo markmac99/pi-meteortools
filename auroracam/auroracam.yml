@@ -1,5 +1,5 @@
 ---
-- hosts: auroracam
+- hosts: mark-imac #auroracam
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/auroracam
     shrdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
@@ -11,6 +11,7 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/uploadLiveJpg.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/checkAuroracam.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/archiveData.sh', dest: '{{destdir}}/', mode: '755', backup: no }
@@ -43,6 +44,7 @@
       line: 'LOGDIR=~/RMS_data/logs'
   - name: make sure modules are downloaded
     shell: source ~/venvs/vRMS/bin/activate && pip install -r {{destdir}}/requirements.txt
+    # also need sudo apt-get install python3-opencv ffmpeg
     args:
       executable: /bin/bash
 

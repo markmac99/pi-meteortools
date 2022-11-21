@@ -73,14 +73,13 @@ set-location $PSScriptRoot
 
 # push to UKMON
 $logf=$datadir+'/logs/ukmon-'+(get-date -uformat '%Y%m%d')+'.log'
-$ukmonkey=$ini['ukmon']['ukmon_keyfile']
+$awsprofile=$ini['ukmon']['awsprofile']
 $station=$ini['ukmon']['ukmon_station']
-. $ukmonkey
 
 $srcloc=$datadir+'\csv\'
 write-output 'updating ukmon' | tee-object $logf 
 $s3targ='s3://ukmon-shared/archive/' + $station + '/'
-aws s3 sync $srcloc $s3targ | tee-object $logf -append
+aws s3 sync $srcloc $s3targ --profile $awsprofile
 
 # now push to my own archive
 scp $datadir\rmob\$yy\$ym\$ym.jpg ukmonhelper:data/Radio/$yy/ 

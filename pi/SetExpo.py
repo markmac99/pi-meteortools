@@ -3,6 +3,13 @@
 #
 import sys
 import time
+import json
+import os
+import ephem
+import configparser
+
+# to use these, run "pip install -r requirements.txt"
+from crontab import CronTab
 from dvrip import DVRIPCam
 
 
@@ -54,9 +61,62 @@ def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False):
     cam.close()
 
 
+def getNextRiseSet(cfg):
+    obs = ephem.Observer()
+    obs.lat = float(cfg['System']['latitude']) / 57.3 # convert to radians, close enough for this
+    obs.lon = float(cfg['System']['longitude']) / 57.3
+    obs.elev = float(cfg['System']['elevation'])
+    obs.horizon = -6.0 / 57.3 # degrees below horizon for darkness
+
+    sun = ephem.Sun()
+    rise = obs.next_rising(sun).datetime()
+    set = obs.next_setting(sun).datetime()
+    return rise, set
+
+
+def addCrontabEntries(ipaddr, cfg):
+    local_path =os.path.dirname(os.path.abspath(__file__))
+    rmsdatadir = os.path.expanduser(cfg['Capture']['data_dir'])
+
+    rise, set = getNextRiseSet(cfg)
+
+    cron = CronTab(user=True)
+    found = False
+    iter=cron.find_command(f'setIPCamExpo.sh {ipaddr} DAY')
+    for i in iter:
+        if i.is_enabled():
+            found = True
+            i.hour.on(rise.hour)
+            i.minute.on(rise.minute)
+    if found is False:
+        job = cron.new(f'{local_path}/setIPCamExpo.sh {ipaddr} DAY > {rmsdatadir}/logs/setday.log')
+        job.hour.on(rise.hour)
+        job.minute.on(rise.minute)
+        cron.write()
+
+    found = False
+    iter=cron.find_command(f'setIPCamExpo.sh {ipaddr} NIGHT')
+    for i in iter:
+        if i.is_enabled():
+            found = True
+            i.hour.on(set.hour)
+            i.minute.on(set.minute)
+    if found is False:
+        job = cron.new(f'{local_path}/setIPCamExpo.sh {ipaddr} NIGHT > {rmsdatadir}/logs/setnight.log')
+        job.hour.on(set.hour)
+        job.minute.on(set.minute)
+        cron.write()
+    cron.write()
+    return 
+
+
 if __name__ == '__main__':
     host_ip = sys.argv[1]
     daynight=sys.argv[2]
+
+    cfg = configparser.ConfigParser(inline_comment_prefixes=';')
+    rmsdir = os.path.expanduser(os.getenv('RMSDIR', default='~/source/RMS'))
+    cfg.read(os.path.join(rmsdir,'.config'))
 
     if len(sys.argv) > 3:
         nightgain = float(sys.argv[3])
@@ -68,7 +128,11 @@ if __name__ == '__main__':
     else:
         nightColor = False
     setCameraExposure(host_ip, daynight, nightgain, nightColor)
+    addCrontabEntries(host_ip, cfg)
 
+
+# other possible things you could set
+#
 #[{'AeSensitivity': 1, 'ApertureMode': '0x00000000', 'BLCMode': '0x00000001', 
 # 'DayNightColor': '0x00000002', 'Day_nfLevel': 0, 'DncThr': 50, 'ElecLevel': 30, 
 # 'EsShutter': '0x00000006', 
