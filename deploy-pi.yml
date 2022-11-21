@@ -9,8 +9,6 @@
   - name: Copy meteorhunting files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
-    - {src: '{{srcdir}}/recalibrateAndUpload.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/RMS_Pi4Monitor.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/trackFFs.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no }
@@ -18,16 +16,10 @@
     - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendAnEmail.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logGrabInterval.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-  - name: Copy shared files
-    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
-    with_items:
     - {src: '{{srcdir}}/annotateImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/dvrip.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/networkCheck.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/sunwait', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
@@ -41,19 +33,27 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'IDFILE='
-      #line: 'IDFILE=~/.ssh/markskey.pem'
       line: 'IDFILE=~/.ssh/mjmm-data.key'
   - name: update AWS host
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'HOST='
-      #line: 'HOST=ec2-3-9-128-14.eu-west-2.compute.amazonaws.com'
       line: 'HOST=s3://mjmm-data'
   - name: update AWS user
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'USER='
       line: 'USER=bitnami'
+  - name: update webserver
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'WEBSERVER='
+      line: 'WEBSERVER=3.9.128.14'
+  - name: update webid
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'WEBID='
+      line: 'WEBID=/home/pi/.ssh/markskey.pem'
   - name: update target folder
     lineinfile:
       path: '{{destdir}}/config.ini'
