@@ -82,27 +82,27 @@ def addCrontabEntries(ipaddr, cfg):
 
     cron = CronTab(user=True)
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh {ipaddr} DAY')
+    iter=cron.find_command(f'setIPCamExpo.sh DAY')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
             i.minute.on(rise.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh {ipaddr} DAY > {rmsdatadir}/logs/setday.log')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmsdatadir}/logs/setday.log')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
 
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh {ipaddr} NIGHT')
+    iter=cron.find_command(f'setIPCamExpo.sh NIGHT')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh {ipaddr} NIGHT > {rmsdatadir}/logs/setnight.log')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmsdatadir}/logs/setnight.log')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()
