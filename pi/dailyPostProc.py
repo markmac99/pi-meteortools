@@ -17,7 +17,6 @@ import datetime
 import time
 
 import RMS.ConfigReader as cr
-import Utils.TrackStack as ts
 import Utils.StackFFs as sff
 from RMS.Logger import initLogging
 
@@ -194,14 +193,6 @@ def rmsExternal(cap_dir, arch_dir, config):
                     total = total + int(ss[4])
     log.info('sending email')
     em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
-
-    try:
-        ts.trackStack(arch_dir, config)
-    except Exception:
-        pass
-    
-    # doing this on my PC now, from confirmedFiles data
-    # copyAndStack(arch_dir, srcdir, log, localcfg)
 
     if os.path.exists(os.path.join(srcdir, 'doistream')):
         log.info('doing istream')

@@ -109,4 +109,5 @@ fi
 
 export PYLIB=~/prod/ukmon_pylib
 source ~/venvs/wmpl/bin/activate
+export PYTHONPATH=$PYTHONPATH:~/src/RMS 
 python $PYLIB/utils/getNextBatchStart.py 120 createCamIndex
