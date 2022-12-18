@@ -151,5 +151,9 @@ if ($RMS_INSTALLED -eq 1){
 set-location $PSScriptRoot
 .\createMonthlyStack.ps1 $inifname $path.substring(7,8)
 
-.\uploadTrackStacks.ps1 $inifname 
+# upload to my website, if appropriate
+$uploadts = $ini['mjmm']['uploadtrackstacks']
+if ($uploadts -eq 1 ) {
+    .\uploadTrackStacks.ps1 $inifname 
+}
 
