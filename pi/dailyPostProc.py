@@ -179,19 +179,18 @@ def rmsExternal(cap_dir, arch_dir, config):
     # email a summary to the mailrecip
 
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
+    logfs = glob.glob(os.path.join(logdir, 'log*.log*'))
+    logfs.sort(key=lambda x: os.path.getmtime(x))
+    with open(logfs[-1],'r') as fi:
+        sl = fi.readlines()
+    totli = [li for li in sl if 'TOTAL' in li]
+    total = 0
+    if len(totli) > 0:
+        total  = totli[0].split(' ')[4]
+
+    log.info('sending email')
     splits = os.path.basename(arch_dir).split('_')
     curdt = splits[1]
-    logname=os.path.join(logdir, 'log_' + splits[0] + '_' + splits[1] + '_' + '*.log*')
-    logfs = glob.glob(logname)
-    total = 0
-    for f in logfs:
-        with open(f,'r') as fi:
-            sl = fi.readlines()
-            for line in sl:
-                if 'TOTAL' in line:
-                    ss = line.split(' ')
-                    total = total + int(ss[4])
-    log.info('sending email')
     em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
 
     if os.path.exists(os.path.join(srcdir, 'doistream')):
