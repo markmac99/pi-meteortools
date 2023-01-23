@@ -58,10 +58,10 @@ def sendDailyMail(localcfg, hname, curdt, total, extramsg, log):
     mailrecip = localcfg['postprocess']['mailrecip'].rstrip()
     if len(mailrecip)<5:
         mailrecip ='mark.jm.mcintyre@cesmail.net'
-    message = '{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total)
+    message = '{:s}: {:s}: {} meteors found'.format(hname, curdt, total)
     message = message + '\n' + extramsg
     mailmsg = create_message('markmcintyre99@gmail.com',mailrecip,
-        '{:s}: {:s}: {:d} meteors found'.format(hname, curdt, total), message)
+        '{:s}: {:s}: {} meteors found'.format(hname, curdt, total), message)
     try:
         retval = (service.users().messages().send(userId='me', body=mailmsg).execute())
         print('Message Id: %s' % retval['id'])
