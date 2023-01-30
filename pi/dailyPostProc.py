@@ -26,6 +26,7 @@ sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 from annotateImage import annotateImage
 import sendAnEmail as em
 import sendToYoutube as stu
+import sendToMQTT as mqs
 
 
 def copyAndStack(arch_dir, srcdir, log, localcfg):
@@ -187,6 +188,12 @@ def rmsExternal(cap_dir, arch_dir, config):
     total = 0
     if len(totli) > 0:
         total  = totli[0].split(' ')[4]
+
+    log.info('sending to MQ')
+    try:
+        mqs.sendToMqtt(config)
+    except:
+        log.warning('problem sending to MQTT')
 
     log.info('sending email')
     splits = os.path.basename(arch_dir).split('_')
