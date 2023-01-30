@@ -17,10 +17,11 @@ $hostname=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 
 $awsprofile=$ini['mjmm']['awsprofile']
+$targbuck=$ini['mjmm']['cambucket']
 
 $srcpath=$localfolder + '\..\trackstacks\'
 $hnu = $hostname.toupper()
-$dirname = "s3://mjmm-data/" + $hnu + "/trackstacks/"
+$dirname = $targbuck + "/" + $hnu + "/trackstacks/"
 aws s3 sync $srcpath $dirname --exclude "*" --include "$hnu*" --profile $awsprofile
 
 set-location $loc

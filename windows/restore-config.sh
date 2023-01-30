@@ -2,7 +2,16 @@
 echo $1
 hn=$1
 
-cd /mnt/f/videos/MeteorCam/config
+hn_u=${hn^^}
+
+here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+pushd $here
+if [ ! -f $hn_u.ini ] ; then
+    echo "ini file for $hn not found"
+    exit 1
+fi 
+locf=$(grep LOCALFOLDER ../scripts/$hn_u.ini |sed 's/F:/\/mnt\/f/g'| awk -F= '{print $2}' | tr -d "\r")
+pushd $locf/../config
 
 if [ ! -d $hn ] ; then 
     echo backup of $hn not found

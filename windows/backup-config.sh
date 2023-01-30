@@ -2,9 +2,18 @@
 echo $1
 hn=$1
 
-cd /mnt/f/videos/MeteorCam/config
+hn_u=${hn^^}
 
-mkdir $hn > /dev/null 2>%1
+here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+pushd $here
+if [ ! -f $hn_u.ini ] ; then
+    echo "ini file for $hn not found"
+    exit 1
+fi 
+locf=$(grep LOCALFOLDER ../scripts/$hn_u.ini |sed 's/F:/\/mnt\/f/g'| awk -F= '{print $2}' | tr -d "\r")
+pushd $locf/../config
+
+mkdir $hn > /dev/null 2>&1
 
 rsync ${hn}:source/RMS/platepar* $hn/
 rsync ${hn}:source/RMS/mask* $hn/
@@ -23,3 +32,6 @@ rsync ${hn}:source/ukmon-pitools/extrascript $hn > /dev/null 2>&1
 
 # mjmm settings
 scp $hn:mjmm/*.pickle $hn/ > /dev/null 2>&1
+
+popd
+popd 

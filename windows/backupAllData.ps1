@@ -53,7 +53,7 @@ foreach ($cam in $cl)
             foreach ($fldr in $fldrs) {
                 if (get-item $fldr | where-object { $_.creationtime -lt $DatetoDelete }) { 
                     write-output "removing $fldr" 
-                    rmdir $fldr -recurse -force
+                    Remove-Item $fldr -recurse -force
                 }
             }
         }
@@ -67,11 +67,12 @@ foreach ($cam in $cl)
         if (test-path $ssrc)
         {
             robocopy $ssrc $sdest /dcopy:DAT /move /s /z /r:3 /minage:$daysback
+            write-output "now removing old folders"
             $fldrs = (get-item $ssrc\*)
             foreach ($fldr in $fldrs) {
                 if (get-item $fldr | where-object { $_.creationtime -lt $datetodelete }) {
                     write-output "removing $fldr" 
-                    rmdir $fldr -recurse -force
+                    Remove-Item $fldr -recurse -force
                 }
             }
         }

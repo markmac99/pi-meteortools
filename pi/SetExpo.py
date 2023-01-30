@@ -89,7 +89,7 @@ def addCrontabEntries(ipaddr, cfg):
             i.hour.on(rise.hour)
             i.minute.on(rise.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmsdatadir}/logs/setday.log')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmsdatadir}/logs/setday.log 2>&1')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
@@ -102,7 +102,7 @@ def addCrontabEntries(ipaddr, cfg):
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmsdatadir}/logs/setnight.log')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmsdatadir}/logs/setnight.log 2>&1')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()
