@@ -25,11 +25,11 @@
     - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
 
-  - name: update mail recip
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'MAILRECIP='
-      line: 'MAILRECIP=markmcintyre99@googlemail.com'
+  #- name: update mail recip
+  #  lineinfile: 
+  #    path: '{{destdir}}/config.ini'
+  #    regexp: 'MAILRECIP='
+  #    line: 'MAILRECIP=markmcintyre99@googlemail.com'
   - name: update id file
     lineinfile:
       path: '{{destdir}}/config.ini'

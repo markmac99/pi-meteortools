@@ -137,9 +137,10 @@ def rmsExternal(cap_dir, arch_dir, config):
                     
                 with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
                     f.write(mp4name)
-        except Exception:
+        except Exception as e:
             errmsg = 'unable to upload timelapse'
             log.info(errmsg)
+            log.info(e, exc_info=True)
             extramsg = extramsg + errmsg + '\n'
 
     # upload the MP4 to S3 or a website
@@ -166,8 +167,9 @@ def rmsExternal(cap_dir, arch_dir, config):
             outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
             try: 
                 s3.meta.client.upload_file(fn, target, outf)
-            except Exception:
+            except Exception as e:
                 print('upload to S3 failed')
+                log.info(e, exc_info=True)
         else:
             log.info('uploading to website')
             user = localcfg['postprocess']['user']
@@ -189,16 +191,23 @@ def rmsExternal(cap_dir, arch_dir, config):
     if len(totli) > 0:
         total  = totli[0].split(' ')[4]
 
-    log.info('sending to MQ')
-    try:
-        mqs.sendToMqtt(config)
-    except:
-        log.warning('problem sending to MQTT')
+    if len(localcfg['mqtt']['broker']) > 1:
+        log.info('sending to MQ')
+        try:
+            mqs.sendToMqtt(config)
+        except Exception as e:
+            log.warning('problem sending to MQTT')
+            log.info(e, exc_info=True)
 
-    log.info('sending email')
-    splits = os.path.basename(arch_dir).split('_')
-    curdt = splits[1]
-    em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
+    if len(localcfg['postprocess']['mailrecip']) > 1:
+        log.info('sending email')
+        splits = os.path.basename(arch_dir).split('_')
+        curdt = splits[1]
+        try: 
+            em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
+        except Exception as e:
+            log.warning('problem sending email')
+            log.info(e, exc_info=True)
 
     if os.path.exists(os.path.join(srcdir, 'doistream')):
         log.info('doing istream')
