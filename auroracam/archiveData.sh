@@ -9,12 +9,16 @@ cd $DATADIR
 find . -type d -mtime +7 | while read i 
 do
     bn=$(basename $i)
-    tar cvfz ./$bn.tgz ./$bn/*.*
-    if [ $? -eq 0 ] ; then 
-        rm -Rf ./$bn
+    if compgen -G ./$bn/*.* > /dev/null ; then 
+        tar cvf ./$bn.tar ./$bn/*.*
+        if [ $? -eq 0 ] ; then 
+            rm -Rf ./$bn
+        else
+            echo archiving failed
+        fi
     else
-        echo archiving failed
-    fi 
+        rm -Rf ./$bn
+    fi
 done
 
 # delete archives after a further seven days
