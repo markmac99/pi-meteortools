@@ -139,7 +139,7 @@ if ($RMS_INSTALLED -eq 1){
             }
         }
         else{
-            write-output skipping' '$myf
+            write-output "skipping $myf"
         }
     }    
 }
