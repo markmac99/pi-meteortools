@@ -33,6 +33,12 @@ if ((test-path $destpath) -eq 0) { mkdir $destpath}
 $age=[int]$maxage
 robocopy $srcpath $destpath /dcopy:DAT /tee /v /s /r:3 /maxage:$age /xf *.bz2
 
+# purge older logfiles
+$Days = "30" 
+$CutoffDate = (Get-Date).AddDays(-$Days) 
+$logpath = $localfolder + '/logs'
+Get-ChildItem -Path $logpath -Recurse -File | Where-Object { $_.LastWriteTime -lt $CutoffDate } | Remove-Item –Force
+
 # find the latest set of data on the local drive
 $path=(get-childitem $destpath -directory | sort-object creationtime | select-object -last 1).name
 $myf = $destpath + '\'+$path
@@ -98,17 +104,6 @@ if ($RMS_INSTALLED -eq 1){
     set-location $RMS_LOC
     $mindt = (get-date).AddDays(-$age)
 
-    # run the ML module
-    $destpath=$localfolder+'\ArchivedFiles'
-    $dlist = (Get-ChildItem  -directory $destpath | Where-Object { $_.creationtime -gt $mindt }).name
-    foreach ($path in $dlist) {
-        $myf = $destpath + '\'+$path
-        $unffil=$myf+'\FTPdetectinfo_'+$path+'_unfiltered.txt'
-        if ((test-path $unffil) -eq 0) 
-        {
-            python -m usertools.compareMLtoManual $myf -t 0.85
-        }
-    }
     $destpath=$localfolder+'\ConfirmedFiles'
     $dlist = (Get-ChildItem  -directory $destpath | Where-Object { $_.creationtime -gt $mindt }).name
     foreach ($path in $dlist) {
@@ -126,7 +121,7 @@ if ($RMS_INSTALLED -eq 1){
             copy-item $flat $myf
             python -m Utils.ShowerAssociation $ftpfil -x -p gist_ncar -c $myf\.config
             python -m Utils.StackFFs $myf -x -b jpg -f $myf\flat.bmp -m $myf\mask.bmp
-            python -m Utils.TrackStack $myf -c $myf\.config -x
+            python -m Utils.TrackStack $myf -c $myf\.config -x --constellations -b
             python -m Utils.BatchFFtoImage $myf jpg -t
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
