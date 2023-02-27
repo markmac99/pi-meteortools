@@ -1,5 +1,5 @@
 ---
-- hosts: mark-imac #auroracam
+- hosts: auroracam
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/auroracam
     shrdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi

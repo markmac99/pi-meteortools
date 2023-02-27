@@ -34,7 +34,7 @@ def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False):
 
     cam = DVRIPCam(host_ip)
     print('connecting to', host_ip)
-    for i in range(5):
+    for i in range(0,5):
         try: 
             if cam.login():
                 print("Success! Connected to " + host_ip)

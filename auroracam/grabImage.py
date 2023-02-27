@@ -3,15 +3,16 @@ import cv2
 import sys
 import os
 import shutil
-from RMS.CaptureDuration import captureDuration
 import datetime 
 import time 
 import subprocess
+import configparser
 from annotateImage import annotateImage
 import boto3 
 import logging 
 import logging.handlers
-from setExpo import setCameraExposure
+from SetExpo import setCameraExposure, getNextRiseSet
+from crontab import CronTab
 
 
 pausetime = 2 # time to wait between capturing frames 
@@ -19,15 +20,25 @@ log = logging.getLogger("logger")
 
 
 def getStartEndTimes(datadir):
-    starttime, dur=captureDuration(51.88,-1.31,80) 
-    if starttime is True:
+    lat = os.getenv('LAT', default=52)
+    lon = os.getenv('LON', default=0)
+    ele = os.getenv('ALT', default=50)
+
+    cfg = configparser.ConfigParser(inline_comment_prefixes=';')
+    cfg.add_section('System')
+    cfg.set('System', 'latitude', lat)
+    cfg.set('System', 'longitude', lon)
+    cfg.set('System', 'elevation', ele)
+
+    risetm, settm = getNextRiseSet(cfg)
+    if risetm < settm:
         # we are starting after dusk so find out if there's already a folder
         # and use that instead
         log.info('after overnight start time')
 
         # if starttime=True, then dur is the number of seconds from now to end time.
         starttime = datetime.datetime.utcnow()
-        endtime = starttime + datetime.timedelta(seconds=dur)
+        endtime = risetm
         # see if there's an existing folder for the data
         dirs=[]
         flist = os.listdir(datadir)
@@ -51,13 +62,14 @@ def getStartEndTimes(datadir):
         else:
             pass
     else:
-        # start time is in the future, so add on  dur seconds to get end time
-        endtime = starttime + datetime.timedelta(seconds=dur)
+        # next set time is before the next rise time, ie its currently daytime
+        starttime = settm
+        endtime = risetm
     log.info(f'night starts at {starttime} and ends at {endtime}')
     return starttime, endtime
 
 
-def grabImage(ipaddress, fnam, camid, now):
+def grabImage(ipaddress, fnam, hostname, now):
     capstr = f'rtsp://{ipaddress}:554/user=admin&password=&channel=1&stream=0.sdp'
     # log.info(capstr)
     try:
@@ -76,12 +88,12 @@ def grabImage(ipaddress, fnam, camid, now):
             x = x + 1
     cap.release()
     cv2.destroyAllWindows()
-    title = f'{camid} {now.strftime("%Y-%m-%d %H:%M:%S")}'
+    title = f'{hostname} {now.strftime("%Y-%m-%d %H:%M:%S")}'
     annotateImage(fnam, title, color='#FFFFFF')
     return 
 
 
-def makeTimelapse(dirname, s3, camname):
+def makeTimelapse(dirname, s3, camname, bucket):
     dirname = os.path.normpath(os.path.expanduser(dirname))
     _, mp4shortname = os.path.split(dirname)
     mp4name = os.path.join(dirname, mp4shortname + '.mp4')
@@ -95,11 +107,14 @@ def makeTimelapse(dirname, s3, camname):
     log.info(f'making timelapse of {dirname}')
     subprocess.call([cmdline], shell=True)
     log.info('done')
-    targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}.mp4'
-    try:
-        s3.meta.client.upload_file(mp4name, 'mjmm-data', targkey, ExtraArgs = {'ContentType': 'video/mp4'})
-    except:
-        log.info('unable to upload mp4')
+    if s3 is not None:
+        targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}.mp4'
+        try:
+            s3.meta.client.upload_file(mp4name, bucket, targkey, ExtraArgs = {'ContentType': 'video/mp4'})
+        except:
+            log.info('unable to upload mp4')
+    else:
+        print('created but not uploading mp4')
     return 
 
 
@@ -128,19 +143,44 @@ def setupLogging():
     return 
 
 
+
+def addCrontabEntry():
+    logdir = os.getenv('LOGDIR', default=os.path.expanduser('~/RMS_data/logs'))
+    local_path =os.path.dirname(os.path.abspath(__file__))
+    cron = CronTab(user=True)
+    found = False
+    iter=cron.find_command(f'uploadLiveJpg.sh')
+    for i in iter:
+        if i.is_enabled():
+            found = True
+            cron.remove(i)
+    dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
+    job.every_reboot()
+    cron.write()
+
+
 if __name__ == '__main__':
     ipaddress = sys.argv[1]
-    camid = sys.argv[2]
+    hostname = sys.argv[2]
     if len(sys.argv)> 4:
         force_day = True
     else:
         force_day = False
 
-    s3 = boto3.resource('s3')
+    ulloc = os.getenv('UPLOADLOC', default='none')
+    if ulloc[:5] == 's3://':
+        s3 = boto3.resource('s3')
+        bucket = ulloc[5:]
+    else:
+        print('not uploading to AWS S3')
+        s3 = None
+        bucket = None
     setupLogging()
+    addCrontabEntry()
 
     nightgain = int(os.getenv('NIGHTGAIN', default='70'))
-
+    camid = os.getenv('CAMID', default='XXXXXXXX')
     datadir = os.getenv('DATADIR', default=os.path.expanduser('~/RMS_data/auroracam'))
     os.makedirs(datadir, exist_ok=True)
     norebootflag = os.path.join(datadir, '..', '.noreboot')
@@ -171,20 +211,20 @@ if __name__ == '__main__':
         if force_day is True:
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             os.makedirs(dirnam, exist_ok=True)
-            grabImage(ipaddress, fnam, camid, now)
+            grabImage(ipaddress, fnam, hostname, now)
             log.info(f'grabbed {fnam}')
 
         # if we are in the daytime period, just grab an image
         elif now > dawn or now < dusk:
             # grab the image
-            fnam = os.path.expanduser(os.path.join('~/RMS_data', 'live.jpg'))
-            grabImage(ipaddress, fnam, camid, now)
+            fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
+            grabImage(ipaddress, fnam, hostname, now)
             log.info(f'grabbed {fnam}')
             if isnight is True:
                 # make the mp4
                 norebootflag = os.path.join(datadir, '..', '.noreboot')
                 open(norebootflag, 'w')
-                makeTimelapse(dirnam, s3, 'UK9999')
+                makeTimelapse(dirnam, s3, camid, bucket)
                 # refresh the dusk/dawn times for tomorrow
                 dusk, dawn = getStartEndTimes(datadir)
                 dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
@@ -201,9 +241,9 @@ if __name__ == '__main__':
             dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
             os.makedirs(dirnam, exist_ok=True)
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
-            grabImage(ipaddress, fnam, camid, now)
+            grabImage(ipaddress, fnam, hostname, now)
             log.info(f'grabbed {fnam}')
-            fnam2 = os.path.expanduser(os.path.join('~/RMS_data', 'live.jpg'))
+            fnam2 = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
             if os.path.isfile(fnam):
                 shutil.copy(fnam, fnam2)
                 log.info('updated live copy')
@@ -212,11 +252,11 @@ if __name__ == '__main__':
 
         uploadcounter += pausetime
         testmode = int(os.getenv('TESTMODE', default=0))
-        if uploadcounter > 9 and testmode == 0:
+        if uploadcounter > 9 and testmode == 0 and s3 is not None:
             log.info('uploading live image')
             if os.path.isfile(fnam):
                 try:
-                    s3.meta.client.upload_file(fnam, 'mjmm-data', f'{camid}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
+                    s3.meta.client.upload_file(fnam, bucket, f'{hostname}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
                 except:
                     log.info('unable to upload live image')
                     pass

@@ -5,21 +5,25 @@ source $here/config.ini
 
 cd $DATADIR
 
-# find folders older than 7 days and archive them to a gzipped tarball
+# find folders older than 7 days and archive them to a tarball
 find . -type d -mtime +7 | while read i 
 do
     bn=$(basename $i)
-    tar cvfz ./$bn.tgz ./$bn/*.*
-    if [ $? -eq 0 ] ; then 
-        rm -Rf ./$bn
+    if compgen -G ./$bn/*.* > /dev/null ; then 
+        tar cvf ./$bn.tar ./$bn/*.*
+        if [ $? -eq 0 ] ; then 
+            rm -Rf ./$bn
+        else
+            echo archiving failed
+        fi
     else
-        echo archiving failed
-    fi 
+        rm -Rf ./$bn
+    fi
 done
 
 # delete archives after a further seven days
 # note that the archive will have the datestamp from when it was created
-find . -type f -name "2*.tgz" -mtime +7 | while read i 
+find . -type f -name "2*.tar" -mtime +7 | while read i 
 do
     rm -f $i
 done 
