@@ -10,5 +10,5 @@ resource "aws_sns_topic" "myalerts" {
 resource "aws_sns_topic_subscription" "snsemailsubs" {
   topic_arn = aws_sns_topic.myalerts.arn
   protocol  = "email"
-  endpoint  = "mark.jm.mcintyre@cesmail.net"
+  endpoint  = "markmcintyre99@googlemail.com"
 }
