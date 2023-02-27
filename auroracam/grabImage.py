@@ -27,7 +27,7 @@ def getStartEndTimes(datadir):
     cfg = configparser.ConfigParser(inline_comment_prefixes=';')
     cfg.add_section('System')
     cfg.set('System', 'latitude', lat)
-    cfg.set('System', 'lonitude', lon)
+    cfg.set('System', 'longitude', lon)
     cfg.set('System', 'elevation', ele)
 
     risetm, settm = getNextRiseSet(cfg)
