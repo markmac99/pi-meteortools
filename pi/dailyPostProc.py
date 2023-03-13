@@ -108,7 +108,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
 
-    hname = os.uname()[1]
+    hname = os.uname()[1][:6]
 
     extramsg = 'Notes:\n'
     
