@@ -32,8 +32,8 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_publish(client, userdata, result):
-        #print('data published - {}'.format(result))
-        return
+    #print('data published - {}'.format(result))
+    return
 
 
 def getLoggedInfo(cfg):
@@ -42,7 +42,7 @@ def getLoggedInfo(cfg):
     logfs.sort(key=lambda x: os.path.getmtime(x))
     dd=[]
     i=1
-    while len(dd) == 0 and i < 5:
+    while len(dd) == 0 and i < 10:
         logf = logfs[-i]
         lis = open(logf,'r').readlines()
         dd = [li for li in lis if 'Data directory' in li]
@@ -54,7 +54,7 @@ def getLoggedInfo(cfg):
     totli = [li for li in lis if 'TOTAL' in li]
     detectedcount = 0
     if len(totli) > 0:
-        detectedcount  = int(totli[0].split(' ')[4].strip())
+        detectedcount = int(totli[0].split(' ')[4].strip())
     ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
     ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
     meteorcount = 0
@@ -89,6 +89,7 @@ def sendToMqtt(cfg, localcfg=None):
         topic = f'{topicbase}/{camname}/{subtopic}'
         ret = client.publish(topic, payload=msg, qos=0, retain=False)
         #print("send to {}, result {}".format(topic, ret))
+    return ret
 
 
 def sendOtherData(cputemp, diskspace, localcfg=None):
@@ -113,6 +114,7 @@ def sendOtherData(cputemp, diskspace, localcfg=None):
     ret = client.publish(topic, payload=cputemp, qos=0, retain=False)
     topic = f'meteorcams/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
+    return ret
 
 
 def test_mqtt(localcfg=None):
