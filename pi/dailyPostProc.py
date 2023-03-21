@@ -235,9 +235,9 @@ if __name__ == '__main__':
         print('usage: dailyPostProc.py UK0006_20230318_184715_611839 {optional config file}')
     hname = os.uname()[1]
     if len(sys.argv) > 2: 
-        rmscfg = os.expanduser(sys.argv[2])
+        rmscfg = os.path.expanduser(sys.argv[2])
     else:
-        rmscfg = os.expanduser('~/source/RMS/.config')
+        rmscfg = os.path.expanduser('~/source/RMS/.config')
     config = cr.parse(rmscfg)
     datadir = config.data_dir
     cap_dir = os.path.join(datadir, 'CapturedFiles', sys.argv[1])
