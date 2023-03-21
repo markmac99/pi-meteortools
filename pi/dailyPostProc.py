@@ -108,7 +108,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
 
-    hname = os.uname()[1]
+    hname = os.uname()[1][:6]
 
     extramsg = 'Notes:\n'
     
@@ -189,7 +189,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     totli = [li for li in sl if 'TOTAL' in li]
     total = 0
     if len(totli) > 0:
-        total  = totli[0].split(' ')[4]
+        total = totli[0].split(' ')[4]
 
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
@@ -216,7 +216,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         while len(log.handlers) > 0:
             log.removeHandler(log.handlers[0])
 
-        sys.path.append('/home/pi/source/RMS/iStream')
+        sys.path.append(os.expanduser('~/source/RMS/iStream'))
         import iStream as istr
         istr.rmsExternal(cap_dir, arch_dir, config)
     else:
@@ -231,18 +231,16 @@ def rmsExternal(cap_dir, arch_dir, config):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print('usage: dailyPostProc.py UK0006_20230318_184715_611839 {optional config file}')
     hname = os.uname()[1]
-    if len(sys.argv) < 1:
-        if hname == 'meteorpi':
-            cap_dir = '/home/pi/RMS_data/CapturedFiles/UK0006_20210130_172616_214463'
-            arch_dir = '/home/pi/RMS_data/ArchivedFiles/UK0006_20210130_172616_214463'
-        else:
-            cap_dir = '/home/pi/RMS_data/CapturedFiles/UK000F_20210128_172253_791467'
-            arch_dir = '/home/pi/RMS_data/ArchivedFiles/UK000F_20210128_172253_791467'
+    if len(sys.argv) > 2: 
+        rmscfg = os.expanduser(sys.argv[2])
     else:
-        cap_dir = os.path.join('/home/pi/RMS_data/CapturedFiles/', sys.argv[1])
-        arch_dir = os.path.join('/home/pi/RMS_data/ArchivedFiles/', sys.argv[1])
-
-    config = cr.parse(".config")
-
+        rmscfg = os.expanduser('~/source/RMS/.config')
+    config = cr.parse(rmscfg)
+    datadir = config.data_dir
+    cap_dir = os.path.join(datadir, 'CapturedFiles', sys.argv[1])
+    arch_dir = os.path.join(datadir, 'ArchivedFiles', sys.argv[1])
+  
     rmsExternal(cap_dir, arch_dir, config)

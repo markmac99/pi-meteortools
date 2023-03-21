@@ -32,6 +32,7 @@ rsync ${hn}:source/ukmon-pitools/extrascript $hn > /dev/null 2>&1
 
 # mjmm settings
 scp $hn:mjmm/*.pickle $hn/ > /dev/null 2>&1
+scp $hn:mjmm/config.ini $hn/ > /dev/null 2>&1
 
 popd
 popd 

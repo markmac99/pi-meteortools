@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib:/usr/local/openss
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-source ~/vRMS/bin/activate
+source $HOME/vRMS/bin/activate
 source $here/config.ini >/dev/null 2>&1
 
 cd $RMSDIR

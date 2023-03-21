@@ -8,3 +8,5 @@ boto3
 opencv-python
 python-crontab
 paho-mqtt
+ephem
+pillow
