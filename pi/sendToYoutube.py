@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 # Simple script to upload a video to Youtube
 # Takes two arguments - title and filename
 #
@@ -12,7 +14,6 @@
 import os
 import sys
 import pickle
-import time
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors

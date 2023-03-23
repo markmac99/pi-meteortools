@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 # Script to restart wifi if the Pi loses connection
 #
 # TO USE THIS SCRIPT

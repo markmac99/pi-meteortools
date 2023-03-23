@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 #
 # A script to track the number of images captured each night
 #
