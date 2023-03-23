@@ -216,7 +216,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         while len(log.handlers) > 0:
             log.removeHandler(log.handlers[0])
 
-        sys.path.append(os.expanduser('~/source/RMS/iStream'))
+        sys.path.append(os.path.expanduser('~/source/RMS/iStream'))
         import iStream as istr
         istr.rmsExternal(cap_dir, arch_dir, config)
     else:
