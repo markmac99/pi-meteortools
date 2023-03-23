@@ -1,3 +1,5 @@
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 #
 # annotate an image with station info and meteor count
 #

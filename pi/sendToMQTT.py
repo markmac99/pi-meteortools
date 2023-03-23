@@ -1,5 +1,7 @@
 #
 # Python script to publish meteor data to MQTT
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 #
 # first run "pip install paho-mqtt"
 # then run "python sendToMQTT.py"

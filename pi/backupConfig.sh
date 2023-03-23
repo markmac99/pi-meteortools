@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 # backup RMS config 
 
 srcdir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"

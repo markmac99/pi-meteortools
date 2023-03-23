@@ -1,9 +1,10 @@
 # SetExpo.py
 # sets the exposure on the IPCamera using Python_DVRIP
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 #
 import sys
 import time
-import json
 import os
 import ephem
 import configparser
@@ -82,27 +83,27 @@ def addCrontabEntries(ipaddr, cfg):
 
     cron = CronTab(user=True)
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh DAY')
+    iter=cron.find_command(f'setIPCamExpo.sh DAY {ipaddr}')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
             i.minute.on(rise.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmsdatadir}/logs/setday.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {ipaddr} > {rmsdatadir}/logs/setday-{ipaddr}.log 2>&1')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
 
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh NIGHT')
+    iter=cron.find_command(f'setIPCamExpo.sh NIGHT {ipaddr}')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmsdatadir}/logs/setnight.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {ipaddr} > {rmsdatadir}/logs/setnight-{ipaddr}.log 2>&1')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()

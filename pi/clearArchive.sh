@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 # clear down anything older than 20 days from ArchivedFiles
 
 cd $HOME/RMS_data/ArchivedFiles
