@@ -1,4 +1,5 @@
 # test the ML routine
+# Copyright (C) Mark McIntyre
 
 Write-Output "starting" > F:\videos\MeteorCam\logs\testml.log
 

@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 variable "profile" {
     description = "AWS creds to use"
     default = "default"

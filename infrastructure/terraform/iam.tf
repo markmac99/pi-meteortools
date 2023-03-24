@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # User, Policy and Roles used to mount s3 buckets. 
 resource "aws_iam_user" "s3user" {
   name = "s3user"

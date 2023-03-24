@@ -1,4 +1,5 @@
 #daily upload of UFO or RMS data to the UKMON archive
+# Copyright (C) Mark McIntyre
 
 $curloc=get-location
 set-location $PSScriptRoot

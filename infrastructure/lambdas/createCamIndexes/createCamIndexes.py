@@ -1,3 +1,5 @@
+# Copyright (C) Mark McIntyre
+
 import boto3
 import os
 import tempfile

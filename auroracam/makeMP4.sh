@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (C) Mark McIntyre
+#
 if [ $# -lt 1 ] ; then
     echo usage: ./makeMP4 yyyymmdd_hhmmss
 else

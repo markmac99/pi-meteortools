@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # script to push video data to the website
 $curloc = get-location
 set-location $PSScriptRoot

@@ -1,4 +1,5 @@
-﻿set-location $PSScriptRoot
+﻿# Copyright (C) Mark McIntyre
+set-location $PSScriptRoot
 $now=(get-date -uformat '%Y%m%d')
 $logf="..\logs\"+$now+".log"
 

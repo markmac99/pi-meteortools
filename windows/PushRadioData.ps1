@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 #
 # powershell script to generate heatmaps and push them to a website
 #

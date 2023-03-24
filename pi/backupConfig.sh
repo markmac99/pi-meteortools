@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 # backup RMS config 
 

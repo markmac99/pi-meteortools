@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 $loc = get-location
 set-location $PSScriptRoot
 # load the helper functions

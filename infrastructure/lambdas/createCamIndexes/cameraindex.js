@@ -1,3 +1,5 @@
+//# Copyright (C) Mark McIntyre
+
 $(function() {
 var table = document.createElement("table");
 table.className = "table table-striped table-bordered table-hover table-condensed";

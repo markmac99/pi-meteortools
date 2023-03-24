@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # SNS topics etc for alerting
 
 resource "aws_sns_topic" "myalerts" {

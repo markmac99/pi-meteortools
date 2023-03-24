@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (C) Mark McIntyre
+#
 source ~/source/auroracam/config.ini
 filetocheck=$DATADIR/../live.jpg
 

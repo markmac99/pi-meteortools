@@ -1,6 +1,6 @@
 # SetExpo.py
 # sets the exposure on the IPCamera using Python_DVRIP
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 #
 import sys

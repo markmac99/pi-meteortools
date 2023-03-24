@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 import boto3
 
 

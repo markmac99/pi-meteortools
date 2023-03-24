@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 if ($args.count -lt 1)
 {
     Write-Output "usage: createUserKeyAWS.ps1 devicename"

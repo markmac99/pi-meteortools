@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 import numpy as np
 import boto3
 import matplotlib

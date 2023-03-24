@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 resource "aws_s3_bucket" "mjmmauditing" {
   force_destroy = false
   bucket        = "mjmmauditing"

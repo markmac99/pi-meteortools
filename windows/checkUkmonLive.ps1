@@ -1,4 +1,5 @@
 # check the files against latest algo
+# Copyright (C) Mark McIntyre
 
 $loc=get-location
 Set-Location $psscriptroot

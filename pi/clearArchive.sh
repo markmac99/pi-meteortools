@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 # clear down anything older than 20 days from ArchivedFiles
 

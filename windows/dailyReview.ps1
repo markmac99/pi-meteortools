@@ -1,6 +1,7 @@
 # simple script to copy then display the most recent CMN/RMS meteor captures
 # if RMS is installed it will also run some postprocessing to generate
 # shower maps, JPGs and a UFO-Orbit-compatible detection file
+# Copyright (C) Mark McIntyre
 
 set-location $PSScriptRoot
 # load the helper functions
@@ -13,7 +14,7 @@ if ($args.count -eq 0) {
 $inifname = $args[0]
 
 $ini=get-inicontent $inifname
-$hostname=$ini['camera']['hostname']
+$remotepth=$ini['camera']['hostname']
 $maxage=$ini['camera']['maxage']
 $localfolder=$ini['camera']['localfolder']
 $binviewer_exe_loc=$ini['python']['binviewer_exe_loc']
@@ -25,9 +26,16 @@ $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 $upload_rej=$ini['cleaning']['uploadtogmn']
 $pylib=$ini['ukmon']['ukmon_pylib']
+$hostname=(split-path $remotepth -leaf)
 
-# copy the latest data from the Pi
-$srcpath='\\'+$hostname+'\RMS_data\ArchivedFiles'
+# copy the latest data from the Pi or other location
+if ($remotepth -ne $hostname ) {
+    $srcpath='\\'+$remotepth+'\ArchivedFiles'
+}
+else{
+    $srcpath='\\'+$remotepth+'\RMS_data\ArchivedFiles'
+}
+
 $destpath=$localfolder+'\ArchivedFiles'
 if ((test-path $destpath) -eq 0) { mkdir $destpath}
 $age=[int]$maxage

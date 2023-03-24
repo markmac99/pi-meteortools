@@ -1,4 +1,5 @@
 # script to backup a month's worth of meteorcam data to an SD card
+# Copyright (C) Mark McIntyre
 set-location $PSScriptRoot
 # load the helper functions
 . .\helperfunctions.ps1

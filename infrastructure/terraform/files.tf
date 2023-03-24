@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # upload the radio ini file
 
 

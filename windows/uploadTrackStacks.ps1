@@ -1,5 +1,6 @@
 #
 # upload trackstacks to website
+# Copyright (C) Mark McIntyre
 #
 
 $loc = get-location

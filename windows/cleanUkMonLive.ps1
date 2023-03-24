@@ -1,5 +1,6 @@
 #
 # script to remove bad data from livestream including bad fireballs
+# Copyright (C) Mark McIntyre
 #
 
 $curloc = get-location

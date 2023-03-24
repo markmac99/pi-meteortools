@@ -1,3 +1,5 @@
+# Copyright (C) Mark McIntyre
+#
 # script to copy potential meteors that were missed by RMS
 # this script grabs all the FF files for which there is a corresponding FR file.
 # These are events that RMS thought there may have been bright enough, even
@@ -25,10 +27,11 @@ if ((test-path $inifname) -eq $false) {
 }
 
 $ini=get-inicontent $inifname
-$hostname=$ini['camera']['hostname']
+$remotepth=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
+$hostname=(split-path $remotepth -leaf)
 
 conda activate $rms_env
 $srcdir='\\'+$hostname+'\RMS_Data\CapturedFiles\*'+$args[1]+'*'

@@ -1,5 +1,6 @@
 # simple script to copy then display the most recent UFO meteor captures
 # and allow analysis / sanity checking before optionally uploading to UKMON
+# Copyright (C) Mark McIntyre
 
 set-location $PSScriptRoot
 # load the helper functions
