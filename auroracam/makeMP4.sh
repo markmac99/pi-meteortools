@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 if [ $# -lt 1 ] ; then
     echo usage: ./makeMP4 yyyymmdd_hhmmss

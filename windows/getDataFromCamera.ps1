@@ -1,4 +1,5 @@
-﻿# script to copy/move data from a remote Pc or Pi running a camer to
+﻿# Copyright (C) Mark McIntyre
+# script to copy/move data from a remote Pc or Pi running a camer to
 # a central location for analysis purposes
 # Copyright (C) 2018-2023 Mark McIntyre
 #

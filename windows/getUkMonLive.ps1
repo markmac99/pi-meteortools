@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 #
 # script to get livestream including bad and fireballs
 #

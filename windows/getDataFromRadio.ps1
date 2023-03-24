@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 set-location $PSScriptRoot
 # load the helper functions
 . .\helperfunctions.ps1

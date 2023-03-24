@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 #
 # powershell script to plot a map of RMS FTP files
 #

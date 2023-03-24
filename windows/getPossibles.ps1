@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 # script to copy potential meteors that were missed by RMS
 # this script grabs all the FF files for which there is a corresponding FR file.

@@ -1,4 +1,5 @@
 # powershell script to clean the non-fireballs out of S3
+# Copyright (C) Mark McIntyre
 #
 $curloc = get-location
 set-location $PSScriptRoot

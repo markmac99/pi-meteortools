@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 export PATH=$PATH:/usr/local/bin
 # required for SSL with python3

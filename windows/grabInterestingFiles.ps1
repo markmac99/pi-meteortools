@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # powershell script to grab interesting files from Pi which were 
 # not picked up by the automated process for some reason but 
 # which you would like to examine. 

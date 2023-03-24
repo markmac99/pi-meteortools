@@ -1,6 +1,7 @@
 # 
 # script to backup or restore Pi configuration
 #
+# Copyright (C) Mark McIntyre
 
 if ($args[0] -eq "backup") 
 {

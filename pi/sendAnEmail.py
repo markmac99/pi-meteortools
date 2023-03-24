@@ -1,6 +1,6 @@
 # 
 # Send email from python
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 #
 import os

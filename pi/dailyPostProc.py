@@ -5,7 +5,7 @@
 # ~/.ssh/keyfile - plaintext file containing S3 keys or SSH private key for 
 # upload to S3 or website. filename configurable in config file
 #
-# Copyright (C) 2018-2023 Mark McIntyre
+# Copyright (C) Mark McIntyre
 #
 #
 

@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # SSM stuff for maintaining the webserver
 
 # recover the Webserver details - this isn't currently managed by Terraform

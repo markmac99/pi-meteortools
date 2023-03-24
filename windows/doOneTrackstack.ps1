@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 $loc=get-location
 $env:pythonpath="e:\dev\meteorhunting\rms;e:\dev\meteorhunting\westernmeteorpylib;e:\dev\meteorhunting\ukmon-shared\ukmon_pylib"
 $myf=(get-location).path

@@ -1,5 +1,6 @@
 # 
 # Uploads rejected/confirmed data to RMS for training the ML toolset
+# Copyright (C) Mark McIntyre
 # 
 
 set-location $PSScriptRoot

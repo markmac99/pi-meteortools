@@ -1,6 +1,8 @@
 #
 # Terraform to manage SSM and CW alerts
 # 
+# Copyright (C) Mark McIntyre
+
 
 resource "aws_iam_role" "CloudWatchAgentServerRole" {
   name        = "CloudWatchAgentServerRole"

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (C) Mark McIntyre
 echo $1
 hn=$1
 

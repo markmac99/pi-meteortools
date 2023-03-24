@@ -1,3 +1,4 @@
+# Copyright (C) Mark McIntyre
 # powershell script to load UFOCAP csv files into MySQL
 # database details all stored in the ini file 
 
