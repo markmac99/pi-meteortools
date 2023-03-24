@@ -1,5 +1,7 @@
 ﻿# script to copy/move data from a remote Pc or Pi running a camer to
 # a central location for analysis purposes
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 #
 set-location $PSScriptRoot
 # load the helper functions
@@ -17,12 +19,13 @@ if ((test-path $inifname) -eq $false) {
 }
 
 $ini=get-inicontent $inifname
-$hostname=$ini['camera']['hostname']
+$remotepth=$ini['camera']['hostname']
 $camname=$ini['camera']['camera_name']
 $locfldr=$ini['camera']['localfolder']
 $isufo=$ini['camera']['UFO']
 $remuser=$ini['camera']['remoteuser']
 $rempass=(get-content $ini['camera']['remotepass'])
+$hostname=(split-path $remotepth -leaf)
 
 Write-Output "Getting data from $camname" (get-date) 
 

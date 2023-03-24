@@ -1,3 +1,5 @@
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 $loc = get-location
 set-location $PSScriptRoot
 # load the helper functions
@@ -9,12 +11,13 @@ if ($args.count -eq 0) {
 }
 $inifname = $args[0]
 $ini=get-inicontent $inifname
-$hostname=$ini['camera']['hostname']
+$remotepth=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 $pylib=$ini['ukmon']['ukmon_pylib']
 $webserver=$ini['website']['webserver']
+$hostname=(split-path $remotepth -leaf)
 
 if ($args.count -eq 2){
     $ym = ([string]$args[1]).substring(0,6)
