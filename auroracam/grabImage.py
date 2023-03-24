@@ -1,4 +1,6 @@
 # simple python programme to capture a jpg from an IP camera
+# Copyright (C) 2018-2023 Mark McIntyre
+#
 import cv2
 import sys
 import os
