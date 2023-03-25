@@ -13,7 +13,7 @@ else
     touch $DATADIR/../.noreboot
     cd ${DATADIR}/${fldr}
     echo making an mp4 of $(pwd)
-    ffmpeg -v quiet -r 125 -pattern_type glob -i "*.jpg" \
+    ffmpeg -v quiet -r 60 -pattern_type glob -i "*.jpg" \
             -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
             ${camid}_${fldr}.mp4
 
