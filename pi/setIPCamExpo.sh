@@ -1,14 +1,12 @@
 #!/bin/bash
 # Copyright (C) Mark McIntyre
 #
-export PATH=$PATH:/usr/local/bin
-# required for SSL with python3
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/openssl/lib:/usr/local/openssl/lib
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 source $HOME/vRMS/bin/activate
 source $here/config.ini >/dev/null 2>&1
+pip install -r python-crontab
 
 cd $RMSDIR
 if [ "$1" == "" ] ; then
