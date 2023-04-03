@@ -9,7 +9,8 @@ import os
 import ephem
 import configparser
 
-# to use these, run "pip install -r requirements.txt"
+# if you have RMS and the ukmon-pitools installed, these libs will already be present
+# otherwise, use pip to install python-crontab==2.5.1 and python-dvr"
 from crontab import CronTab
 from dvrip import DVRIPCam
 

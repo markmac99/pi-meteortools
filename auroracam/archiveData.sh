@@ -12,6 +12,7 @@ find . -type d -mtime +7 | while read i
 do
     bn=$(basename $i)
     if compgen -G ./$bn/*.* > /dev/null ; then 
+        echo "compressing then removing $bn as more than 7 days old"
         tar cvf ./$bn.tar ./$bn/*.*
         if [ $? -eq 0 ] ; then 
             rm -Rf ./$bn
@@ -19,6 +20,7 @@ do
             echo archiving failed
         fi
     else
+        echo "removing empty $bn"
         rm -Rf ./$bn
     fi
 done
@@ -27,6 +29,7 @@ done
 # note that the archive will have the datestamp from when it was created
 find . -type f -name "2*.tar" -mtime +7 | while read i 
 do
+    echo "removing $i as more than 7 days old"
     rm -f $i
 done 
 
@@ -34,9 +37,11 @@ done
 cd $LOGDIR
 find . -type f -mtime +21 -name "*.gz" | while read i 
 do
+    echo "removing $i as more than 21 days old"
     rm -f $i
 done
 find . -type f -mtime +7 -name "*.log" | while read i 
 do
+    echo "compressing $i as more than 7 days old"
     gzip $i 
 done

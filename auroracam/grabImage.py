@@ -100,7 +100,7 @@ def makeTimelapse(dirname, s3, camname, bucket):
     _, mp4shortname = os.path.split(dirname)
     mp4name = os.path.join(dirname, mp4shortname + '.mp4')
     log.info(f'creating {mp4name}')
-    fps = int(250/pausetime)
+    fps = int(125/pausetime)
     if os.path.isfile(mp4name):
         os.remove(mp4name)
     cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
@@ -150,11 +150,11 @@ def addCrontabEntry():
     logdir = os.getenv('LOGDIR', default=os.path.expanduser('~/RMS_data/logs'))
     local_path =os.path.dirname(os.path.abspath(__file__))
     cron = CronTab(user=True)
-    found = False
-    iter=cron.find_command(f'uploadLiveJpg.sh')
+    #found = False
+    iter=cron.find_command('uploadLiveJpg.sh')
     for i in iter:
         if i.is_enabled():
-            found = True
+            #found = True
             cron.remove(i)
     dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
