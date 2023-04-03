@@ -6,7 +6,7 @@ here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 source $HOME/vRMS/bin/activate
 source $here/config.ini >/dev/null 2>&1
-pip install -r python-crontab
+pip install python-crontab
 
 cd $RMSDIR
 if [ "$1" == "" ] ; then
