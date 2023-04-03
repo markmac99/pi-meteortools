@@ -113,7 +113,7 @@ def addCrontabEntries(ipaddr, cfg):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print('usage: python SetExpo.py ipaddress DAY/NIGHT')
         exit()
         
