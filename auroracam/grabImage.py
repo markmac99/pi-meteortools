@@ -13,7 +13,7 @@ from annotateImage import annotateImage
 import boto3 
 import logging 
 import logging.handlers
-from SetExpo import setCameraExposure, getNextRiseSet
+from setExpo import setCameraExposure, getNextRiseSet
 from crontab import CronTab
 
 
@@ -147,7 +147,6 @@ def setupLogging():
 
 
 def addCrontabEntry():
-    logdir = os.getenv('LOGDIR', default=os.path.expanduser('~/RMS_data/logs'))
     local_path =os.path.dirname(os.path.abspath(__file__))
     cron = CronTab(user=True)
     #found = False
@@ -156,8 +155,8 @@ def addCrontabEntry():
         if i.is_enabled():
             #found = True
             cron.remove(i)
-    dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
+    #dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh') # > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
     job.every_reboot()
     cron.write()
 
@@ -206,7 +205,7 @@ if __name__ == '__main__':
     uploadcounter = 0
     while True:
         now = datetime.datetime.utcnow()
-        if now < dawn and now > dusk:
+        if now < dawn and now > dusk and isnight is False:
             isnight = True
             setCameraExposure(ipaddress, 'NIGHT', nightgain, True)
         # if force_day then save a dated file for the daytime 

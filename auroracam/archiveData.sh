@@ -8,6 +8,7 @@ source $here/config.ini
 cd $DATADIR
 
 # find folders older than 7 days and archive them to a tarball
+echo "checking for folders older than 7 days to compress"
 find . -type d -mtime +7 | while read i 
 do
     bn=$(basename $i)
@@ -27,6 +28,7 @@ done
 
 # delete archives after a further seven days
 # note that the archive will have the datestamp from when it was created
+echo "looking for tarballs older than 7 days to delete"
 find . -type f -name "2*.tar" -mtime +7 | while read i 
 do
     echo "removing $i as more than 7 days old"
@@ -34,6 +36,7 @@ do
 done 
 
 # purge older logfiles
+echo "looking for older logfiles to delete or compress"
 cd $LOGDIR
 find . -type f -mtime +21 -name "*.gz" | while read i 
 do
