@@ -139,7 +139,8 @@ if ($RMS_INSTALLED -eq 1){
             $ts=(Get-ChildItem $myf\*track_stack.jpg).name
             if ($ts.count -ne 0){
                 $ymd=$ts.substring(7,8)
-                python -m utils.annotateImage $myf\$ts $hostname $metcount $ymd
+                $imgfile=("$myf\$ts").replace('\','/')
+                python -c "from ukmon_meteortools.utils import annotateImage; annotateImage('$imgfile', '$hostname', $metcount, '$ymd')"
                 $newn=$ts.substring(0,15)+".jpg"
                 copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
             }else {
