@@ -181,7 +181,7 @@ if __name__ == '__main__':
     addCrontabEntry()
 
     nightgain = int(os.getenv('NIGHTGAIN', default='70'))
-    camid = os.getenv('CAMID', default='XXXXXXXX')
+    camid = os.getenv('CAMID', default='UK9999')
     datadir = os.getenv('DATADIR', default=os.path.expanduser('~/RMS_data/auroracam'))
     os.makedirs(datadir, exist_ok=True)
     norebootflag = os.path.join(datadir, '..', '.noreboot')

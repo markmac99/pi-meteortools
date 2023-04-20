@@ -7,7 +7,7 @@ hn=$(hostname)
 logger -s -t $hn "starting live jpg upload"
 source $here/config.ini
 export DATADIR LOGDIR IPADDRESS NIGHTGAIN
-export LAT LON ALT UPLOADLOC
+export LAT LON ALT UPLOADLOC CAMID
 
 source ~/vAuroracam/bin/activate
 #export PYTHONPATH=~/source/RMS
