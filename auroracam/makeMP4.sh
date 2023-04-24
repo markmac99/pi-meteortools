@@ -8,7 +8,7 @@ if [ $# -lt 1 ] ; then
     echo usage: ./makeMP4 yyyymmdd_hhmmss
 else
     here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-    source $here/config.ini
+    source $here/config.ini > /dev/null 2>&1
 
     fldr=$1
     camid=$CAMID

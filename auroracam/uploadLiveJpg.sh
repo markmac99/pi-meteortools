@@ -5,7 +5,7 @@ here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 hn=$(hostname)
 logger -s -t $hn "starting live jpg upload"
-source $here/config.ini
+source $here/config.ini > /dev/null 2>&1
 export DATADIR LOGDIR IPADDRESS NIGHTGAIN
 export LAT LON ALT UPLOADLOC CAMID
 
