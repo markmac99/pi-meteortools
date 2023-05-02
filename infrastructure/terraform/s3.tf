@@ -44,3 +44,28 @@ resource "aws_s3_bucket_logging" "rsdlogging" {
   target_bucket = aws_s3_bucket.mjmmauditing.id
   target_prefix = "rawsatdata/"
 }
+
+
+resource "aws_s3_bucket_lifecycle_configuration" "mjmmdatalcp" {
+  bucket = aws_s3_bucket.mjmm-data.id
+  rule {
+    status = "Enabled"
+    id     = "purge old versions"
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+  rule {
+    status = "Enabled"
+    id     = "Transition to IA"
+#    filter {
+#      prefix = "archive/"
+#    }
+
+    transition {
+      days          = 45
+      storage_class = "STANDARD_IA"
+    }
+  }
+}
+
