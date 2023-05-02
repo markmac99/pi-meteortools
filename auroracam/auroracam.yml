@@ -63,7 +63,7 @@
       regexp: 'UPLOADLOC='
       line: 'UPLOADLOC=s3://mjmm-data'
   - name: make sure modules are downloaded
-    shell: source ~/venvs/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
+    shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg
     args:
       executable: /bin/bash

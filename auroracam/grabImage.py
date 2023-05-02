@@ -123,7 +123,7 @@ def makeTimelapse(dirname, s3, camname, bucket):
 
 def setupLogging(thiscfg):
     print('about to initialise logger')
-    logdir = thiscfg['auroracam']['logdir']
+    logdir = os.path.expanduser(thiscfg['auroracam']['logdir'])
     os.makedirs(logdir, exist_ok=True)
 
     logfilename = os.path.join(logdir, 'auroracam_' + datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S.%f') + '.log')
@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
     nightgain = int(thiscfg['auroracam']['nightgain'])
     camid = thiscfg['auroracam']['camid']
-    datadir = thiscfg['auroracam']['datadir']
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
     os.makedirs(datadir, exist_ok=True)
     norebootflag = os.path.join(datadir, '..', '.noreboot')
     if os.path.isfile(norebootflag):
