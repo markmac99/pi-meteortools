@@ -114,7 +114,7 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     extramsg = 'Notes:\n'
     
-    mp4name = os.path.basename(cap_dir) + '.mp4'
+    mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
         try: 
