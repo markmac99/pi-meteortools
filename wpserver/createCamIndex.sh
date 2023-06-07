@@ -5,6 +5,7 @@
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source $here/config.ini
+mkdir -p $here/logs
 cd $DATADIR
 
 idxfile=$TMPDIR/cameraindex.js
@@ -16,6 +17,11 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
+camlist=$(ls -1d UK* allsky/startrails allsky/videos)
+for cam in $camlist ; do 
+    mkdir -p $cam/$currmth 
+    aws s3 sync s3://mjmm-data/$cam/ ./$cam --exclude "*" --include "*.js" --include "*.html"
+done
 
 camlist=$(ls -1d UK* allsky)
 mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
@@ -106,8 +112,37 @@ else
     echo nothing changed
 fi
 
+delaymins=120
 
-export PYLIB=~/prod/ukmon_pylib
-source ~/venvs/wmpl/bin/activate
-export PYTHONPATH=$PYTHONPATH:~/src/RMS 
-python $PYLIB/maintenance/getNextBatchStart.py 120 createCamIndex
+source ~/tools/vwebstuff/bin/activate
+pip install --upgrade python-crontab ephem
+
+python - << EOD
+from crontab import CronTab
+import ephem
+import datetime
+
+obs = ephem.Observer()
+obs.lat = 51.88 / 57.3 
+obs.lon = -1.31 / 57.3
+obs.elev = 80
+obs.horizon = -6.0 / 57.3 # degrees below horizon for darkness
+
+sun = ephem.Sun()
+rise = obs.next_rising(sun).datetime()
+rise = rise + + datetime.timedelta(minutes=${delaymins})
+cron = CronTab(user=True)
+found = False
+iter=cron.find_command('createCamIndex')
+for i in iter:
+    if i.is_enabled():
+        i.hour.on(rise.hour)
+        i.minute.on(rise.minute)
+        found = True
+if found is False:
+    job = cron.new('${here}/createCamIndex.sh > ${here}/logs/createCamIndex.log 2>&1')
+    job.hour.on(rise.hour)
+    job.minute.on(rise.minute)
+cron.write()
+EOD
+
