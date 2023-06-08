@@ -12,83 +12,19 @@
 import os
 import sys
 import glob
-import shutil
 import configparser
 import logging
-import datetime
 import time
 
 import RMS.ConfigReader as cr
-import Utils.StackFFs as sff
 from RMS.Logger import initLogging
 
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
-from annotateImage import annotateImage # noqa:E402
 import sendAnEmail as em # noqa:E402
 import sendToYoutube as stu # noqa:E402
 import sendToMQTT as mqs # noqa:E402
-
-
-def copyAndStack(arch_dir, srcdir, log, localcfg):
-    # copy FFs for stacking
-    idfile = localcfg['postprocess']['webid'] # /home/pi/.ssh/markskey.pem'
-    user = localcfg['postprocess']['user']  # 'bitnami'
-    hn = localcfg['postprocess']['webserver'] # '3.9.128.14'
-
-    outdir = os.path.join(srcdir, 'tmp')
-    camid = os.path.basename(arch_dir).split('_')[0]
-    fn = os.path.join(outdir, '{}_latest.jpg'.format(camid))
-
-    now = datetime.datetime.now()
-    if now.day == 1:
-        log.info('clearing last months data')
-        cmdline = 'rm {}/*.fits {}/*.jpg'.format(outdir, outdir)
-        os.system(cmdline)
-
-    log.info('removing previous night stack')    
-    if os.path.isfile(fn):
-        os.remove(fn)
-    
-    log.info('getting FITS files')
-    ffs = glob.glob1(arch_dir, 'FF*.fits')
-    for ff in ffs:
-        srcfil = os.path.join(arch_dir, ff)        
-        shutil.copy2(srcfil, outdir)
-
-    log.info('creating stack')
-    sff.stackFFs(outdir, 'jpg',subavg=True, filter_bright=True)
-    ffs = glob.glob1(outdir, 'FF*.fits')
-    numffs = len(ffs)
-    now = datetime.datetime.now()
-    title = '{} {}'.format(camid, now.strftime('%Y-%m-%d'))
-
-    jpgs = glob.glob1(outdir, '*.jpg')
-    if len(jpgs) > 0:
-        log.info('uploading stack')
-        lateststack = os.path.join(outdir, '{}_latest.jpg'.format(camid))
-        os.rename(os.path.join(outdir, jpgs[0]), lateststack)
-        annotateImage(lateststack, title, numffs)
-        targdir = 'data/meteors/'
-        cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}'.format(idfile, fn, user, hn, targdir)
-        os.system(cmdline)
-        mthfile = '{:s}_{:04d}{:02d}.jpg'.format(camid, now.year, now.month)
-        targdir = 'data/mjmm-data/{}/stacks'.format(camid)
-        cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}/{}'.format(idfile, fn, user, hn, targdir, mthfile)
-        os.system(cmdline)
-    else:
-        log.info('no stack to upload')
-
-
-def reStackAndPush(arch_dir):
-    config = cr.parse('.config')
-    log = logging.getLogger("logger")
-    initLogging(config, 'tackley_')
-    localcfg = configparser.ConfigParser()
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
-    copyAndStack(arch_dir, srcdir, log, localcfg)
 
 
 def rmsExternal(cap_dir, arch_dir, config):
