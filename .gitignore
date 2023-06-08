@@ -10,3 +10,4 @@ infrastructure/terraform/.terraform/providers/registry.terraform.io/hashicorp/*
 windows/userdets/allsky.txt
 windows/jsonkeys/allsky.json
 windows/creds/credentials.allsky
+infrastructure/terraform/.terraform.tfstate.lock.info
