@@ -7,7 +7,7 @@ if ($args.count -lt 1)
 }
 $username = $args[0]
 $acct='317976261112'
-$policyname = 'MMS3BucketAccessRW'
+$policyname = 's3AccessforAuroraCam'
 
 if ((test-path "$psscriptroot\jsonkeys") -eq 0 ){
 	mkdir "$psscriptroot\jsonkeys"
@@ -19,8 +19,8 @@ $keyf = "$psscriptroot\jsonkeys\$username.json"
 $policyarn = 'arn:aws:iam::' + $acct + ':policy/' + $policyname
 
 write-output "user $username being created if needed"
-$res=(aws iam get-user --user-name $username) 
-if ($res -eq '' ) {
+$res=(aws iam get-user --user-name $username --profile default) 
+if (! $res) {
     aws iam create-user --user-name $username --profile default | out-file -filepath $userdets
 }
 write-output "creating key and saving it"
