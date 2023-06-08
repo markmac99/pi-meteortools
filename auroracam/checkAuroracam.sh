@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (C) Mark McIntyre
 #
-source ~/source/auroracam/config.ini
+source ~/source/auroracam/config.ini > /dev/null 2>&1
 filetocheck=$DATADIR/../live.jpg
 
 while true

@@ -13,7 +13,7 @@ from annotateImage import annotateImage
 import boto3 
 import logging 
 import logging.handlers
-from SetExpo import setCameraExposure, getNextRiseSet
+from setExpo import setCameraExposure, getNextRiseSet
 from crontab import CronTab
 
 
@@ -21,10 +21,10 @@ pausetime = 2 # time to wait between capturing frames
 log = logging.getLogger("logger")
 
 
-def getStartEndTimes(datadir):
-    lat = os.getenv('LAT', default=52)
-    lon = os.getenv('LON', default=0)
-    ele = os.getenv('ALT', default=50)
+def getStartEndTimes(datadir, thiscfg):
+    lat = thiscfg['auroracam']['lat']
+    lon = thiscfg['auroracam']['lon']
+    ele = thiscfg['auroracam']['alt']
 
     cfg = configparser.ConfigParser(inline_comment_prefixes=';')
     cfg.add_section('System')
@@ -112,6 +112,7 @@ def makeTimelapse(dirname, s3, camname, bucket):
     if s3 is not None:
         targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}.mp4'
         try:
+            log.info(f'uploading to {bucket}/{targkey}')
             s3.meta.client.upload_file(mp4name, bucket, targkey, ExtraArgs = {'ContentType': 'video/mp4'})
         except:
             log.info('unable to upload mp4')
@@ -120,9 +121,9 @@ def makeTimelapse(dirname, s3, camname, bucket):
     return 
 
 
-def setupLogging():
+def setupLogging(thiscfg):
     print('about to initialise logger')
-    logdir = os.getenv('LOGDIR', default=os.path.expanduser('~/RMS_data/logs'))
+    logdir = os.path.expanduser(thiscfg['auroracam']['logdir'])
     os.makedirs(logdir, exist_ok=True)
 
     logfilename = os.path.join(logdir, 'auroracam_' + datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S.%f') + '.log')
@@ -146,9 +147,7 @@ def setupLogging():
 
 
 
-def addCrontabEntry():
-    logdir = os.getenv('LOGDIR', default=os.path.expanduser('~/RMS_data/logs'))
-    local_path =os.path.dirname(os.path.abspath(__file__))
+def addCrontabEntry(local_path):
     cron = CronTab(user=True)
     #found = False
     iter=cron.find_command('uploadLiveJpg.sh')
@@ -156,8 +155,8 @@ def addCrontabEntry():
         if i.is_enabled():
             #found = True
             cron.remove(i)
-    dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
+    #dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh') # > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
     job.every_reboot()
     cron.write()
 
@@ -170,7 +169,12 @@ if __name__ == '__main__':
     else:
         force_day = False
 
-    ulloc = os.getenv('UPLOADLOC', default='none')
+    thiscfg = configparser.ConfigParser()
+    local_path =os.path.dirname(os.path.abspath(__file__))
+    thiscfg.read(os.path.join(local_path, 'config.ini'))
+    setupLogging(thiscfg)
+
+    ulloc = thiscfg['auroracam']['uploadloc']
     if ulloc[:5] == 's3://':
         s3 = boto3.resource('s3')
         bucket = ulloc[5:]
@@ -178,19 +182,18 @@ if __name__ == '__main__':
         print('not uploading to AWS S3')
         s3 = None
         bucket = None
-    setupLogging()
-    addCrontabEntry()
+    addCrontabEntry(local_path)
 
-    nightgain = int(os.getenv('NIGHTGAIN', default='70'))
-    camid = os.getenv('CAMID', default='XXXXXXXX')
-    datadir = os.getenv('DATADIR', default=os.path.expanduser('~/RMS_data/auroracam'))
+    nightgain = int(thiscfg['auroracam']['nightgain'])
+    camid = thiscfg['auroracam']['camid']
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
     os.makedirs(datadir, exist_ok=True)
     norebootflag = os.path.join(datadir, '..', '.noreboot')
     if os.path.isfile(norebootflag):
         os.remove(norebootflag)
     
     # get todays dusk and tomorrows dawn times
-    dusk, dawn = getStartEndTimes(datadir)
+    dusk, dawn = getStartEndTimes(datadir, thiscfg)
     dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
     os.makedirs(dirnam, exist_ok=True)
 
@@ -206,7 +209,7 @@ if __name__ == '__main__':
     uploadcounter = 0
     while True:
         now = datetime.datetime.utcnow()
-        if now < dawn and now > dusk:
+        if now < dawn and now > dusk and isnight is False:
             isnight = True
             setCameraExposure(ipaddress, 'NIGHT', nightgain, True)
         # if force_day then save a dated file for the daytime 
@@ -228,7 +231,7 @@ if __name__ == '__main__':
                 open(norebootflag, 'w')
                 makeTimelapse(dirnam, s3, camid, bucket)
                 # refresh the dusk/dawn times for tomorrow
-                dusk, dawn = getStartEndTimes(datadir)
+                dusk, dawn = getStartEndTimes(datadir, thiscfg)
                 dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
                 os.makedirs(dirnam, exist_ok=True)
                 setCameraExposure(ipaddress, 'DAY', nightgain, True)

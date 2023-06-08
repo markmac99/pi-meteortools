@@ -48,8 +48,8 @@ $stackfile = (Get-ChildItem  $destpath\*.jpg ).name
 if ((test-path $destpath\$stackfile) -eq 1)
 {
     $metcount = $stackfile.split('_')[2]
-    $env:pythonpath=$pylib
-    python -m utils.annotateImage $destpath\$stackfile $hostname $metcount $ym
+    $imgfile=("$destpath\$stackfile").replace('\','/')
+    python -c "from ukmon_meteortools.utils import annotateImage; annotateImage('$imgfile', '$hostname', $metcount, '$ym')"
     $newname=$hostname.toupper() + '_' + $ym + '.jpg'
     Move-Item $destpath\*.jpg $destpath\..\$newname -force
 

@@ -42,8 +42,28 @@
       path: '{{destdir}}/config.ini'
       regexp: 'LOGDIR='
       line: 'LOGDIR=~/RMS_data/logs'
+  - name: update latitude
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'LAT='
+      line: 'LAT=51.88'
+  - name: update longitude
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'LON='
+      line: 'LON=-1.31'
+  - name: update altitude
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'ALT='
+      line: 'ALT=80'
+  - name: update uploadloc
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'UPLOADLOC='
+      line: 'UPLOADLOC=s3://mjmm-data'
   - name: make sure modules are downloaded
-    shell: source ~/venvs/vRMS/bin/activate && pip install -r {{destdir}}/requirements.txt
+    shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg
     args:
       executable: /bin/bash

@@ -14,6 +14,11 @@ if [ "$1" == "" ] ; then
   exit 1
 fi
 if [ "$2" == "" ] ; then 
+  if [ ! -f .config ] ; then
+    echo "Unable to find RMS config file - supply ipaddress as 2nd parameter"
+    echo "eg ./setIPCamExpo.sh DAY 192.168.1.11"
+    exit 1
+  fi 
   IPCAMADDR=$(grep device .config  |awk -F "rtsp://" '{ print $2 }' | awk -F: '{print $1 }' | uniq)
 else
   IPCAMADDR=$2

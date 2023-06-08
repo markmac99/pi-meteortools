@@ -1,0 +1,15 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "mjmm-data",
+          "arn": "arn:aws:s3:::mjmm-data"
+        },
+        "object": {
+          "key": "allsky/startrails/YYYYMM/startrails-anything.jpg"
+        }
+      }
+    }
+  ]
+}
