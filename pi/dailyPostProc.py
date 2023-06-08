@@ -25,10 +25,10 @@ from RMS.Logger import initLogging
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
-from annotateImage import annotateImage
-import sendAnEmail as em
-import sendToYoutube as stu
-import sendToMQTT as mqs
+from annotateImage import annotateImage # noqa:E402
+import sendAnEmail as em # noqa:E402
+import sendToYoutube as stu # noqa:E402
+import sendToMQTT as mqs # noqa:E402
 
 
 def copyAndStack(arch_dir, srcdir, log, localcfg):
@@ -168,7 +168,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             target=hn[5:]
             outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
             try: 
-                s3.meta.client.upload_file(fn, target, outf)
+                s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
             except Exception as e:
                 print('upload to S3 failed')
                 log.info(e, exc_info=True)
