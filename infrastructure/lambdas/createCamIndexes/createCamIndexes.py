@@ -100,9 +100,9 @@ def createNewIndex(buck, obj):
                 colc=0
             outf.write('var cell = row.insertCell(-1);\n')
             if 'startrails' not in cn and 'stacks' not in cn:
-                outf.write(f'cell.innerHTML = "\\<a href=\\"/data/mjmm-data/{cn}\\"\\>{shorname}\\</a\\>";\n')
+                outf.write(f'cell.innerHTML = "\\<a href=\\"https://d3jdcxriig76vh.cloudfront.net/{cn}\\"\\>{shorname}\\</a\\>";\n')
             else:
-                outf.write(f'cell.innerHTML = "\\<a href=\\"/data/mjmm-data/{cn}\\"\\>\\<img src={shorname} width=100\\%\\>\\</a\\>";\n')
+                outf.write(f'cell.innerHTML = "\\<a href=\\"https://d3jdcxriig76vh.cloudfront.net/{cn}\\"\\>\\<img src=https://d3jdcxriig76vh.cloudfront.net/{cn} width=100\\%\\>\\</a\\>";\n')
             colc = colc + 1
         outf.write('var outer_div = document.getElementById("mthindex");\n')
         outf.write('outer_div.appendChild(table);\n')
