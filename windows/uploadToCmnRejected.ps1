@@ -18,7 +18,7 @@ if (($nf -gt 0) -and ($tp -eq 1))
 {
     Write-Output "in $rp"
     Push-Location $rp
-    Write-Output "cd /files/RejectedFiles" > ../upload.txt
+    Write-Output "cd files/RejectedFiles" > ../upload.txt
     Write-Output "mkdir $dirloc" >> ../upload.txt 
     Write-Output "cd $dirloc" >> ../upload.txt
     Write-Output "progress" >> ../upload.txt
@@ -30,7 +30,7 @@ if (($nf -gt 0) -and ($tp -eq 1))
     if ($? -eq 0)
     {
         Write-Output "trying without mkdir "
-        Write-Output "cd /files/RejectedFiles" > ../upload.txt
+        Write-Output "cd files/RejectedFiles" > ../upload.txt
         Write-Output "cd $dirloc" >> ../upload.txt
         Write-Output "progress" >> ../upload.txt
         Write-Output "mput *" >> ../upload.txt
