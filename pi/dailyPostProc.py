@@ -15,6 +15,7 @@ import glob
 import configparser
 import logging
 import time
+import shutil
 
 import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
@@ -25,6 +26,26 @@ sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendAnEmail as em # noqa:E402
 import sendToYoutube as stu # noqa:E402
 import sendToMQTT as mqs # noqa:E402
+
+
+def copyMLRejects(cap_dir, arch_dir):
+    ftplist = [f for f in glob.glob(os.path.join(arch_dir,'FTPdetectinfo*.txt')) if 'backup' not in f and 'uncalibrated' not in f]
+    detlist = [f for f in ftplist if 'unfiltered' not in f]
+    detlist = detlist[0]
+    uflist = [f for f in ftplist if 'unfiltered' in f]
+    uflist = uflist[0]
+    
+    dets = [li.strip() for li in open(detlist,'r').readlines() if 'FF_' in li]
+    ufdets = [li.strip() for li in open(uflist,'r').readlines() if 'FF_' in li]
+    rejs = [li for li in ufdets if li not in dets]
+    for ff_file in rejs:
+        srcfile = os.path.join(cap_dir, ff_file)
+        trgfile = os.path.join(arch_dir, ff_file)
+        if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
+            print('copying', os.path.basename(srcfile))
+            shutil.copyfile(srcfile, trgfile)
+
+    return 
 
 
 def rmsExternal(cap_dir, arch_dir, config):
@@ -80,7 +101,9 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info(errmsg)
             log.info(e, exc_info=True)
             extramsg = extramsg + errmsg + '\n'
-
+    # copy the ML rejected files
+    copyMLRejects(cap_dir, arch_dir)
+    
     # upload the MP4 to S3 or a website
     if int(localcfg['postprocess']['upload']) == 1:
         hn = localcfg['postprocess']['host']
@@ -118,7 +141,6 @@ def rmsExternal(cap_dir, arch_dir, config):
             os.system(cmdline)
 
     # email a summary to the mailrecip
-
     logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
     logfs = glob.glob(os.path.join(logdir, 'log*.log*'))
     logfs.sort(key=lambda x: os.path.getmtime(x))
