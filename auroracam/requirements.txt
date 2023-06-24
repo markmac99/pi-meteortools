@@ -5,3 +5,4 @@ ephem
 numpy
 Pillow
 python-dvr
+ukmon_meteortools

@@ -9,7 +9,7 @@ import datetime
 import time 
 import subprocess
 import configparser
-from annotateImage import annotateImage
+from ukmon_meteortools.utils import annotateImageArbitrary
 import boto3 
 import logging 
 import logging.handlers
@@ -91,7 +91,7 @@ def grabImage(ipaddress, fnam, hostname, now):
     cap.release()
     cv2.destroyAllWindows()
     title = f'{hostname} {now.strftime("%Y-%m-%d %H:%M:%S")}'
-    annotateImage(fnam, title, color='#FFFFFF')
+    annotateImageArbitrary(fnam, title, color='#FFFFFF')
     return 
 
 
@@ -200,10 +200,10 @@ if __name__ == '__main__':
     now = datetime.datetime.utcnow()
     if now > dawn or now < dusk:
         isnight = False
-        setCameraExposure(ipaddress, 'DAY', nightgain, True)
+        setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
     else:
         isnight = True
-        setCameraExposure(ipaddress, 'NIGHT', nightgain, True)
+        setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
 
     log.info(f'now {now}, night start {dusk}, end {dawn}')
     uploadcounter = 0
@@ -211,7 +211,7 @@ if __name__ == '__main__':
         now = datetime.datetime.utcnow()
         if now < dawn and now > dusk and isnight is False:
             isnight = True
-            setCameraExposure(ipaddress, 'NIGHT', nightgain, True)
+            setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
         # if force_day then save a dated file for the daytime 
         if force_day is True:
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
@@ -234,7 +234,7 @@ if __name__ == '__main__':
                 dusk, dawn = getStartEndTimes(datadir, thiscfg)
                 dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
                 os.makedirs(dirnam, exist_ok=True)
-                setCameraExposure(ipaddress, 'DAY', nightgain, True)
+                setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
                 log.info('switched to daytime mode, now rebooting')
                 isnight = False
                 os.remove(norebootflag)
