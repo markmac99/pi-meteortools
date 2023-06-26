@@ -28,12 +28,13 @@ def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False, autoExp
         minexp = '0x00000064'
         maxexp = '0x00009C40'
     else:
-        expo = 100
-        gain = nightgain
         cmode = nightcmode
+        gain = nightgain
         if autoExp is True:
+            expo = 30
             minexp = '0x00000064'
         else:
+            expo = 100
             minexp = '0x00009C40'
         maxexp = '0x00009C40'
 
