@@ -71,7 +71,17 @@ def getStartEndTimes(datadir, thiscfg):
     return starttime, endtime
 
 
-def grabImage(ipaddress, fnam, hostname, now):
+def adjustColour(fnam, red=1, green=1, blue=1, fnamnew=None):
+    img = cv2.imread(fnam, flags=cv2.IMREAD_COLOR)
+    img[:,:,2]=img[:,:,2] * red
+    img[:,:,1]=img[:,:,1] * green
+    img[:,:,0]=img[:,:,0] * blue
+    if fnamnew is None:
+        fnamnew = fnam
+    cv2.imwrite(fnamnew, img)    
+
+
+def grabImage(ipaddress, fnam, hostname, now, thiscfg):
     capstr = f'rtsp://{ipaddress}:554/user=admin&password=&channel=1&stream=0.sdp'
     # log.info(capstr)
     try:
@@ -91,6 +101,8 @@ def grabImage(ipaddress, fnam, hostname, now):
     cap.release()
     cv2.destroyAllWindows()
     title = f'{hostname} {now.strftime("%Y-%m-%d %H:%M:%S")}'
+    radj, gadj, badj = (thiscfg['auroracam']['rgbadj']).split(',')
+    adjustColour(fnam, red=float(radj), green=float(gadj), blue=float(badj))
     annotateImageArbitrary(fnam, title, color='#FFFFFF')
     return 
 
@@ -216,14 +228,14 @@ if __name__ == '__main__':
         if force_day is True:
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             os.makedirs(dirnam, exist_ok=True)
-            grabImage(ipaddress, fnam, hostname, now)
+            grabImage(ipaddress, fnam, hostname, now, thiscfg)
             log.info(f'grabbed {fnam}')
 
         # if we are in the daytime period, just grab an image
         elif now > dawn or now < dusk:
             # grab the image
             fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
-            grabImage(ipaddress, fnam, hostname, now)
+            grabImage(ipaddress, fnam, hostname, now, thiscfg)
             log.info(f'grabbed {fnam}')
             if isnight is True:
                 # make the mp4
@@ -246,7 +258,7 @@ if __name__ == '__main__':
             dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
             os.makedirs(dirnam, exist_ok=True)
             fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
-            grabImage(ipaddress, fnam, hostname, now)
+            grabImage(ipaddress, fnam, hostname, now, thiscfg)
             log.info(f'grabbed {fnam}')
             fnam2 = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
             if os.path.isfile(fnam):
