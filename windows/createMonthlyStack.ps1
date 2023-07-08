@@ -15,8 +15,10 @@ $remotepth=$ini['camera']['hostname']
 $localfolder=$ini['camera']['localfolder']
 $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
-$pylib=$ini['ukmon']['ukmon_pylib']
 $webserver=$ini['website']['webserver']
+$awsprofile=$ini['mjmm']['awsprofile']
+$awsbuck=$ini['mjmm']['cambucket']
+
 $hostname=(split-path $remotepth -leaf)
 
 if ($args.count -eq 2){
@@ -57,8 +59,8 @@ if ((test-path $destpath\$stackfile) -eq 1)
     $latf=$hostname.toupper() + '_latest.jpg'
     $webtarg=$webserver+":data/meteors"
     scp $newname $webtarg/$latf
-    $webtarg=$webserver+":data/mjmm-data/" + $hostname.toupper() + "/stacks"
-    scp $newname $webtarg
+    $webtarg = $awsbuck + '/' + $hostname.toupper() + "/stacks/" 
+    aws s3 cp $newname $webtarg --profile $awsprofile
 }
 else {
     Write-Output 'no stack to upload'
