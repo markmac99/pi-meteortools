@@ -70,7 +70,7 @@ echo "})"  >> $idxfile
 
 diff $idxfile $DATADIR/cameraindex.js > /dev/null 
 if [ $? -gt 0 ] ; then
-    echo deploying changes
+    echo deploying changes to $DATADIR
     cp $idxfile $DATADIR/cameraindex.js
 else
     echo nothing changed
@@ -106,16 +106,21 @@ echo "})"  >> $idxfile
 
 diff $idxfile $DATADIR/allsky/startrails/cameraindex.js > /dev/null 
 if [ $? -gt 0 ] ; then
-    echo deploying changes
+    echo deploying startrails changes
     cp $idxfile $DATADIR/allsky/startrails/cameraindex.js
 else
     echo nothing changed
 fi
 
+camlist=$(ls -1d UK* allsky/startrails allsky/videos)
+for cam in $camlist ; do 
+    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html"
+done
+
 delaymins=120
 
 source ~/tools/vwebstuff/bin/activate
-pip install --upgrade python-crontab ephem
+#pip install --upgrade python-crontab ephem
 
 python - << EOD
 from crontab import CronTab
