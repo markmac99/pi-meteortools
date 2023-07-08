@@ -9,11 +9,11 @@ import datetime
 import time 
 import subprocess
 import configparser
-from ukmon_meteortools.utils import annotateImageArbitrary
+from ukmon_meteortools.utils import annotateImageArbitrary, getNextRiseSet
 import boto3 
 import logging 
 import logging.handlers
-from setExpo import setCameraExposure, getNextRiseSet
+from setExpo import setCameraExposure
 from crontab import CronTab
 
 
@@ -26,13 +26,10 @@ def getStartEndTimes(datadir, thiscfg):
     lon = thiscfg['auroracam']['lon']
     ele = thiscfg['auroracam']['alt']
 
-    cfg = configparser.ConfigParser(inline_comment_prefixes=';')
-    cfg.add_section('System')
-    cfg.set('System', 'latitude', lat)
-    cfg.set('System', 'longitude', lon)
-    cfg.set('System', 'elevation', ele)
-
-    risetm, settm = getNextRiseSet(cfg)
+    risetm, settm = getNextRiseSet(lat, lon, ele)
+    # capture from an hour before dusk to an hour after dawn - camera autoadjusts now
+    risetm = risetm + datetime.timedelta(minutes=60)
+    settm = settm - datetime.timedelta(minutes=60)
     if risetm < settm:
         # we are starting after dusk so find out if there's already a folder
         # and use that instead
@@ -107,10 +104,13 @@ def grabImage(ipaddress, fnam, hostname, now, thiscfg):
     return 
 
 
-def makeTimelapse(dirname, s3, camname, bucket):
+def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
     dirname = os.path.normpath(os.path.expanduser(dirname))
     _, mp4shortname = os.path.split(dirname)
-    mp4name = os.path.join(dirname, mp4shortname + '.mp4')
+    if daytimelapse:
+        mp4name = os.path.join(dirname, mp4shortname + '_day.mp4')
+    else:
+        mp4name = os.path.join(dirname, mp4shortname + '.mp4')
     log.info(f'creating {mp4name}')
     fps = int(125/pausetime)
     if os.path.isfile(mp4name):
@@ -208,6 +208,11 @@ if __name__ == '__main__':
     dusk, dawn = getStartEndTimes(datadir, thiscfg)
     dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
     os.makedirs(dirnam, exist_ok=True)
+    daytimelapse = int(thiscfg['auroracam']['daytimelapse'])
+    if daytimelapse:
+        daydirnam = os.path.join(datadir, dawn.strftime('%Y%m%d_%H%M%S'))
+        log.info(f'daytimelapse is on, creating {daydirnam}')
+        os.makedirs(daydirnam, exist_ok=True)
 
     now = datetime.datetime.utcnow()
     if now > dawn or now < dusk:
@@ -222,6 +227,12 @@ if __name__ == '__main__':
     while True:
         now = datetime.datetime.utcnow()
         if now < dawn and now > dusk and isnight is False:
+            if daytimelapse:
+                # make the daytime mp4
+                norebootflag = os.path.join(datadir, '..', '.noreboot')
+                open(norebootflag, 'w')
+                makeTimelapse(daydirnam, s3, camid, bucket, daytimelapse)
+                os.remove(norebootflag)
             isnight = True
             setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
         # if force_day then save a dated file for the daytime 
@@ -237,6 +248,10 @@ if __name__ == '__main__':
             fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
             grabImage(ipaddress, fnam, hostname, now, thiscfg)
             log.info(f'grabbed {fnam}')
+            if daytimelapse:
+                fnam2 = os.path.join(daydirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
+                log.info(f'copying to {fnam2}')
+                shutil.copyfile(fnam, fnam2)
             if isnight is True:
                 # make the mp4
                 norebootflag = os.path.join(datadir, '..', '.noreboot')
