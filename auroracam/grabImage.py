@@ -21,51 +21,28 @@ pausetime = 2 # time to wait between capturing frames
 log = logging.getLogger("logger")
 
 
-def getStartEndTimes(datadir, thiscfg):
+def roundTime(dt):
+    if dt.microsecond > 500000:
+        dt = dt + datetime.timedelta(seconds=1, microseconds = -dt.microsecond)
+    else:
+        dt = dt + datetime.timedelta(microseconds = -dt.microsecond)
+    return dt
+
+
+def getStartEndTimes(currdt, thiscfg):
     lat = thiscfg['auroracam']['lat']
     lon = thiscfg['auroracam']['lon']
     ele = thiscfg['auroracam']['alt']
-
-    risetm, settm = getNextRiseSet(lat, lon, ele)
-    # capture from an hour before dusk to an hour after dawn - camera autoadjusts now
-    risetm = risetm + datetime.timedelta(minutes=60)
-    settm = settm - datetime.timedelta(minutes=60)
+    risetm, settm = getNextRiseSet(lat, lon, ele, fordate=currdt)
+    lastdawn, lastdusk = getNextRiseSet(lat, lon, ele, fordate = currdt - datetime.timedelta(days=1))
     if risetm < settm:
-        # we are starting after dusk so find out if there's already a folder
-        # and use that instead
-        log.info('after overnight start time')
-
-        # if starttime=True, then dur is the number of seconds from now to end time.
-        starttime = datetime.datetime.utcnow()
-        endtime = risetm
-        # see if there's an existing folder for the data
-        dirs=[]
-        flist = os.listdir(datadir)
-        for fl in flist:
-            if os.path.isdir(os.path.join(datadir, fl)):
-                dirs.append(fl)
-        dirs.sort()
-        laststart = datetime.datetime.strptime(dirs[-1], '%Y%m%d_%H%M%S')
-        log.info(f'found folder {dirs[-1]}')
-
-        # if its between noon and midnight on the same day, reuse the folder
-        if starttime.hour > 12 and laststart.day == starttime.day:
-            log.info(f'using {dirs[-1]}')
-            starttime = laststart
-
-        # if its between midnight and noon, and the dates are less than two full 
-        # days apart, reuse the  folder. 
-        elif starttime.hour <= 12 and (starttime - laststart).days < 2:
-            log.info(f'using {dirs[-1]}')
-            starttime = laststart
-        else:
-            pass
-    else:
-        # next set time is before the next rise time, ie its currently daytime
-        starttime = settm
-        endtime = risetm
-    log.info(f'night starts at {starttime} and ends at {endtime}')
-    return starttime, endtime
+        settm = lastdusk
+    # capture from an hour before dusk to an hour after dawn - camera autoadjusts now
+    nextrise = roundTime(risetm) + datetime.timedelta(minutes=60)
+    nextset = roundTime(settm) - datetime.timedelta(minutes=60)
+    lastrise = roundTime(lastdawn) + datetime.timedelta(minutes=60)
+    log.info(f'night starts at {nextset} and ends at {nextrise}')
+    return nextset, nextrise, lastrise
 
 
 def adjustColour(fnam, red=1, green=1, blue=1, fnamnew=None):
@@ -115,14 +92,17 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
     fps = int(125/pausetime)
     if os.path.isfile(mp4name):
         os.remove(mp4name)
-    cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
+    cmdline = f'fmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
         -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
         {mp4name}'
     log.info(f'making timelapse of {dirname}')
     subprocess.call([cmdline], shell=True)
     log.info('done')
     if s3 is not None:
-        targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}.mp4'
+        if daytimelapse:
+            targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}_day.mp4'
+        else:
+            targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}.mp4'
         try:
             log.info(f'uploading to {bucket}/{targkey}')
             s3.meta.client.upload_file(mp4name, bucket, targkey, ExtraArgs = {'ContentType': 'video/mp4'})
@@ -176,10 +156,6 @@ def addCrontabEntry(local_path):
 if __name__ == '__main__':
     ipaddress = sys.argv[1]
     hostname = sys.argv[2]
-    if len(sys.argv)> 4:
-        force_day = True
-    else:
-        force_day = False
 
     thiscfg = configparser.ConfigParser()
     local_path =os.path.dirname(os.path.abspath(__file__))
@@ -205,15 +181,8 @@ if __name__ == '__main__':
         os.remove(norebootflag)
     
     # get todays dusk and tomorrows dawn times
-    dusk, dawn = getStartEndTimes(datadir, thiscfg)
-    dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
-    os.makedirs(dirnam, exist_ok=True)
+    dusk, dawn, lastdawn = getStartEndTimes(datetime.datetime.utcnow(), thiscfg)
     daytimelapse = int(thiscfg['auroracam']['daytimelapse'])
-    if daytimelapse:
-        daydirnam = os.path.join(datadir, dawn.strftime('%Y%m%d_%H%M%S'))
-        log.info(f'daytimelapse is on, creating {daydirnam}')
-        os.makedirs(daydirnam, exist_ok=True)
-
     now = datetime.datetime.utcnow()
     if now > dawn or now < dusk:
         isnight = False
@@ -222,65 +191,45 @@ if __name__ == '__main__':
         isnight = True
         setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
 
-    log.info(f'now {now}, night start {dusk}, end {dawn}')
+    log.info(f'now {now}, dusk {dusk}, dawn {dawn} last dawn {lastdawn}')
     uploadcounter = 0
     while True:
         now = datetime.datetime.utcnow()
+        fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
+        grabImage(ipaddress, fnam, hostname, now, thiscfg)
+        log.info(f'grabbed {fnam}')
+        dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg)
+        if isnight:
+            capdirname = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
+        else:
+            capdirname = os.path.join(datadir, lastdawn.strftime('%Y%m%d_%H%M%S'))
+        if daytimelapse or isnight: 
+            os.makedirs(capdirname, exist_ok=True)
+            fnam2 = os.path.join(capdirname, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
+            shutil.copyfile(fnam, fnam2)
+            log.info(f'and copied to {capdirname}')
+        # when we move from day to night, make the day timelapse then switch exposure and flag
         if now < dawn and now > dusk and isnight is False:
             if daytimelapse:
                 # make the daytime mp4
                 norebootflag = os.path.join(datadir, '..', '.noreboot')
                 open(norebootflag, 'w')
-                makeTimelapse(daydirnam, s3, camid, bucket, daytimelapse)
+                makeTimelapse(capdirname, s3, camid, bucket, daytimelapse)
                 os.remove(norebootflag)
             isnight = True
             setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
-        # if force_day then save a dated file for the daytime 
-        if force_day is True:
-            fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
-            os.makedirs(dirnam, exist_ok=True)
-            grabImage(ipaddress, fnam, hostname, now, thiscfg)
-            log.info(f'grabbed {fnam}')
+            capdirname = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
+            os.makedirs(capdirname, exist_ok=True)
 
-        # if we are in the daytime period, just grab an image
-        elif now > dawn or now < dusk:
-            # grab the image
-            fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
-            grabImage(ipaddress, fnam, hostname, now, thiscfg)
-            log.info(f'grabbed {fnam}')
-            if daytimelapse:
-                fnam2 = os.path.join(daydirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
-                log.info(f'copying to {fnam2}')
-                shutil.copyfile(fnam, fnam2)
-            if isnight is True:
-                # make the mp4
-                norebootflag = os.path.join(datadir, '..', '.noreboot')
-                open(norebootflag, 'w')
-                makeTimelapse(dirnam, s3, camid, bucket)
-                # refresh the dusk/dawn times for tomorrow
-                dusk, dawn = getStartEndTimes(datadir, thiscfg)
-                dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
-                os.makedirs(dirnam, exist_ok=True)
-                setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
-                log.info('switched to daytime mode, now rebooting')
-                isnight = False
-                os.remove(norebootflag)
-                os.system('/usr/bin/sudo /usr/sbin/shutdown -r now')
-
-        # otherwise its night time so save a dated file
-        else:
-            isnight = True
-            dirnam = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
-            os.makedirs(dirnam, exist_ok=True)
-            fnam = os.path.join(dirnam, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
-            grabImage(ipaddress, fnam, hostname, now, thiscfg)
-            log.info(f'grabbed {fnam}')
-            fnam2 = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
-            if os.path.isfile(fnam):
-                shutil.copy(fnam, fnam2)
-                log.info('updated live copy')
-            else:
-                log.info(f'{fnam} missing')
+        # when we move from night to day, make the night timelapse then switch exposure and flag and reboot
+        elif now > lastdawn and now < dusk and isnight is True:
+            norebootflag = os.path.join(datadir, '..', '.noreboot')
+            open(norebootflag, 'w')
+            makeTimelapse(capdirname, s3, camid, bucket)
+            log.info('switched to daytime mode, now rebooting')
+            setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
+            os.remove(norebootflag)
+            os.system('/usr/bin/sudo /usr/sbin/shutdown -r now')
 
         uploadcounter += pausetime
         testmode = int(os.getenv('TESTMODE', default=0))

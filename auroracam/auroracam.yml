@@ -11,6 +11,7 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/reorganize.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/uploadLiveJpg.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/checkAuroracam.sh', dest: '{{destdir}}/', mode: '755', backup: no }

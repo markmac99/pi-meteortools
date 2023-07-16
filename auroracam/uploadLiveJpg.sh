@@ -12,4 +12,7 @@ export LAT LON ALT UPLOADLOC CAMID
 source ~/vAuroracam/bin/activate
 #export PYTHONPATH=~/source/RMS
 
+pids=$(ps -ef | grep ${here}/grabImage | egrep -v "grep|$$" | awk '{print $2}')
+[ "$pids" != "" ] && kill -9 $pids
+
 python $here/grabImage.py $IPADDRESS $hn
