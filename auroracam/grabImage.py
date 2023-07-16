@@ -92,7 +92,7 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
     fps = int(125/pausetime)
     if os.path.isfile(mp4name):
         os.remove(mp4name)
-    cmdline = f'fmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
+    cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
         -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
         {mp4name}'
     log.info(f'making timelapse of {dirname}')
