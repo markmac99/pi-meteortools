@@ -16,16 +16,25 @@ import configparser
 import logging
 import time
 import shutil
+import datetime 
+from dateutil.relativedelta import relativedelta
 
 import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
+from Utils.StackFFs import stackFFs
+from RMS.Routines import MaskImage
+from Utils.TrackStack import trackStack
 
+from ukmon_meteortools.utils import annotateImage
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendAnEmail as em # noqa:E402
 import sendToYoutube as stu # noqa:E402
 import sendToMQTT as mqs # noqa:E402
+
+
+log = logging.getLogger("logger")
 
 
 def copyMLRejects(cap_dir, arch_dir):
@@ -42,8 +51,98 @@ def copyMLRejects(cap_dir, arch_dir):
         srcfile = os.path.join(cap_dir, ff_file)
         trgfile = os.path.join(arch_dir, ff_file)
         if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
-            print('copying', os.path.basename(srcfile))
+            log.info(f'copying reject {os.path.basename(srcfile)}')
             shutil.copyfile(srcfile, trgfile)
+    return 
+
+
+def monthlyStack(cfg, arch_dir, localcfg):
+    currdir = os.path.basename(os.path.normpath(arch_dir))
+    lastmthstr = currdir[:7] + (datetime.datetime.strptime(currdir[7:13], '%Y%m')+ relativedelta(months=-1)).strftime('%Y%m')
+    tmpdir = os.path.join(cfg.data_dir, 'tmpstack')
+    os.makedirs(tmpdir, exist_ok=True)
+    # clear out last months data if present
+    oldfflist = glob.glob(os.path.join(tmpdir, '*.fits'))
+    for ff in oldfflist:
+        if lastmthstr in ff:
+            os.remove(ff)
+    oldjpgs = glob.glob(os.path.join(tmpdir, '*.jpg'))
+    for oldjpg in oldjpgs:
+        os.remove(oldjpg)
+    # copy most recent fits files
+    flist = glob.glob(f'{arch_dir}/*.fits')
+    for ff in flist:
+        targ = os.path.join(tmpdir, os.path.basename(ff))
+        if not os.path.isfile(targ):
+            log.info(f'copying {os.path.basename(ff)} for stacking')
+            shutil.copyfile(ff, targ)
+    # copy the mask if not already there
+    maskfile = os.path.join(tmpdir, 'mask.bmp')
+    if not os.path.isfile(maskfile):
+        currmaskf = os.path.join(arch_dir, 'mask.bmp')
+        if os.path.isfile(currmaskf):
+            shutil.copyfile(currmaskf, maskfile)
+    mask = MaskImage.loadMask(maskfile)
+    # stack files. Flat is not used if subavg is true
+    stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask) 
+    jpgfile = glob.glob(os.path.join(tmpdir, '*.jpg'))
+    if len(jpgfile) > 0:
+        stn = cfg.stationID
+        flist = glob.glob(os.path.join(tmpdir, '*.fits'))
+        annotateImage(jpgfile[0], stn, metcount=len(flist), rundate=currdir[7:13])
+        targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
+        shutil.copyfile(jpgfile[0], targ)
+        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+        hn = localcfg['postprocess']['host']
+        if hn[:3] == 's3:':
+            log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
+            with open(idfile, 'r') as f:
+                li = f.readline()
+                key = li.split('=')[1].rstrip().strip('"')
+                li = f.readline()
+                secret = li.split('=')[1].rstrip().strip('"')
+            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
+            target=hn[5:]
+            outf = '{:s}/stacks/{:s}'.format(stn, currdir[:13]+'.jpg')
+            try: 
+                s3.meta.client.upload_file(jpgfile[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+            except Exception as e:
+                print('upload to S3 failed')
+                log.info(e, exc_info=True)
+        else:
+            log.info('target is not s3, not uploading monthly stack')
+    return     
+
+
+def doTrackStack(arch_dir, cfg, localcfg):
+    trackStack([arch_dir], cfg, draw_constellations=True, hide_plot=True, background_compensation=False)
+    tflist = glob.glob(os.path.join(arch_dir, '*_track_stack.jpg'))
+    if len(tflist) > 0:
+        trackfile = tflist[0]
+        currdir = os.path.basename(os.path.normpath(arch_dir))
+        lis = open(os.path.join(arch_dir, 'FTPdetectinfo_'+currdir+'.txt'), 'r').readlines()
+        metcount = lis[0].split('=')[1].strip()
+        currdir = os.path.basename(os.path.normpath(arch_dir))
+        annotateImage(trackfile, cfg.stationID, int(metcount), currdir[7:15])
+        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+        hn = localcfg['postprocess']['host']
+        if hn[:3] == 's3:':
+            log.info('uploading to {:s}/{:s}/{:s}'.format(hn, cfg.stationID, 'trackstacks'))
+            with open(idfile, 'r') as f:
+                li = f.readline()
+                key = li.split('=')[1].rstrip().strip('"')
+                li = f.readline()
+                secret = li.split('=')[1].rstrip().strip('"')
+            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
+            target=hn[5:]
+            outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
+            try: 
+                s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+            except Exception as e:
+                print('upload to S3 failed')
+                log.info(e, exc_info=True)
+        else:
+            log.info('target is not s3, not uploading monthly stack')
 
     return 
 
@@ -54,7 +153,6 @@ def rmsExternal(cap_dir, arch_dir, config):
         f.write('1')
 
     # clear existing log handlers
-    log = logging.getLogger("logger")
     while len(log.handlers) > 0:
         log.removeHandler(log.handlers[0])
         
@@ -70,7 +168,14 @@ def rmsExternal(cap_dir, arch_dir, config):
     hname = os.uname()[1][:6]
 
     extramsg = 'Notes:\n'
-    
+
+    # create monthly stack
+    log.info('creating monthly tack')
+    monthlyStack(config, arch_dir, localcfg)
+    # create trackstack
+    log.info('creating trackstack')
+    doTrackStack(arch_dir, config, localcfg)
+
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
