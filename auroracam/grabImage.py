@@ -198,11 +198,17 @@ if __name__ == '__main__':
         fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
         grabImage(ipaddress, fnam, hostname, now, thiscfg)
         log.info(f'grabbed {fnam}')
+        lastdusk = dusk
         dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg)
         if isnight:
             capdirname = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
         else:
             capdirname = os.path.join(datadir, lastdawn.strftime('%Y%m%d_%H%M%S'))
+        
+        if dusk != lastdusk and isnight:
+            # its dawn
+            capdirname = os.path.join(datadir, lastdusk.strftime('%Y%m%d_%H%M%S'))
+            
         if daytimelapse or isnight: 
             os.makedirs(capdirname, exist_ok=True)
             fnam2 = os.path.join(capdirname, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
@@ -222,7 +228,7 @@ if __name__ == '__main__':
             os.makedirs(capdirname, exist_ok=True)
 
         # when we move from night to day, make the night timelapse then switch exposure and flag and reboot
-        elif now > lastdawn and now < dusk and isnight is True:
+        if dusk != lastdusk and isnight:
             norebootflag = os.path.join(datadir, '..', '.noreboot')
             open(norebootflag, 'w')
             makeTimelapse(capdirname, s3, camid, bucket)

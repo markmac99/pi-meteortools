@@ -49,7 +49,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
-      line: 'WEBSERVER=3.9.128.14'
+      line: 'WEBSERVER=wordpresssite'
   - name: update webid
     lineinfile:
       path: '{{destdir}}/config.ini'
