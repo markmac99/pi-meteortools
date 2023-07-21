@@ -25,11 +25,6 @@
     - {src: '{{srcdir}}/SetExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
 
-  #- name: update mail recip
-  #  lineinfile: 
-  #    path: '{{destdir}}/config.ini'
-  #    regexp: 'MAILRECIP='
-  #    line: 'MAILRECIP=markmcintyre99@googlemail.com'
   - name: update id file
     lineinfile:
       path: '{{destdir}}/config.ini'
@@ -40,26 +35,11 @@
       path: '{{destdir}}/config.ini'
       regexp: 'HOST='
       line: 'HOST=s3://mjmm-data'
-  - name: update AWS user
-    lineinfile:
-      path: '{{destdir}}/config.ini'
-      regexp: 'USER='
-      line: 'USER=bitnami'
   - name: update webserver
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
       line: 'WEBSERVER=wordpresssite'
-  - name: update webid
-    lineinfile:
-      path: '{{destdir}}/config.ini'
-      regexp: 'WEBID='
-      line: 'WEBID=/home/pi/.ssh/markskey.pem'
-  - name: update target folder
-    lineinfile:
-      path: '{{destdir}}/config.ini'
-      regexp: 'MP4DIR='
-      line: 'MP4DIR=/mnt/mjmm-data/'
   - name: update MQTT broker
     lineinfile:
       path: '{{destdir}}/config.ini'
