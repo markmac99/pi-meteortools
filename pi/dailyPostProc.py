@@ -18,6 +18,9 @@ import time
 import shutil
 import datetime 
 from dateutil.relativedelta import relativedelta
+import paramiko
+from paramiko.config import SSHConfig
+
 
 import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
@@ -29,12 +32,32 @@ from ukmon_meteortools.utils import annotateImage
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
-import sendAnEmail as em # noqa:E402
 import sendToYoutube as stu # noqa:E402
 import sendToMQTT as mqs # noqa:E402
 
 
 log = logging.getLogger("logger")
+
+
+def pushLatestStack(targetname, imgname):
+    config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    sitecfg = config.lookup(targetname)
+    if 'user' not in sitecfg.keys():
+        log.warning(f'unable to connect to {targetname} - no entry in ssh config file')
+        return 
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
+    ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+    ftp_client = ssh_client.open_sftp()
+    _, fname = os.path.split(imgname)
+    camid = fname[:6]
+    if os.path.isfile(imgname):
+        ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
+        log.info(f'uploaded {fname} to {targetname}')
+    else:
+        log.warning(f'file {imgname} not found')
+    return 
 
 
 def copyMLRejects(cap_dir, arch_dir):
@@ -107,10 +130,12 @@ def monthlyStack(cfg, arch_dir, localcfg):
             try: 
                 s3.meta.client.upload_file(jpgfile[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
             except Exception as e:
-                print('upload to S3 failed')
+                log.warning('upload to S3 failed')
                 log.info(e, exc_info=True)
         else:
             log.info('target is not s3, not uploading monthly stack')
+        webserver = localcfg['postprocess']['webserver']
+        pushLatestStack(webserver, targ)
     return     
 
 
@@ -139,7 +164,7 @@ def doTrackStack(arch_dir, cfg, localcfg):
             try: 
                 s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
             except Exception as e:
-                print('upload to S3 failed')
+                log.warning('upload to S3 failed')
                 log.info(e, exc_info=True)
         else:
             log.info('target is not s3, not uploading monthly stack')
@@ -166,8 +191,6 @@ def rmsExternal(cap_dir, arch_dir, config):
     sys.path.append(srcdir)
 
     hname = os.uname()[1][:6]
-
-    extramsg = 'Notes:\n'
 
     # create monthly stack
     log.info('creating monthly tack')
@@ -205,7 +228,6 @@ def rmsExternal(cap_dir, arch_dir, config):
             errmsg = 'unable to upload timelapse'
             log.info(errmsg)
             log.info(e, exc_info=True)
-            extramsg = extramsg + errmsg + '\n'
     # copy the ML rejected files
     copyMLRejects(cap_dir, arch_dir)
     
@@ -218,43 +240,23 @@ def rmsExternal(cap_dir, arch_dir, config):
         yymm = splits[1]
         yymm = yymm[:6]
         idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
-        if hn[:3] == 's3:':
-            log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
+        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
 
-            with open(idfile, 'r') as f:
-                li = f.readline()
-                key = li.split('=')[1].rstrip().strip('"')
-                li = f.readline()
-                secret = li.split('=')[1].rstrip().strip('"')
+        with open(idfile, 'r') as f:
+            li = f.readline()
+            key = li.split('=')[1].rstrip().strip('"')
+            li = f.readline()
+            secret = li.split('=')[1].rstrip().strip('"')
 
-            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
-                region_name='eu-west-2')
-            target=hn[5:]
-            outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
-            try: 
-                s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
-            except Exception as e:
-                print('upload to S3 failed')
-                log.info(e, exc_info=True)
-        else:
-            log.info('uploading to website')
-            user = localcfg['postprocess']['user']
-            mp4dir = localcfg['postprocess']['mp4dir']
-            cmdline = 'ssh -i {:s}  {:s}@{:s} mkdir {:s}/{:s}/{:s}'.format(idfile, user, hn, mp4dir, stn, yymm)
-            os.system(cmdline)
-            cmdline = 'scp -i {:s} {:s} {:s}@{:s}:{:s}/{:s}/{:s}'.format(idfile, fn, user, hn, mp4dir, stn, yymm)
-            os.system(cmdline)
-
-    # email a summary to the mailrecip
-    logdir = os.path.expanduser(os.path.join(config.data_dir, config.log_dir))
-    logfs = glob.glob(os.path.join(logdir, 'log*.log*'))
-    logfs.sort(key=lambda x: os.path.getmtime(x))
-    with open(logfs[-1],'r') as fi:
-        sl = fi.readlines()
-    totli = [li for li in sl if 'TOTAL' in li]
-    total = 0
-    if len(totli) > 0:
-        total = totli[0].split(' ')[4]
+        s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
+            region_name='eu-west-2')
+        target=hn[5:]
+        outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
+        try: 
+            s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
+        except Exception as e:
+            log.warning('upload to S3 failed')
+            log.info(e, exc_info=True)
 
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
@@ -264,30 +266,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
 
-    if len(localcfg['postprocess']['mailrecip']) > 1:
-        log.info('sending email')
-        splits = os.path.basename(arch_dir).split('_')
-        curdt = splits[1]
-        try: 
-            em.sendDailyMail(localcfg, hname, curdt, total, extramsg, log)
-        except Exception as e:
-            log.warning('problem sending email')
-            log.info(e, exc_info=True)
-
-    if os.path.exists(os.path.join(srcdir, 'doistream')):
-        log.info('doing istream')
-
-        # clear log handlers as we want istrastream in its own logfile
-        while len(log.handlers) > 0:
-            log.removeHandler(log.handlers[0])
-
-        sys.path.append(os.path.expanduser('~/source/RMS/iStream'))
-        import iStream as istr
-        istr.rmsExternal(cap_dir, arch_dir, config)
-    else:
-        # only remove this if we are finished with processing
-        os.remove(rebootlockfile)
-        log.info('not doing istream')
+    os.remove(rebootlockfile)
 
     # clear log handlers again
     while len(log.handlers) > 0:
