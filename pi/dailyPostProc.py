@@ -6,8 +6,7 @@
 # upload to S3 or website. filename configurable in config file
 #
 # Copyright (C) Mark McIntyre
-#
-#
+
 
 import os
 import sys
