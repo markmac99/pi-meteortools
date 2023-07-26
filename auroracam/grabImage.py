@@ -15,10 +15,39 @@ import logging
 import logging.handlers
 from setExpo import setCameraExposure
 from crontab import CronTab
+import paho.mqtt.client as mqtt
+import platform 
 
 
 pausetime = 2 # time to wait between capturing frames 
 log = logging.getLogger("logger")
+
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected success")
+    else:
+        print("Connected fail with code", rc)
+
+
+def on_publish(client, userdata, result):
+    #print('data published - {}'.format(result))
+    return
+
+
+def sendToMQTT(broker):
+    if broker is None:
+        broker = 'wxsatpi'
+    hname = platform.uname().node
+    client = mqtt.Client(hname)
+    client.on_connect = on_connect
+    client.on_publish = on_publish
+    client.connect(broker, 1883, 60)
+    usage = shutil.disk_usage('.')
+    diskspace = usage.free/usage.total*100.0
+    topic = f'meteorcams/{hname}/diskspace'
+    ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
+    return ret
 
 
 def roundTime(dt):
