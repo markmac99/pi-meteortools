@@ -44,7 +44,7 @@ def sendToMQTT(broker):
     client.on_publish = on_publish
     client.connect(broker, 1883, 60)
     usage = shutil.disk_usage('.')
-    diskspace = usage.free/usage.total*100.0
+    diskspace = round(usage.used/usage.total*100.0,2)
     topic = f'meteorcams/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
     return ret
