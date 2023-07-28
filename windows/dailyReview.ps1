@@ -91,6 +91,7 @@ if ($fflist.count -gt 0)
 }else {
     write-output "No FF/FR files today"
 }
+
 set-location $PSScriptRoot
 $regex="userej"
 switch -regex -file $bcfg { 
@@ -103,6 +104,9 @@ if ($tst -eq "1" -and $upload_rej -eq "True"){
 else {
     write-output "Skipping GMN ML upload"
 }
+# decide whether to do the trackstack
+$uploadts = $ini['mjmm']['uploadtrackstacks']
+$uploadts = $ini['mjmm']['uploadmthlystacks']
 
 $env:pythonpath=$pylib
 # switch RMS environment to do some post processing
@@ -129,22 +133,24 @@ if ($RMS_INSTALLED -eq 1){
             copy-item $flat $myf
             python -m Utils.ShowerAssociation $ftpfil -x -p gist_ncar -c $myf\.config
             python -m Utils.StackFFs $myf -x -b jpg -f $myf\flat.bmp -m $myf\mask.bmp
-            python -m Utils.TrackStack $myf -c $myf\.config -x --constellations -b
             python -m Utils.BatchFFtoImage $myf jpg -t
             $allplates = $localfolder + '\ArchivedFiles\' + $path + '\platepars_all_recalibrated.json'
             copy-item $allplates $destpath
 
-            $li = (get-content $ftpfil | select-object -first 1)
-            $metcount = [int]$li.split(' ')[3]
-            $ts=(Get-ChildItem $myf\*track_stack.jpg).name
-            if ($ts.count -ne 0){
-                $ymd=$ts.substring(7,8)
-                $imgfile=("$myf\$ts").replace('\','/')
-                python -c "from ukmon_meteortools.utils import annotateImage; annotateImage('$imgfile', '$hostname', $metcount, '$ymd')"
-                $newn=$ts.substring(0,15)+".jpg"
-                copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
-            }else {
-                write-output "No trackstack today"
+            if ($uploadts -eq 1 ) {
+                python -m Utils.TrackStack $myf -c $myf\.config -x --constellations -b
+                $li = (get-content $ftpfil | select-object -first 1)
+                $metcount = [int]$li.split(' ')[3]
+                $ts=(Get-ChildItem $myf\*track_stack.jpg).name
+                if ($ts.count -ne 0){
+                    $ymd=$ts.substring(7,8)
+                    $imgfile=("$myf\$ts").replace('\','/')
+                    python -c "from ukmon_meteortools.utils import annotateImage; annotateImage('$imgfile', '$hostname', $metcount, '$ymd')"
+                    $newn=$ts.substring(0,15)+".jpg"
+                    copy-item $myf\*track_stack.jpg $localfolder\..\trackstacks\$newn
+                }else {
+                    write-output "No trackstack today"
+                }
             }
         }
         else{
@@ -153,10 +159,10 @@ if ($RMS_INSTALLED -eq 1){
     }    
 }
 set-location $PSScriptRoot
-.\createMonthlyStack.ps1 $inifname $path.substring(7,8)
-
+if ($uploadms -eq 1 ) {
+    .\createMonthlyStack.ps1 $inifname $path.substring(7,8)
+}
 # upload to my website, if appropriate
-$uploadts = $ini['mjmm']['uploadtrackstacks']
 if ($uploadts -eq 1 ) {
     .\uploadTrackStacks.ps1 $inifname 
 }
