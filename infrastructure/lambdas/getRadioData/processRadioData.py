@@ -466,7 +466,7 @@ def uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile):
 
     try: 
         assumed_role_object=sts_client.assume_role(
-            RoleArn="arn:aws:iam::822069317839:role/service-role/S3FullAccess",
+            RoleArn="arn:aws:iam::183798037734:role/service-role/S3FullAccess",
             RoleSessionName="AssumeRoleSession1")
         credentials=assumed_role_object['Credentials']
         s3u = boto3.resource('s3',
