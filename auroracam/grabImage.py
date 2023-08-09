@@ -9,7 +9,7 @@ import datetime
 import time 
 import subprocess
 import configparser
-from ukmon_meteortools.utils import annotateImageArbitrary, getNextRiseSet
+from meteortools.utils import annotateImageArbitrary, getNextRiseSet
 import boto3 
 import logging 
 import logging.handlers

@@ -51,7 +51,7 @@ if ((test-path $destpath\$stackfile) -eq 1)
 {
     $metcount = $stackfile.split('_')[2]
     $imgfile=("$destpath\$stackfile").replace('\','/')
-    python -c "from ukmon_meteortools.utils import annotateImage; annotateImage('$imgfile', '$hostname', $metcount, '$ym')"
+    python -c "from meteortools.utils import annotateImage; annotateImage('$imgfile', '$hostname', $metcount, '$ym')"
     $newname=$hostname.toupper() + '_' + $ym + '.jpg'
     Move-Item $destpath\*.jpg $destpath\..\$newname -force
 

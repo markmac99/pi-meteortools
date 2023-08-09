@@ -27,7 +27,7 @@ from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
 from Utils.TrackStack import trackStack
 
-from ukmon_meteortools.utils import annotateImage
+from meteortools.utils import annotateImage
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])

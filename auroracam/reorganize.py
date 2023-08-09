@@ -1,4 +1,4 @@
-from ukmon_meteortools.utils import getNextRiseSet
+from meteortools.utils import getNextRiseSet
 import datetime
 import os
 import glob
