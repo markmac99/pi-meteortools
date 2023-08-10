@@ -28,6 +28,7 @@ from RMS.Routines import MaskImage
 from Utils.TrackStack import trackStack
 
 from meteortools.utils import annotateImage
+from meteortools.utils import sendAnEmail
 import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
@@ -191,13 +192,6 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     hname = os.uname()[1][:6]
 
-    # create monthly stack
-    log.info('creating monthly tack')
-    monthlyStack(config, arch_dir, localcfg)
-    # create trackstack
-    log.info('creating trackstack')
-    doTrackStack(arch_dir, config, localcfg)
-
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
@@ -264,6 +258,19 @@ def rmsExternal(cap_dir, arch_dir, config):
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
+
+    # create monthly stack
+    log.info('creating monthly tack')
+    monthlyStack(config, arch_dir, localcfg)
+    # create trackstack
+    log.info('creating trackstack')
+    try: 
+        doTrackStack(arch_dir, config, localcfg)
+    except Exception as e:
+        log.warning('trackstack failed, probably too many detections')
+        log.info(e, exc_info=True)
+        sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
+                    'Warning',f'{hname}@themcintyres.ddns.net')
 
     os.remove(rebootlockfile)
 

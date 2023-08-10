@@ -22,7 +22,8 @@ $ymd=$ts.substring(7,8)
 
 Write-Output "Annotating image, cam is $hostname, date is $ymd, metcount is $metcount"
 $env:pythonpath="e:\dev\meteorhunting\rms;e:\dev\meteorhunting\westernmeteorpylib;e:\dev\meteorhunting\ukmon-shared\ukmon_pylib"
-python -m utils.annotateImage $myf\$ts $hostname $metcount $ymd
+$myf=$myf.replace('\','/')
+python -c "from meteortools.utils import annotateImage;annotateImage('$myf/$ts', '$hostname', $metcount, '$ymd')"
 Write-Output "copying image"
 $newn=$ts.substring(0,15)+".jpg"
 copy-item $myf\*track_stack.jpg f:\videos\meteorcam\trackstacks\$newn
