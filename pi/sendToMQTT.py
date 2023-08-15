@@ -49,7 +49,6 @@ def getLoggedInfo(cfg):
         lis = open(logf,'r').readlines()
         dd = [li for li in lis if 'Data directory' in li]
         if len(dd) > 0:
-            capdir = dd[0].split(' ')[5].strip()
             break
         i = i + 1
 
@@ -57,6 +56,11 @@ def getLoggedInfo(cfg):
     detectedcount = 0
     if len(totli) > 0:
         detectedcount = int(totli[0].split(' ')[4].strip())
+
+    capdir = os.path.join(cfg.data_dir, 'CapturedFiles')
+    caps = glob.glob(os.path.join(capdir, f'{cfg.stationID}*'))
+    caps.sort(key=lambda x: os.path.getmtime(x))
+    capdir = caps[-1]
     ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
     ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
     meteorcount = 0
@@ -64,7 +68,10 @@ def getLoggedInfo(cfg):
         lis = open(ftpf[0],'r').readlines()
         mc = [li for li in lis if 'Meteor Count' in li]
         meteorcount = int(mc[0].split('=')[1].strip())
-
+    
+    # if meteorcount is nonzero but detected count is zero then the logfile was malformed
+    if detectedcount == 0:
+        detectedcount = meteorcount
 
     datestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     return detectedcount, meteorcount, datestamp
