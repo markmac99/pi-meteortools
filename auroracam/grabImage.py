@@ -225,6 +225,7 @@ if __name__ == '__main__':
     while True:
         now = datetime.datetime.utcnow()
         fnam = os.path.expanduser(os.path.join(datadir, '..', 'live.jpg'))
+        thiscfg.read(os.path.join(local_path, 'config.ini'))
         grabImage(ipaddress, fnam, hostname, now, thiscfg)
         log.info(f'grabbed {fnam}')
         lastdusk = dusk
