@@ -1,3 +1,5 @@
+# Copyright (C) 2018-2023 Mark McIntyre 
+
 # helper functions
 
 Function Get-IniContent {  
@@ -105,6 +107,7 @@ Function Get-IniContent {
     End  
         {Write-Verbose "$($MyInvocation.MyCommand.Name):: Function ended"}  
 } 
+
 Function Test-CommandExists
 {
  Param ($command)
