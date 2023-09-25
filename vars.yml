@@ -1,2 +1,4 @@
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/windows
     destdir: /mnt/f/videos/MeteorCam/scripts
+    emsrcdir: /mnt/e/dev/meteorhunting/pi-meteortools/rmseventmonitor
+    emdestdir: /mnt/f/videos/MeteorCam/Fireballs/events
