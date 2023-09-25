@@ -11,21 +11,19 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/reorganize.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/uploadLiveJpg.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/checkAuroracam.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/archiveData.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}/', mode: '754', backup: no }
+    - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
   - name: Copy shared files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{shrdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{shrdir}}/dvrip.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{shrdir}}/annotateImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{shrdir}}/sendAnEmail.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{shrdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{shrdir}}/networkCheck.sh', dest: '{{destdir}}/', mode: '754', backup: no }
-    - {src: '{{shrdir}}/logTemperature.sh', dest: '{{destdir}}/', mode: '754', backup: no }
 
   - name: update ipaddress
     lineinfile: 
@@ -57,6 +55,11 @@
       path: '{{destdir}}/config.ini'
       regexp: 'ALT='
       line: 'ALT=80'
+  - name: update mqtt broker
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'BROKER='
+      line: 'BROKER=wxsatpi'
   - name: update uploadloc
     lineinfile: 
       path: '{{destdir}}/config.ini'

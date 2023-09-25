@@ -7,14 +7,15 @@ source $here/config.ini > /dev/null 2>&1
 
 cd $DATADIR
 
-# find folders older than 7 days and archive them to a tarball
-echo "checking for folders older than 7 days to compress"
-find . -type d -mtime +7 | while read i 
+DAYS=4
+# find older folders and archive them to a tarball
+echo "checking for folders older than $DAYS days to compress"
+find . -type d -mtime +${DAYS} | while read i 
 do
     bn=$(basename $i)
     if compgen -G ./$bn/*.* > /dev/null ; then 
-        echo "compressing then removing $bn as more than 7 days old"
-        tar cvf ./$bn.tar ./$bn/*.*
+        echo "compressing then removing $bn as more than ${DAYS} days old"
+        tar cvfz ./$bn.tgz ./$bn/*.*
         if [ $? -eq 0 ] ; then 
             rm -Rf ./$bn
         else
@@ -26,12 +27,12 @@ do
     fi
 done
 
-# delete archives after a further seven days
+# delete archives after a further period
 # note that the archive will have the datestamp from when it was created
-echo "looking for tarballs older than 7 days to delete"
-find . -type f -name "2*.tar" -mtime +7 | while read i 
+echo "looking for tarballs older than ${DAYS} days to delete"
+find . -type f -name "2*.tgz" -mtime +${DAYS} | while read i 
 do
-    echo "removing $i as more than 7 days old"
+    echo "removing $i as more than ${DAYS} days old"
     rm -f $i
 done 
 
@@ -43,8 +44,8 @@ do
     echo "removing $i as more than 21 days old"
     rm -f $i
 done
-find . -type f -mtime +7 -name "*.log" | while read i 
+find . -type f -mtime +${DAYS} -name "*.log" | while read i 
 do
-    echo "compressing $i as more than 7 days old"
+    echo "compressing $i as more than ${DAYS} days old"
     gzip $i 
 done

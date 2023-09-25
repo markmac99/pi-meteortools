@@ -10,3 +10,4 @@ python-crontab
 paho-mqtt
 ephem
 pillow
+meteortools

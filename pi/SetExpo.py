@@ -15,7 +15,7 @@ from crontab import CronTab
 from dvrip import DVRIPCam
 
 
-def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False):
+def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False, autoExp=False):
     daycmode = '0x00000001'
     nightcmode = '0x00000002'
     if nightColor is True:
@@ -28,10 +28,14 @@ def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False):
         minexp = '0x00000064'
         maxexp = '0x00009C40'
     else:
-        expo = 100
-        gain = nightgain
         cmode = nightcmode
-        minexp = '0x00009C40'
+        gain = nightgain
+        if autoExp is True:
+            expo = 30
+            minexp = '0x00000064'
+        else:
+            expo = 100
+            minexp = '0x00009C40'
         maxexp = '0x00009C40'
 
     cam = DVRIPCam(host_ip)
@@ -89,11 +93,11 @@ def addCrontabEntries(ipaddr, cfg):
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
-            i.minute.on(rise.minute)
+            i.minute.on(rise.minute + 5)
     if found is False:
         job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {ipaddr} > {rmsdatadir}/logs/setday-{ipaddr}.log 2>&1')
         job.hour.on(rise.hour)
-        job.minute.on(rise.minute)
+        job.minute.on(rise.minute + 5)
         cron.write()
 
     found = False
@@ -102,11 +106,11 @@ def addCrontabEntries(ipaddr, cfg):
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
-            i.minute.on(set.minute)
+            i.minute.on(set.minute - 5)
     if found is False:
         job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {ipaddr} > {rmsdatadir}/logs/setnight-{ipaddr}.log 2>&1')
         job.hour.on(set.hour)
-        job.minute.on(set.minute)
+        job.minute.on(set.minute - 5)
         cron.write()
     cron.write()
     return 
