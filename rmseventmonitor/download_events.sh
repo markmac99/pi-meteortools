@@ -3,14 +3,19 @@
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 dt=$1
-mkdir -p $here/archives/$dt
+mkdir -p $here/$dt
 
-rsync -avz gmn.uwo.ca:/home/uk*/files/event_monitor/*${dt}*.bz2 $here/archives/$dt
-rsync -avz gmn.uwo.ca:/home/be000h/files/event_monitor/${dt}*.bz2 $here/archives/$dt
-rsync -avz gmn.uwo.ca:/home/ie000j/files/event_monitor/${dt}*.bz2 $here/archives/$dt
-rsync -avz gmn.uwo.ca:/home/ie0004/files/event_monitor/${dt}*.bz2 $here/archives/$dt
 
-cd $here/archives/$dt
+rsync -avz gmn.uwo.ca:/home/uk*/files/event_monitor/*${dt}*.bz2 $here/$dt
+rsync -avz gmn.uwo.ca:/home/be*/files/event_monitor/*${dt}*.bz2 $here/$dt
+rsync -avz gmn.uwo.ca:/home/ie*/files/event_monitor/*${dt}*.bz2 $here/$dt
+rsync -avz gmn.uwo.ca:/home/nl*/files/event_monitor/*${dt}*.bz2 $here/$dt
+if [ "$2" == "all" ] ; then 
+    rsync -avz gmn.uwo.ca:/home/fr*/files/event_monitor/*${dt}*.bz2 $here/$dt
+    rsync -avz gmn.uwo.ca:/home/de*/files/event_monitor/*${dt}*.bz2 $here/$dt
+    rsync -avz gmn.uwo.ca:/home/es*/files/event_monitor/*${dt}*.bz2 $here/$dt
+fi
+cd $here/$dt
 
 for f in *.bz2 ; do tar -xvf $f  ; done
 if [ -d UKMON ] ; then

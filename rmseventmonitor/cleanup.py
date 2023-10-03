@@ -16,6 +16,7 @@ def filterData(dirnam):
     allcams = [x for x in allcams if 'stacks' not in x]
     allcams = [x for x in allcams if 'mp4s' not in x]
     allcams = [x for x in allcams if 'nogood' not in x]
+    allcams = [x for x in allcams if 'trajectories' not in x]
 
     movecams = [x for x in allcams if x not in goodcams]
     for cam in movecams:
@@ -30,6 +31,10 @@ def filterData(dirnam):
         mp4s = glob.glob(os.path.join(dirnam,'mp4s',f'*{cam}*.jpg'))
         for mp4 in mp4s:
             shutil.move(mp4, os.path.join(dirnam, 'nogood'))
+    for cambz in glob.glob1(dirnam,'*.bz2'):
+        camid = cambz[:6]
+        if camid not in goodcams: 
+            shutil.move(os.path.join(dirnam, cambz), os.path.join(dirnam, 'nogood'))
 
 
 if __name__ == '__main__':
