@@ -120,7 +120,8 @@ done
 delaymins=120
 
 source ~/tools/vwebstuff/bin/activate
-#pip install --upgrade python-crontab ephem
+#pip install --upgrade python-crontab ephem boto3
+python $here/makeLatestIndex.py
 
 python - << EOD
 from crontab import CronTab

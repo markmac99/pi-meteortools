@@ -7,6 +7,8 @@
   - name: Copy files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
+    - {src: '{{srcdir}}/makeLatestIndex.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/latestindex.js', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/createCamIndex.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/createRmoblist.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/getLatestRadioJpgs.sh', dest: '{{destdir}}/', mode: '755', backup: no }

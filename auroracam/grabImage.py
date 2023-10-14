@@ -112,7 +112,7 @@ def grabImage(ipaddress, fnam, hostname, now, thiscfg):
 
 def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
     dirname = os.path.normpath(os.path.expanduser(dirname))
-    _, mp4shortname = os.path.split(dirname)
+    _, mp4shortname = os.path.split(dirname)[:15]
     if daytimelapse:
         mp4name = os.path.join(dirname, mp4shortname + '_day.mp4')
     else:

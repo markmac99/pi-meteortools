@@ -280,7 +280,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
             region_name='eu-west-2')
         target=hn[5:]
-        outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
+        outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name[:15]+'_timelapse.mp4')
         try: 
             s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
         except Exception as e:
