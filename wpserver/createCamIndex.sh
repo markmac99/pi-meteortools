@@ -26,7 +26,7 @@ done
 camlist=$(ls -1d UK* allsky)
 mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
 if [[ $mthlist != *"$currmth"* ]] ; then mthlist=$(echo $currmth $mthlist ) ; fi
-mthlist=$(echo stacks trackstacks $mthlist)
+mthlist=$(echo stacks dailystacks trackstacks $mthlist)
 
 for mth in $mthlist ; do 
     echo "var row = table.insertRow(-1);" >> $idxfile
