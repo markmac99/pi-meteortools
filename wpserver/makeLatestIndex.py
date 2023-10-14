@@ -1,6 +1,7 @@
 import boto3
 import os
 import datetime
+from crontab import CronTab
 
 
 def createLatestIndex():
@@ -8,6 +9,9 @@ def createLatestIndex():
     sess = boto3.Session(profile_name='default')
     s3 = sess.resource('s3')
     buck = s3.Bucket('mjmm-data')
+    tmpdir = os.getenv('TMPDIR', default='/tmp')
+    datadir = os.getenv('DATADIR', default='/tmp')
+    currdt = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime('%Y%m%d')
 
     templdata = open(os.path.join(here, 'latestindex.js'), 'r').read()
     offs = 1
@@ -61,17 +65,42 @@ def createLatestIndex():
             templdata = templdata.replace('ALLSKYVIDEOTEMPLATE', [x for x in asknonday if 'videos' in x][0])
         #print(templdata)
         if 'TEMPLATE' not in templdata:
+            if offs > 1: 
+                scheduleNextRun()
             break
         offs = offs + 1
         #sleep(10000)
-    currdt = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime('%Y%m%d')
-    tmpdir = os.getenv('TMPDIR', default='/tmp')
     with open(os.path.join(tmpdir, f'latest_{currdt}.js'), 'w') as outf:
         outf.write(templdata)
-    datadir = os.getenv('DATADIR', default='/tmp')
     targfile = os.path.join(datadir, 'latestindex.js')
     with open(targfile, 'w') as outf:
         outf.write(templdata)
+
+
+def scheduleNextRun():
+    nowtm = datetime.datetime.now() + datetime.timedelta(minutes=10)
+    # if the files haven't turned up by 10:00 then they're probably not going to
+    if nowtm.hour > 10:
+        return 
+    cron = CronTab(user=True)
+    found = False
+    iter=cron.find_command('updateLatestPage')
+    for i in iter:
+        if i.is_enabled():
+            i.month.on(nowtm.month)
+            i.day.on(nowtm.day)
+            i.hour.on(nowtm.hour)
+            i.minute.on(nowtm.minute)
+            found = True
+    if found is False:
+        job = cron.new('${here}/updateLatestPage.sh > /dev/null 2>&1')
+        job.month.on(nowtm.month)
+        job.day.on(nowtm.day)
+        job.hour.on(nowtm.hour)
+        job.minute.on(nowtm.minute)
+    cron.write()
+
+    return 
 
 
 if __name__ == '__main__':
