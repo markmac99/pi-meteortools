@@ -79,8 +79,8 @@ def createLatestIndex():
 
 def scheduleNextRun():
     nowtm = datetime.datetime.now() + datetime.timedelta(minutes=10)
-    # if the files haven't turned up by 10:00 then they're probably not going to
-    if nowtm.hour > 10:
+    # if the files haven't turned up by noon UT then they're probably not going to
+    if nowtm.hour > 12:
         return 
     cron = CronTab(user=True)
     found = False

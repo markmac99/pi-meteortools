@@ -90,7 +90,7 @@ def pushLatestDailyStack(config, arch_dir, localcfg):
         except Exception as e:
             log.warning('upload to S3 failed')
             log.info(e, exc_info=True)
-        #os.remove(tmpfname)
+        os.remove(tmpfname)
     else:
         log.info('target is not s3, not uploading daily stack')
     return 
