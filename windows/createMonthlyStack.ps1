@@ -26,27 +26,43 @@ if ($args.count -eq 2){
 }else {
     $ym = (get-date -uformat '%Y%m')
 }
-$rdt=[datetime]($ym.substring(0,4)+'-'+$ym.substring(4))
-$prevym = ($rdt.addmonths(-1)).tostring('yyyyMM')
 
-$srcpath=$localfolder + '\ConfirmedFiles'
+$srcpath=$localfolder + '\ArchivedFiles'
 $destpath=$localfolder+'\..\mthlystacks\'+$hostname
 
 if ((test-path $destpath) -eq 0) { mkdir $destpath}
 
-$ffpatt = 'FF*' + $prevym + '*.fits'
-Remove-Item $destpath\$ffpatt
+Get-ChildItem $destpath\*.fits -exclude "FF_${hostname}_${ym}*" | Remove-Item
+remove-item $destpath\*.jpg
 
-$dlist = (Get-ChildItem  -directory "$srcpath\*_$ym*" ).name
-foreach ($path in $dlist) {
-    robocopy $srcpath\$path $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /np /v
+# for the current month we can fetch from the camera
+$currmth = (get-date -uformat '%Y%m')
+if ($ym -eq $currmth ) {
+  $upstreampath='\\' + $hostname + '\RMS_data\tmpstack\'
+  robocopy $upstreampath $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /np /xc /xo /v /purge
+}
+else {
+    $dlist = (Get-ChildItem  -directory "$srcpath\*_$ym*" ).name
+    foreach ($path in $dlist) {
+        robocopy $srcpath\$path $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /xc /ns /np /v
+    }
 }
 
 conda activate $RMS_ENV
 set-location $RMS_LOC
+python -m Utils.BatchFFtoImage $destpath jpg
+
+$fitsfiles=(Get-ChildItem  $destpath\*.fits).fullname
+& explorer $destpath.replace('/','\')
+pause
+
+foreach ($fits in $fitsfiles) {
+    $jpg = $fits.replace('.fits','.jpg')
+    if ((test-path $jpg) -eq 0) { remove-item "$fits" }
+}
 python -m Utils.StackFFs $destpath -x -s -b jpg -f $destpath/flat.bmp -m $destpath/mask.bmp
 
-$stackfile = (Get-ChildItem  $destpath\*.jpg ).name
+$stackfile = (Get-ChildItem  $destpath\*stack*.jpg ).name
 if ((test-path $destpath\$stackfile) -eq 1)
 {
     $metcount = $stackfile.split('_')[2]
@@ -65,5 +81,12 @@ if ((test-path $destpath\$stackfile) -eq 1)
 else {
     Write-Output 'no stack to upload'
 }
+#if processing the current month sync the local cleaned folder back to the tempdir on the target
+if ($ym -eq $currmth ) {
+  $upstreampath='\\' + $hostname + '\RMS_data\tmpstack\'
+  Write-Output "$upstreampath"
+  robocopy $destpath $upstreampath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /xc /np /v /purge
+}
+
 set-location $loc
 #pause
