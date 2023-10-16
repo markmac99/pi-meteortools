@@ -4,12 +4,24 @@
   tasks:
   - name: import variables 
     include_vars: ./vars.yml
+    tags: [dev,prod]
   - name: Ensures {{destdir}} exists
     file: path={{destdir}} state=directory  
     delegate_to: localhost
+    tags: [dev,prod]
   - name: Copy files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     tags: [dev,prod]
     delegate_to: localhost
     with_items:
     - {src: '{{srcdir}}/', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: yes }
+  - name: Ensures {{emdestdir}} exists
+    file: path={{emdestdir}} state=directory  
+    delegate_to: localhost
+    tags: [dev,prod]
+  - name: Copy evt_mon files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    tags: [dev,prod]
+    delegate_to: localhost
+    with_items:
+    - {src: '{{emsrcdir}}/', dest: '{{emdestdir}}/', mode: '755', backup: no, directory_mode: yes }

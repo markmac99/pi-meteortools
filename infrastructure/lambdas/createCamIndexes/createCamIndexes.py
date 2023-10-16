@@ -28,7 +28,7 @@ def createHtmlIdx(vid_or_img, ym, cam, fldr, buck, s3):
         outf.write('<script src="/js/plugins/morris/raphael.min.js"></script>\n')
         outf.write('<script src="/js/plugins/morris/morris.min.js"></script>\n')
         outf.write('<script src="./cameraindex.js"></script>\n')
-        if (vid_or_img == 'stacks') or (vid_or_img == 'trackstacks'):
+        if 'stacks' in vid_or_img:
             outf.write(f'<h2>List of {vid_or_img} available for {cam}</h2>\n')
         elif (vid_or_img == 'startrails'):
             outf.write(f'<h2>List of {vid_or_img} available for {ym}</h2>\n')
@@ -85,6 +85,8 @@ def createNewIndex(buck, obj):
     else:
         vid_or_img = spls[1]
     createHtmlIdx(vid_or_img, ym, cam, fldr, buck, s3)
+    if vid_or_img == 'dailystacks':
+        contents = contents[:60]
 
     fd, tmpf = tempfile.mkstemp(text=True)
     with os.fdopen(fd, 'w') as outf:

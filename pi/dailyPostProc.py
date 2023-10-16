@@ -33,13 +33,13 @@ import boto3
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
-import sendToMQTT as mqs # noqa:E402
+from sendToMQTT import sendToMqtt # noqa:E402
 
 
 log = logging.getLogger("logger")
 
 
-def pushLatestStack(targetname, imgname):
+def pushLatestMonthlyStack(targetname, imgname):
     config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
     sitecfg = config.lookup(targetname)
     if 'user' not in sitecfg.keys():
@@ -57,6 +57,42 @@ def pushLatestStack(targetname, imgname):
         log.info(f'uploaded {fname} to {targetname}')
     else:
         log.warning(f'file {imgname} not found')
+    return 
+
+
+def pushLatestDailyStack(config, arch_dir, localcfg):
+    stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack_*.jpg'))]
+    if len(stacklist) ==0:
+        return 
+    imgname = stacklist[0]
+    _, fname = os.path.split(imgname)
+    tmpfname = os.path.join('/tmp', fname)
+    if os.path.isfile(tmpfname):
+        os.remove(tmpfname)
+    shutil.copyfile(imgname, tmpfname)
+    metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
+    camid = config.stationID
+    annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
+    idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+    hn = localcfg['postprocess']['host']
+    if hn[:3] == 's3:':
+        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'dailystacks'))
+        with open(idfile, 'r') as f:
+            li = f.readline()
+            key = li.split('=')[1].rstrip().strip('"')
+            li = f.readline()
+            secret = li.split('=')[1].rstrip().strip('"')
+        s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
+        target=hn[5:]
+        outf = '{:s}/dailystacks/{:s}'.format(camid, fname[:15]+'.jpg')
+        try: 
+            s3.meta.client.upload_file(tmpfname, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+        except Exception as e:
+            log.warning('upload to S3 failed')
+            log.info(e, exc_info=True)
+        os.remove(tmpfname)
+    else:
+        log.info('target is not s3, not uploading daily stack')
     return 
 
 
@@ -135,7 +171,7 @@ def monthlyStack(cfg, arch_dir, localcfg):
         else:
             log.info('target is not s3, not uploading monthly stack')
         webserver = localcfg['postprocess']['webserver']
-        pushLatestStack(webserver, targ)
+        pushLatestMonthlyStack(webserver, targ)
     return     
 
 
@@ -244,7 +280,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
             region_name='eu-west-2')
         target=hn[5:]
-        outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name)
+        outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name[:15]+'_timelapse.mp4')
         try: 
             s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
         except Exception as e:
@@ -254,13 +290,16 @@ def rmsExternal(cap_dir, arch_dir, config):
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
         try:
-            mqs.sendToMqtt(config)
+            sendToMqtt(config)
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
+    # upload daily stack
+    log.info('uploading daily stack')
+    pushLatestDailyStack(config, arch_dir, localcfg)
 
     # create monthly stack
-    log.info('creating monthly tack')
+    log.info('creating monthly stack')
     monthlyStack(config, arch_dir, localcfg)
     # create trackstack
     log.info('creating trackstack')
@@ -293,4 +332,8 @@ if __name__ == '__main__':
     cap_dir = os.path.join(datadir, 'CapturedFiles', sys.argv[1])
     arch_dir = os.path.join(datadir, 'ArchivedFiles', sys.argv[1])
   
+    #srcdir = os.path.split(os.path.abspath(__file__))[0]
+    #localcfg = configparser.ConfigParser()
+    #localcfg.read(os.path.join(srcdir, 'config.ini'))
+    #pushLatestDailyStack(config, arch_dir, localcfg)
     rmsExternal(cap_dir, arch_dir, config)
