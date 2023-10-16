@@ -66,7 +66,9 @@ def createLatestIndex():
         #print(templdata)
         if 'TEMPLATE' not in templdata:
             if offs > 1: 
-                scheduleNextRun()
+                scheduleNextRun(False)
+            else:
+                scheduleNextRun(True)
             break
         offs = offs + 1
         #sleep(10000)
@@ -77,11 +79,12 @@ def createLatestIndex():
         outf.write(templdata)
 
 
-def scheduleNextRun():
+def scheduleNextRun(resetme=False):
     nowtm = datetime.datetime.now() + datetime.timedelta(minutes=10)
     # if the files haven't turned up by noon UT then they're probably not going to
-    if nowtm.hour > 12:
-        return 
+    if nowtm.hour > 12 or resetme is True:
+        nowtm = datetime.datetime.now() + datetime.timedelta(days=1)
+        nowtm = nowtm.replace(hour=9, minute=0,second=0)
     cron = CronTab(user=True)
     found = False
     iter=cron.find_command('updateLatestPage')
