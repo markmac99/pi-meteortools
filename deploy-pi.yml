@@ -9,6 +9,7 @@
   - name: Copy meteorhunting files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
+    - {src: '{{srcdir}}/postMatchStats.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/trackFFs.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no }

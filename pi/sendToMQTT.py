@@ -19,6 +19,7 @@ import sys
 import glob
 import platform 
 import logging
+import requests
 
 import RMS.ConfigReader as cr
 
@@ -75,6 +76,40 @@ def getLoggedInfo(cfg):
 
     datestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     return detectedcount, meteorcount, datestamp
+
+
+def sendMatchdataToMqtt(cfg, localcfg=None):
+    if localcfg is None:
+        broker = 'wxsatpi' # localcfg['mqtt']['broker']
+    else:
+        broker = localcfg['mqtt']['broker']
+    topicbase = 'meteorcams' 
+    camname = cfg.stationID.lower()
+    apiurl = 'https://api.ukmeteors.co.uk/matches'
+    dtstr = datetime.datetime.now().strftime('%Y%m%d')
+    apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
+    res = requests.get(apicall)
+    if res.status_code == 200:
+        rawdata=res.text.strip()
+        matchcount = rawdata.count('orbname')
+    else:
+        matchcount = 0
+    dtstr = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime('%Y%m%d')
+    apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
+    res = requests.get(apicall)
+    if res.status_code == 200:
+        rawdata=res.text.strip()
+        v1 = rawdata.count(f'{dtstr}_1')
+        v2 = rawdata.count(f'{dtstr}_2')
+        matchcount = matchcount + v1 + v2
+    client = mqtt.Client(camname)
+    client.on_connect = on_connect
+    client.on_publish = on_publish
+    client.connect(broker, 1883, 60)
+    topic = f'{topicbase}/{camname}/matchcount'
+    ret = client.publish(topic, payload=matchcount, qos=0, retain=False)
+    log.info(f'there were {matchcount} matches last night for {camname}')
+    return ret
 
 
 def sendToMqtt(cfg, localcfg=None):
