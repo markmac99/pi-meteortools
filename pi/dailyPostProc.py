@@ -19,6 +19,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import paramiko
 from paramiko.config import SSHConfig
+from PIL import Image, ImageFont, ImageDraw
 
 
 import RMS.ConfigReader as cr
@@ -185,26 +186,49 @@ def doTrackStack(arch_dir, cfg, localcfg):
         metcount = lis[0].split('=')[1].strip()
         currdir = os.path.basename(os.path.normpath(arch_dir))
         annotateImage(trackfile, cfg.stationID, int(metcount), currdir[7:15])
-        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
-        hn = localcfg['postprocess']['host']
-        if hn[:3] == 's3:':
-            log.info('uploading to {:s}/{:s}/{:s}'.format(hn, cfg.stationID, 'trackstacks'))
-            with open(idfile, 'r') as f:
-                li = f.readline()
-                key = li.split('=')[1].rstrip().strip('"')
-                li = f.readline()
-                secret = li.split('=')[1].rstrip().strip('"')
-            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
-            target=hn[5:]
-            outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
-            try: 
-                s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
-            except Exception as e:
-                log.warning('upload to S3 failed')
-                log.info(e, exc_info=True)
-        else:
-            log.info('target is not s3, not uploading monthly stack')
+    else:
+        log.info('no trackstack available today')
+        sflist = glob.glob(os.path.join(arch_dir, '*_stack_*.jpg'))
+        if len(sflist) ==0: 
+            return 
+        sfil = sflist[0]
+        trackfile = sfil[:sfil.find('_stack_')] + '_track_stack.jpg'
+        trackfile = os.path.join('/tmp', os.path.split(trackfile)[1])
+        shutil.copyfile(sfil, trackfile)
+        my_image = Image.open(trackfile)
+        width, height = my_image.size
+        image_editable = ImageDraw.Draw(my_image)
+        fntheight=100
+        try:
+            fnt = ImageFont.truetype("arial.ttf", fntheight)
+        except:
+            fnt = ImageFont.truetype("DejaVuSans.ttf", fntheight)
+        #fnt = ImageFont.load_default()
+        image_editable.text((20,height/2), "NO TRACKSTACK TODAY", font=fnt, fill=(255))
+        my_image.save(trackfile)
 
+    idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+    hn = localcfg['postprocess']['host']
+    if hn[:3] == 's3:':
+        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, cfg.stationID, 'trackstacks'))
+        with open(idfile, 'r') as f:
+            li = f.readline()
+            key = li.split('=')[1].rstrip().strip('"')
+            li = f.readline()
+            secret = li.split('=')[1].rstrip().strip('"')
+        s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
+        target=hn[5:]
+        outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
+        try: 
+            s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+        except Exception as e:
+            log.warning('upload to S3 failed')
+            log.info(e, exc_info=True)
+    else:
+        log.info('target is not s3, not uploading monthly stack')
+    if len(tflist) == 0 and '/tmp' in trackfile:
+        if os.path.isfile(trackfile):
+            os.remove(trackfile)
     return 
 
 
