@@ -27,4 +27,19 @@
       line: 'export TMPDIR={{destdir}}/tmp'
   - name: Ensures tmpdir exists
     file: path={{destdir}}/tmp state=directory  
+  - name: update LATI
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export LATI='
+      line: 'export LATI=51.88'
+  - name: update LONGI
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export LONGI='
+      line: 'export LONGI=-1.31'
+  - name: update ALTI
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export ALTI='
+      line: 'export ALTI=80'
 

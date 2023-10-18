@@ -2,6 +2,7 @@ import boto3
 import os
 import datetime
 from crontab import CronTab
+from meteortools.utils import getNextRiseSet
 
 
 def createLatestIndex():
@@ -83,8 +84,11 @@ def scheduleNextRun(resetme=False):
     nowtm = datetime.datetime.now() + datetime.timedelta(minutes=10)
     # if the files haven't turned up by noon UT then they're probably not going to
     if nowtm.hour > 12 or resetme is True:
-        nowtm = datetime.datetime.now() + datetime.timedelta(days=1)
-        nowtm = nowtm.replace(hour=9, minute=0,second=0)
+        lati = float(os.getenv('LATI', default=51.88))
+        lngi = float(os.getenv('LONGI', default=-1.31))
+        alti = float(os.getenv('ALTI', default=80))
+        nowtm, _ = getNextRiseSet(lati, lngi, alti)
+        nowtm = nowtm.replace(hour=nowtm.hour+1)
     cron = CronTab(user=True)
     found = False
     iter=cron.find_command('updateLatestPage')
