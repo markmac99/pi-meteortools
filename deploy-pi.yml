@@ -9,13 +9,14 @@
   - name: Copy meteorhunting files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
+    - {src: '{{srcdir}}/trackStarCount.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/postMatchStats.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/clearArchive.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/trackFFs.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendAnEmail.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logGrabInterval.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/annotateImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
