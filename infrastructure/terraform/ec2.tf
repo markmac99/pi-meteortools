@@ -5,7 +5,7 @@ data "aws_security_group" "launch-wizard-4" {
 
 resource "aws_instance" "adminserver" {
   ami                  = "ami-03e88be9ecff64781"
-  instance_type        = "t2.nano"
+  instance_type        = "t3a.nano"
   iam_instance_profile = aws_iam_instance_profile.cwagentadminprofile.name
   key_name             = data.aws_key_pair.marks_key2.key_name
   security_groups      = [data.aws_security_group.launch-wizard-4.name]
