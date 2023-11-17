@@ -1,6 +1,6 @@
 # Copyright (C) Mark McIntyre
 $loc=get-location
-$env:pythonpath="e:\dev\meteorhunting\rms;e:\dev\meteorhunting\westernmeteorpylib;e:\dev\meteorhunting\ukmon-shared\ukmon_pylib"
+$env:pythonpath="e:\dev\meteorhunting\rms;e:\dev\meteorhunting\westernmeteorpylib;e:\dev\meteorhunting\ukmda-dataprocessing\ukmon_pylib"
 $myf=(get-location).path
 $path=$myf.split('\')[-1]
 $ftpfil=$myf+'\FTPdetectinfo_'+$path+'.txt'
@@ -21,7 +21,7 @@ $ts=(Get-ChildItem $myf\*track_stack.jpg).name
 $ymd=$ts.substring(7,8)
 
 Write-Output "Annotating image, cam is $hostname, date is $ymd, metcount is $metcount"
-$env:pythonpath="e:\dev\meteorhunting\rms;e:\dev\meteorhunting\westernmeteorpylib;e:\dev\meteorhunting\ukmon-shared\ukmon_pylib"
+$env:pythonpath="e:\dev\meteorhunting\rms;e:\dev\meteorhunting\westernmeteorpylib;e:\dev\meteorhunting\ukmda-dataprocessing\ukmon_pylib"
 $myf=$myf.replace('\','/')
 python -c "from meteortools.utils import annotateImage;annotateImage('$myf/$ts', '$hostname', $metcount, '$ymd')"
 Write-Output "copying image"
