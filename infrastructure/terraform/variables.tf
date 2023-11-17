@@ -23,10 +23,6 @@ variable "websitebackupbucket" { default = "mjmm-website-backups" }
 variable "mlmwebsitebackupbucket" { default = "mlm-website-backups" }
 variable "satdatabucket" { default = "mjmm-rawsatdata" }
 
-variable "ukmonsharedbucket" { default = "ukmon-shared"}
-variable "ukmonlivebucket" { default = "ukmon-live"}
-variable "ukmonwebbucket" { default = "ukmeteornetworkarchive"}
-
 #data used by the code in several places
 data "aws_caller_identity" "current" {}
 
