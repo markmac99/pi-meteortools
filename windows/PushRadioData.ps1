@@ -79,11 +79,11 @@ $station=$ini['ukmon']['ukmon_station']
 
 $srcloc=$datadir+'\csv\'
 write-output 'updating ukmon' | tee-object $logf 
-$s3targ='s3://ukmon-shared/archive/' + $station + '/'
+$s3targ='s3://ukmda-shared/archive/' + $station + '/'
 aws s3 sync $srcloc $s3targ --profile $awsprofile
 
 # now push to my own archive
-scp $datadir\rmob\$yy\$ym\$ym.jpg ukmonhelper:data/Radio/$yy/ 
+scp $datadir\rmob\$yy\$ym\$ym.jpg ukmonhelper2:data/Radio/$yy/ 
 
 # create index for the rmob history
 set-location $PSScriptRoot

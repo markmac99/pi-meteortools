@@ -33,7 +33,7 @@ if ($ismember -eq 'Yes')
     $srcpath=$localfolder+'/'+$yr+'/' + $ym + '/'
 
     write-output "Syncing $srcpath"
-    $targ= 's3://ukmon-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym + '/'
+    $targ= 's3://ukmda-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym + '/'
 
     if ($UFO -eq 0){
         aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4 --profile $awsprofile
@@ -44,7 +44,7 @@ if ($ismember -eq 'Yes')
 
         $srcpath=$localfolder+'/'+$yr+'/' + $ym2 + '/'
         write-output "Syncing $srcpath"
-        $targ= 's3://ukmon-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym2 + '/'
+        $targ= 's3://ukmda-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym2 + '/'
         if ($UFO -eq 0){
             aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4  --profile $awsprofile
         } else {
@@ -55,7 +55,7 @@ if ($ismember -eq 'Yes')
 
         $srcpath=$localfolder+'/'+$yr+'/' + $ym3 + '/'
         write-output "Syncing $srcpath"
-        $targ= 's3://ukmon-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym3 + '/'
+        $targ= 's3://ukmda-shared/archive/' + $ukmoncam  + '/' + $yr+'/' + $ym3 + '/'
         if ($UFO -eq 0){
             aws s3 sync $srcpath $targ --include * --exclude *.fits --exclude *.bin --exclude *.gif  --exclude *.bz2 --exclude UK*.mp4  --profile $awsprofile
         } else {

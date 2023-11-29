@@ -52,32 +52,6 @@ resource "aws_iam_user_policy_attachment" "s3user-pol-attachment" {
   policy_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/MMS3BucketAccessRW"
 }
 
-#inline policy used by s3user
-resource "aws_iam_user_policy" "Ukmon-shared-access" {
-  name = "Ukmon-shared-access"
-  user = aws_iam_user.s3user.name
-  policy = jsonencode(
-    {
-      Statement = [
-        {
-          Action = [
-            "s3:GetObject",
-            "s3:PutObject",
-            "s3:PutObjectAcl",
-          ]
-          Effect = "Allow"
-          Resource = [
-            "arn:aws:s3:::${var.ukmonsharedbucket}/*",
-            "arn:aws:s3:::${var.ukmonlivebucket}/*",
-            "arn:aws:s3:::${var.ukmonwebbucket}/*",
-          ]
-        },
-      ]
-      Version = "2012-10-17"
-    }
-  )
-}
-
 # role for SSM hybrid device management
 resource "aws_iam_role" "hybrid_ssm_role" {
   name        = "HybridSSMRole"

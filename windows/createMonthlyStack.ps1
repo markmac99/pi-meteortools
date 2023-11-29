@@ -73,8 +73,10 @@ if ((test-path $destpath\$stackfile) -eq 1)
 
     set-location "$destpath\.."
     $latf=$hostname.toupper() + '_latest.jpg'
-    $webtarg=$webserver+":data/meteors"
-    scp $newname $webtarg/$latf
+    if ($ym -eq $currmth ) {
+        $webtarg=$webserver+":data/meteors"
+        scp $newname $webtarg/$latf
+    }
     $webtarg = $awsbuck + '/' + $hostname.toupper() + "/stacks/" 
     aws s3 cp $newname $webtarg --profile $awsprofile
 }

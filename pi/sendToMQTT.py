@@ -136,6 +136,27 @@ def sendToMqtt(cfg, localcfg=None):
     return ret
 
 
+def sendStarCountToMqtt(starcount, rmscfg=None, localcfg=None):
+    if localcfg is None:
+        broker = 'wxsatpi' # localcfg['mqtt']['broker']
+    else:
+        broker = localcfg['mqtt']['broker']
+    if rmscfg is None:
+        rmscfg = '/home/pi/source/RMS/.config'        
+    cfg = cr.parse(os.path.expanduser(rmscfg))
+    topicbase = 'meteorcams' 
+    camname = cfg.stationID.lower()
+
+    client = mqtt.Client(camname)
+    client.on_connect = on_connect
+    client.on_publish = on_publish
+    client.connect(broker, 1883, 60)
+
+    topic = f'{topicbase}/{camname}/starcount'
+    ret = client.publish(topic, payload=starcount, qos=0, retain=False)
+    return ret
+
+
 def sendOtherData(cputemp, diskspace, localcfg=None):
     if localcfg is None:
         broker = 'wxsatpi'

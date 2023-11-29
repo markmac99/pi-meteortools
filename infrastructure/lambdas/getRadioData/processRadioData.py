@@ -461,7 +461,7 @@ def uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile):
     extraargs = {'ContentType': 'text/csv'}
     s3.meta.client.upload_file(csvfile, targbucket, targkey, ExtraArgs=extraargs) 
 
-    # and then upload it to the ukmon-shared bucket too, using suitable creds
+    # and then upload it to the bucket too, using suitable creds
     sts_client = boto3.client('sts')
 
     try: 
@@ -475,7 +475,7 @@ def uploadFiles(s3, heatmapname, rmoblatestfile, threemthfile, csvfile):
             aws_session_token=credentials['SessionToken'])
         print('about to push file')
         targkey =f'archive/Tackley/Radio/{ymd[:4]}/{ymd[:6]}/{fname}'
-        s3u.meta.client.upload_file(csvfile, 'ukmon-shared', targkey, ExtraArgs=extraargs) 
+        s3u.meta.client.upload_file(csvfile, 'ukmda-shared', targkey, ExtraArgs=extraargs) 
     except: 
         print('unable to assume role')
 
