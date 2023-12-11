@@ -30,16 +30,21 @@ if ($args.count -eq 2){
 $srcpath=$localfolder + '\ArchivedFiles'
 $destpath=$localfolder+'\..\mthlystacks\'+$hostname
 
+Write-Output "processing $hostname for $ym"
+
 if ((test-path $destpath) -eq 0) { mkdir $destpath}
 
+Write-output "removing existing files from folder $destpath"
 Get-ChildItem $destpath\*.fits -exclude "FF_${hostname}_${ym}*" | Remove-Item
 remove-item $destpath\*.jpg
 
+Write-output "copying new data"
 # for the current month we can fetch from the camera
 $currmth = (get-date -uformat '%Y%m')
 if ($ym -eq $currmth ) {
-  $upstreampath='\\' + $hostname + '\RMS_data\tmpstack\'
-  robocopy $upstreampath $destpath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /np /xc /xo /v /purge
+    $destpath_l ="/mnt/" +$destpath.replace(':','').tolower().replace('\','/')
+    $upstreampath_l = "${hostname}:RMS_data/tmpstack/"
+    bash -c "rsync -avz --delete $upstreampath_l $destpath_l"
 }
 else {
     $dlist = (Get-ChildItem  -directory "$srcpath\*_$ym*" ).name
@@ -48,6 +53,7 @@ else {
     }
 }
 
+Write-output "creating jpgs"
 conda activate $RMS_ENV
 set-location $RMS_LOC
 python -m Utils.BatchFFtoImage $destpath jpg
@@ -56,12 +62,15 @@ $fitsfiles=(Get-ChildItem  $destpath\*.fits).fullname
 & explorer $destpath.replace('/','\')
 pause
 
+Write-output "removing bad images"
 foreach ($fits in $fitsfiles) {
     $jpg = $fits.replace('.fits','.jpg')
     if ((test-path $jpg) -eq 0) { remove-item "$fits" }
 }
+Remove-Item $destpath\*stack*.jpg
 python -m Utils.StackFFs $destpath -x -s -b jpg -f $destpath/flat.bmp -m $destpath/mask.bmp
 
+Write-output "annotating and uploading the stack"
 $stackfile = (Get-ChildItem  $destpath\*stack*.jpg ).name
 if ((test-path $destpath\$stackfile) -eq 1)
 {
@@ -85,9 +94,9 @@ else {
 }
 #if processing the current month sync the local cleaned folder back to the tempdir on the target
 if ($ym -eq $currmth ) {
-  $upstreampath='\\' + $hostname + '\RMS_data\tmpstack\'
-  Write-Output "$upstreampath"
-  robocopy $destpath $upstreampath FF*.fits mask.bmp flat.bmp /NFL /NDL /NJH /NJS /nc /ns /xc /np /v /purge
+  write-host "Syncing back to remote folder"
+  Write-Output "$upstreampath_l"
+  bash -c "rsync -avz --delete --include *.bmp --include *.fits $destpath_l/ $upstreampath_l"
 }
 
 set-location $loc
