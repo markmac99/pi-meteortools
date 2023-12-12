@@ -4,6 +4,7 @@
 # Copyright (C) 2018-2023 Mark McIntyre
 #
 #
+$loc = get-location
 set-location $PSScriptRoot
 # load the helper functions
 . .\helperfunctions.ps1
@@ -21,14 +22,10 @@ if ((test-path $inifname) -eq $false) {
 
 $ini=get-inicontent $inifname
 $remotepth=$ini['camera']['hostname']
-$camname=$ini['camera']['camera_name']
-$locfldr=$ini['camera']['localfolder']
-$isufo=$ini['camera']['UFO']
-$remuser=$ini['camera']['remoteuser']
-$rempass=(get-content $ini['camera']['remotepass'])
+$localfolder=$ini['camera']['localfolder']
 $hostname=(split-path $remotepth -leaf)
 
-Write-Output "Getting data from $camname" (get-date) 
+Write-Output "Getting data from $hostname" (get-date) 
 
 $loopctr=0
 ping -n 1 $hostname
@@ -41,62 +38,17 @@ if ($loopctr -eq 10)  {
     Send-MailMessage -from $hostname@oservatory -to mark@localhost -subject "$hostname down" -body "$hostname seems to be down, check power and network" -smtpserver 192.168.1.151    
     exit 1
 }
-set-location $locfldr
+set-location $localfolder
 
-if ($isufo -eq 1){
-    write-output "processing UFO camera "
-    $remfldr=$ini['camera']['remotefolder']
-    $tod=((get-date).tostring("yyyy\\yyyyMM"))
-    $ytd=((get-date).adddays(-1).tostring("yyyy\\yyyyMM"))
-    if ((test-path $tod) -eq $false) {
-        mkdir $tod
-    }
-    if ((test-path $ytd) -eq $false) {
-        mkdir $ytd
-    }
-    $remfldr = $remfldr.replace("/","\")
-    $rempth='\\'+$hostname+$remfldr
-    net use $rempth /user:$remuser $rempass
-    $src=$rempth+'\'+$tod
+$destpath=$localfolder+'\ArchivedFiles'
+$destpath_l ="/mnt/" +$destpath.replace(':','').tolower().replace('\','/')
 
-    Write-Output "copying data for $src to $tod" 
+write-output "checking bash"
+& C:\Windows\System32\bash.exe --version
+write-output "running rsync"
+& C:\Windows\System32\bash.exe -c "rsync -avz --exclude=UK*.bz2 ${hostname}:RMS_data/ArchivedFiles/ ${destpath_l}"
+& C:\Windows\System32\bash.exe -c "rsync -avz --exclude=UK*.bz2 ${hostname}:RMS_data/logs/ ./logs"
 
-    robocopy $src $tod *.jpg *.bmp *.txt *.xml M*.avi M*.mp4 /dcopy:DAT /tee /v /s /r:3 /mov /z /np
-    if ($tod -ne $ytd) {
-        Write-Output "copying data for $ytd"
-        robocopy $rempth\$ytd $ytd *.jpg *.bmp *.txt *.xml M*.avi M*.mp4 /dcopy:DAT /tee /v /s /r:3 /mov /z  /np
-    }
-    net use $rempth /d >> c:\temp\log.log
-}
-else {
-    Write-Output "processing RMS camera"
-    $remfldr= '\\'+$hostname+'\rms_data\ArchivedFiles'
-    $dirlist=(get-childitem $remfldr -directory)
-    for ($i=0;$i -lt $dirlist.length; $i++) { 
-        $dn=$dirlist[$i].name 
-        $locpth='ArchivedFiles\'+$dn
-        $tp=(test-path $locpth)
-        if ($tp -eq $true){
-            $lrt=$dirlist[$i].lastwritetime
-            $lp=$locpth+'*'
-            $llt=(get-childitem $lp -directory).lastwritetime   
-            if ($llt -lt $lrt){
-                $rmpth=$remfldr+'\'+$dn
-                robocopy $rmpth  $locpth /dcopy:DAT /tee /v /s /r:3 /np /z /xf *.bz2
-                (get-item $locpth).lastwritetime=(get-date)
-            }
-        }
-        else{
-            $rmpth=$remfldr+'\'+$dn
-            robocopy $rmpth $locpth /dcopy:DAT /tee /v /s /r:3 /np /z /xf *.bz2
-        }
-    }
-    $remfldr= '\\'+$hostname+'\rms_data\logs'
-    robocopy $remfldr logs /dcopy:DAT /tee /v /s /r:3 
-
-    Set-Location $psscriptroot
-    #.\reorgByYMD.ps1 $inifname
-}
-Set-Location $psscriptroot
+Set-Location $loc
 Write-Output "finished" (get-date) 
 exit 0

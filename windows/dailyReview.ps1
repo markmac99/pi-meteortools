@@ -15,7 +15,6 @@ $inifname = $args[0]
 
 $ini=get-inicontent $inifname
 $remotepth=$ini['camera']['hostname']
-$maxage=$ini['camera']['maxage']
 $localfolder=$ini['camera']['localfolder']
 $binviewer_exe_loc=$ini['python']['binviewer_exe_loc']
 $binviewer_pyt_loc=$ini['python']['binviewer_pyt_loc']
@@ -38,8 +37,10 @@ else{
 
 $destpath=$localfolder+'\ArchivedFiles'
 if ((test-path $destpath) -eq 0) { mkdir $destpath}
-$age=[int]$maxage
-robocopy $srcpath $destpath /dcopy:DAT /tee /v /s /r:3 /maxage:$age /xf *.bz2
+$destpath_l ="/mnt/" +$destpath.replace(':','').tolower().replace('\','/')
+bash -c "rsync -avz -exclude=UK*.bz2 ${hostname}:RMS_data/ArchivedFiles/ ${destpath_l}"
+#$age=[int]$maxage
+#robocopy $srcpath $destpath /dcopy:DAT /tee /v /s /r:3 /maxage:$age /xf *.bz2
 
 # purge older logfiles
 $Days = "30" 
