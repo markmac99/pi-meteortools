@@ -4,9 +4,9 @@
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-codeloc=$(grep UKMDACODE ${here}/archive.ini | awk -F "=" '{print $2}'| tr -d '\r')
-mkdir -p $codeloc/servercopy/files
-pushd $codeloc/servercopy/files
+codeloc=$(grep UKMDACODE ${here}/archive.ini | awk -F "=" '{print $2}'| tr -d '\r\n')
+mkdir -p ${codeloc}/servercopy/files
+pushd ${codeloc}/servercopy/files
 pwd
 rsync -avz ukmonhelper2:prod/analysis/ ./analysis --delete
 rsync -avz ukmonhelper2:prod/website/ ./website --delete
