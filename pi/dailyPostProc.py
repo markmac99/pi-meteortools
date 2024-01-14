@@ -344,8 +344,6 @@ def rmsExternal(cap_dir, arch_dir, config):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('usage: dailyPostProc.py UK0006_20230318_184715_611839 {optional config file}')
     hname = os.uname()[1]
     if len(sys.argv) > 2: 
         rmscfg = os.path.expanduser(sys.argv[2])
@@ -353,9 +351,13 @@ if __name__ == '__main__':
         rmscfg = os.path.expanduser('~/source/RMS/.config')
     config = cr.parse(rmscfg)
     datadir = config.data_dir
-    cap_dir = os.path.join(datadir, 'CapturedFiles', sys.argv[1])
-    arch_dir = os.path.join(datadir, 'ArchivedFiles', sys.argv[1])
-  
+    if len(sys.argv) < 2:
+        lastcap = sorted(os.listdir(os.path.join(datadir, 'CapturedFiles')))[-1]
+    else:
+        lastcap = sys.argv[1]
+    cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
+    arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
+    print('processing {}'.format(lastcap))
     #srcdir = os.path.split(os.path.abspath(__file__))[0]
     #localcfg = configparser.ConfigParser()
     #localcfg.read(os.path.join(srcdir, 'config.ini'))
