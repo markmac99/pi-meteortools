@@ -49,15 +49,19 @@ def pushLatestMonthlyStack(targetname, imgname):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
-    ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
-    ftp_client = ssh_client.open_sftp()
-    _, fname = os.path.split(imgname)
-    camid = fname[:6]
-    if os.path.isfile(imgname):
-        ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
-        log.info(f'uploaded {fname} to {targetname}')
-    else:
-        log.warning(f'file {imgname} not found')
+    try:
+        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        _, fname = os.path.split(imgname)
+        camid = fname[:6]
+        if os.path.isfile(imgname):
+            ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
+            log.info(f'uploaded {fname} to {targetname}')
+        else:
+            log.warning(f'file {imgname} not found')
+    except Exception as e:
+        log.warning(f'upload to {sitecfg["hostname"]}')
+        log.info(e, exc_info=True)
     return 
 
 
