@@ -232,6 +232,46 @@ def doTrackStack(arch_dir, cfg, localcfg):
     return 
 
 
+def archiveBz2(config=None, localcfg=None):
+    if localcfg is None:
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if config is None:
+        rmscfg = os.path.expanduser('~/source/RMS/.config')
+        config = cr.parse(rmscfg)
+    sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    camid = config.stationID.lower()
+    datadir = config.data_dir
+    sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
+    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ftp = ssh_client.open_sftp()
+        yr=0
+        localbzs = glob.glob(f'{datadir}/ArchivedFiles/*.bz2')
+        for locbz in localbzs:
+            locbzfn = os.path.split(locbz)[1]
+            if yr != locbz[7:11]:
+                yr = locbzfn[7:11]
+                rempath = f'{localcfg["backup"]["remotepath"]}/{camid}/{yr}'
+                try:
+                    rembzs = ftp.listdir(rempath)
+                except Exception:
+                    ftp.mkdir(rempath)
+                    rembzs = []
+            if locbzfn not in rembzs:
+                remfnam = os.path.join(rempath, locbzfn)
+                log.info(f'archiving {locbzfn}')
+                ftp.put(locbz, remfnam)
+        ftp.close()
+    except Exception as e:
+        log.warning(f"unable to archive the bz2 file to {sitecfg['hostname']}")
+        log.warning(e, exc_info=True)
+
+
 def rmsExternal(cap_dir, arch_dir, config):
     rebootlockfile = os.path.join(config.data_dir, config.reboot_lock_file)
     with open(rebootlockfile, 'w') as f:
@@ -335,6 +375,8 @@ def rmsExternal(cap_dir, arch_dir, config):
         sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
                     'Warning',f'{hname}@themcintyres.ddns.net')
 
+    archiveBz2(config, localcfg)
+
     os.remove(rebootlockfile)
 
     # clear log handlers again
@@ -358,8 +400,9 @@ if __name__ == '__main__':
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
     arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
     print('processing {}'.format(lastcap))
-    #srcdir = os.path.split(os.path.abspath(__file__))[0]
-    #localcfg = configparser.ConfigParser()
-    #localcfg.read(os.path.join(srcdir, 'config.ini'))
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
     #pushLatestDailyStack(config, arch_dir, localcfg)
+    #archiveBz2(config, localcfg)
     rmsExternal(cap_dir, arch_dir, config)
