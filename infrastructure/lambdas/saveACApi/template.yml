@@ -1,0 +1,32 @@
+# SAM build file for searchArchive
+# Copyright (C) 2018-2023 Mark McIntyre
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Resources:
+  saveACapi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: saveACapi.lambda_handler
+      Runtime: python3.8
+      FunctionName: saveACapi
+      Description: API backend that marks an auroracam dataset for saving
+      Timeout: 30
+      Policies: [AmazonS3FullAccess]
+      Environment:
+        Variables:
+          ACFOLDER: auroracam
+          ACBUCKET: mjmm-data
+      Events:
+        HttpGet:
+          Type: Api
+          Properties:
+            Path: '/'
+            Method: get
+            RequestParameters: 
+              - method.request.querystring.dt: 
+                  Required: true
+      Tags:
+        billingtag: "auroracam"
+        typetag: "api"
+    Metadata:
+      BuildMethod: python3.8
