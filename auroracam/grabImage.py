@@ -105,7 +105,11 @@ def grabImage(ipaddress, fnam, hostname, now, thiscfg):
     cv2.destroyAllWindows()
     title = f'{hostname} {now.strftime("%Y-%m-%d %H:%M:%S")}'
     radj, gadj, badj = (thiscfg['auroracam']['rgbadj']).split(',')
-    adjustColour(fnam, red=float(radj), green=float(gadj), blue=float(badj))
+    radj = float(radj)
+    gadj = float(gadj)
+    badj = float(badj)
+    if radj < 0.99 or gadj < 0.99 or badj < 0.99:
+        adjustColour(fnam, red=radj, green=gadj, blue=badj)
     annotateImageArbitrary(fnam, title, color='#FFFFFF')
     return 
 
@@ -142,12 +146,12 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
     return 
 
 
-def setupLogging(thiscfg):
+def setupLogging(thiscfg, prefix='auroracam_'):
     print('about to initialise logger')
     logdir = os.path.expanduser(thiscfg['auroracam']['logdir'])
     os.makedirs(logdir, exist_ok=True)
 
-    logfilename = os.path.join(logdir, 'auroracam_' + datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S.%f') + '.log')
+    logfilename = os.path.join(logdir, prefix + datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S.%f') + '.log')
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
     handler.setLevel(logging.INFO)
     handler.setLevel(logging.DEBUG)
@@ -210,9 +214,9 @@ if __name__ == '__main__':
         os.remove(norebootflag)
     
     # get todays dusk and tomorrows dawn times
-    dusk, dawn, lastdawn = getStartEndTimes(datetime.datetime.utcnow(), thiscfg)
-    daytimelapse = int(thiscfg['auroracam']['daytimelapse'])
     now = datetime.datetime.utcnow()
+    dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg)
+    daytimelapse = int(thiscfg['auroracam']['daytimelapse'])
     if now > dawn or now < dusk:
         isnight = False
         setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
