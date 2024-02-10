@@ -143,9 +143,7 @@ if __name__ == '__main__':
     thiscfg = configparser.ConfigParser()
     local_path =os.path.dirname(os.path.abspath(__file__))
     thiscfg.read(os.path.join(local_path, 'config.ini'))
-
     setupLogging(thiscfg, 'archive_')
-
     datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
     archserver = thiscfg['archive']['archserver']
     archfldr = thiscfg['archive']['archfldr']
