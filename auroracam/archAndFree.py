@@ -167,16 +167,17 @@ def freeUpSpace(datadir, archserver, archfldr):
     freekb = getFreeSpace()
     reqkb = getNeededSpace()
     log.info(f'need {reqkb/1024/1024:.3f} GB, have {freekb/1024/1024:.3f} GB')
-    log.info(f'archiving to {archserver}{archfldr}')     
+    log.info(f'archiving to {archserver}:{archfldr}')     
     filestoupload = getFilesToUpload(datadir)
-    filelist = getDeletableFiles(datadir, daystookeep=3, filestokeep=filestoupload)
+    filelist = getDeletableFiles(datadir, daystokeep=3, filestokeep=filestoupload)
     log.info(f'want to keep {filestoupload}')
     for thisfile in filelist:
-        for patt in filestoupload:
-            patt = patt.strip()
+        for origpatt in filestoupload:
+            patt = origpatt.strip()
             if patt in thisfile:
                 if compressAndUpload(datadir, thisfile, archserver, archfldr):
-                    filestoupload.remove(patt)
+                    while origpatt in filestoupload:
+                        filestoupload.remove(origpatt)
                     saveFilesToUpload(datadir, filestoupload)
                     newfree = getFreeSpace()
                     if newfree < reqkb:
