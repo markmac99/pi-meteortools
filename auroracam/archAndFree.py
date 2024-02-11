@@ -22,6 +22,12 @@ log = logging.getLogger("logger")
 
 
 def getFilesToUpload(datadir):
+    """
+    Load the current list of folders/files to be archived 
+
+    Parameters
+        datadir [string] datadir to look in
+    """
     dirnames = open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'r').readlines()
     if len(dirnames) == 0:
         return False
@@ -29,6 +35,12 @@ def getFilesToUpload(datadir):
 
 
 def saveFilesToUpload(datadir, dirs):
+    """
+    Save the current list of folders/files to be archived 
+
+    Parameters
+        datadir [string] datadir to save in
+    """
     open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'w').writelines(dirs)
     return 
 
@@ -40,8 +52,11 @@ def getFreeSpace():
 
 
 def getNeededSpace():
-    #each jpg is about 100kB, and we capture about 20,000 per day - about one every 4 seconds
-    # plus extra for the timelapses and tarballs, and a bit of overhead
+    """
+    Calculate space required for next 24 hours of operation. 
+    each jpg is about 100kB, and we capture about 20,000 per day - about one every 4 seconds 
+    plus extra for the timelapses and tarballs, and a bit of overhead 
+    """
     jpgspace = 20000 * 100 # 100 kB per file
     mp4space = 100 * 1024  # 100 MB
     tarballspace = 1500 * 1024 # 1.5 GB 
@@ -50,19 +65,46 @@ def getNeededSpace():
     return reqspace
 
 
-def getDeletableFiles(datadir, daystokeep=3):
+def getDeletableFiles(datadir, daystokeep=3, filestokeep=None):
+    """
+    Get a list of files and folders that can be deleted
+
+    Parameters:
+        datadir     [string] - the root folder containing the data files eg ~/RMS_data/auroracam
+        daystokeep  [int]    - number of recent days to keep and consider not deletable
+        filestokeep [string] - a list of files or folders we want to archive before deleting
+    """
     tod = datetime.datetime.now().strftime('%Y%m%d')
     allfiles = os.listdir(datadir)
     allfiles = [x for x in allfiles if 'FILES' not in x]
     allfiles = [x for x in allfiles if tod not in x]
+    origallfiles = allfiles
     for d in range(1,daystokeep):
         yest = (datetime.datetime.now() - datetime.timedelta(days=d)).strftime('%Y%m%d')
         allfiles = [x for x in allfiles if yest not in x]
+    for patt in filestokeep:
+        toarch = [x for x in origallfiles if patt.strip() in x]
+        allfiles += toarch
     allfiles.sort()
     return allfiles
 
 
 def compressAndUpload(datadir, thisfile, archserver, archfldr):
+    """
+    Compress and upload data.
+    If thisfile is a folder name, the folder is compressed into a zip archive.
+    The zipped archive is then uploaded to the target server and location. 
+    The year is postpended to the target folder, so that data will be sorted by year on the server.
+    The zip archive is deleted after upload. 
+
+    Parameters:
+        datadir     [string] - the root folder containing the data files eg ~/RMS_data/auroracam
+        thisfile    [string] - the name of the file or folder to process
+        archserver  [string] - target server to archive files to
+        archfolder  [string] - target location on server. The current year will be appended to this. 
+
+    
+    """
     if '.zip' in thisfile or '.tgz' in thisfile:
         pass
     else:
@@ -106,12 +148,28 @@ def compressAndUpload(datadir, thisfile, archserver, archfldr):
 
 
 def freeUpSpace(datadir, archserver, archfldr):
+    """
+    Free up space by deleting older data. 
+    Free space is checked and required space determined. The routine then obtains a list
+    of folders that the user has marked as of interest and to be saved, and  a list 
+    of files & folders in the datadir which might be deletable. By default, the last three 
+    days worth of data will be retained unless space is required. 
+
+    We then loop through the list of deletable files and folders, checking if they're marked
+    as to be archived and compressing and archiving if needed. Freespace is then checked
+    and if insufficient, the folder or file is deleted. This continues till there's sufficient space.
+
+    Parameters:
+        datadir     [string] - the root folder containing the data files eg ~/RMS_data/auroracam
+        archserver  [string] - target server to archive files to
+        archfolder  [string] - target location on server. The current year will be appended to this. 
+    """
     freekb = getFreeSpace()
     reqkb = getNeededSpace()
     log.info(f'need {reqkb/1024/1024:.3f} GB, have {freekb/1024/1024:.3f} GB')
     log.info(f'archiving to {archserver}{archfldr}')     
-    filelist = getDeletableFiles(datadir)
     filestoupload = getFilesToUpload(datadir)
+    filelist = getDeletableFiles(datadir, daystookeep=3, filestokeep=filestoupload)
     log.info(f'want to keep {filestoupload}')
     for thisfile in filelist:
         for patt in filestoupload:
