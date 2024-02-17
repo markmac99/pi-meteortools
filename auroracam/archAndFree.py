@@ -29,8 +29,6 @@ def getFilesToUpload(datadir):
         datadir [string] datadir to look in
     """
     dirnames = open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'r').readlines()
-    if len(dirnames) == 0:
-        return False
     return dirnames
 
 
