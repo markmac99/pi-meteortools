@@ -26,6 +26,7 @@ import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
 from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
+from RMS.DeleteOldObservations import getNightDirs, deleteNightFolders
 from Utils.TrackStack import trackStack
 
 from meteortools.utils import annotateImage
@@ -49,15 +50,19 @@ def pushLatestMonthlyStack(targetname, imgname):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
-    ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
-    ftp_client = ssh_client.open_sftp()
-    _, fname = os.path.split(imgname)
-    camid = fname[:6]
-    if os.path.isfile(imgname):
-        ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
-        log.info(f'uploaded {fname} to {targetname}')
-    else:
-        log.warning(f'file {imgname} not found')
+    try:
+        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        _, fname = os.path.split(imgname)
+        camid = fname[:6]
+        if os.path.isfile(imgname):
+            ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
+            log.info(f'uploaded {fname} to {targetname}')
+        else:
+            log.warning(f'file {imgname} not found')
+    except Exception as e:
+        log.warning(f'upload to {sitecfg["hostname"]}')
+        log.info(e, exc_info=True)
     return 
 
 
@@ -97,7 +102,9 @@ def pushLatestDailyStack(config, arch_dir, localcfg):
     return 
 
 
-def copyMLRejects(cap_dir, arch_dir):
+def copyMLRejects(cap_dir, arch_dir, config):
+    rej_dir = arch_dir.replace('ArchivedFiles','RejectedFiles')
+    os.makedirs(rej_dir, exist_ok=True)
     ftplist = [f for f in glob.glob(os.path.join(arch_dir,'FTPdetectinfo*.txt')) if 'backup' not in f and 'uncalibrated' not in f]
     detlist = [f for f in ftplist if 'unfiltered' not in f]
     detlist = detlist[0]
@@ -109,10 +116,32 @@ def copyMLRejects(cap_dir, arch_dir):
     rejs = [li for li in ufdets if li not in dets]
     for ff_file in rejs:
         srcfile = os.path.join(cap_dir, ff_file)
-        trgfile = os.path.join(arch_dir, ff_file)
+        trgfile = os.path.join(rej_dir, ff_file)
         if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
-            log.info(f'copying reject {os.path.basename(srcfile)}')
+            log.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
             shutil.copyfile(srcfile, trgfile)
+    shutil.make_archive(rej_dir + '_rejected', 'zip', root_dir = rej_dir, base_dir=rej_dir)
+    # housekeep the Rejects
+    orig_count = 0
+    final_count = 0
+    base_dir, _ = os.path.split(rej_dir)
+    if config.arch_dirs_to_keep > 0:
+        archdir_list = getNightDirs(base_dir, config.stationID)
+        orig_count = len(archdir_list)
+        while len(archdir_list) > config.arch_dirs_to_keep:
+            archdir_list = deleteNightFolders(base_dir, config)
+        final_count = len(archdir_list)
+    log.info('Purged {} older folders from RejectedFiles'.format(orig_count - final_count))
+    orig_count = 0
+    final_count = 0
+    if config.bz2_files_to_keep > 0:
+        bz2_list = glob.glob(f'{base_dir}/*.zip')
+        orig_count = len(bz2_list)
+        while len(bz2_list) > config.bz2_files_to_keep:
+            os.remove(os.path.join(base_dir, bz2_list[0]))
+            bz2_list.pop(0)
+        final_count = len(bz2_list)
+    log.info('Purged {} older zip files from RejectedFiles'.format(orig_count - final_count))
     return 
 
 
@@ -232,6 +261,61 @@ def doTrackStack(arch_dir, cfg, localcfg):
     return 
 
 
+def archiveBz2(config=None, localcfg=None):
+    if localcfg is None:
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if config is None:
+        rmscfg = os.path.expanduser('~/source/RMS/.config')
+        config = cr.parse(rmscfg)
+    sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    camid = config.stationID.lower()
+    datadir = config.data_dir
+    sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
+    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ftp = ssh_client.open_sftp()
+        yr=0
+        localbzs = glob.glob(f'{datadir}/ArchivedFiles/*.bz2')
+        for locbz in localbzs:
+            locbzfn = os.path.split(locbz)[1]
+            if yr != locbz[7:11]:
+                yr = locbzfn[7:11]
+                rempath = f'{localcfg["backup"]["remotepath"]}/{camid}/{yr}'
+                try:
+                    rembzs = ftp.listdir(rempath)
+                except Exception:
+                    ftp.mkdir(rempath)
+                    rembzs = []
+            if locbzfn not in rembzs:
+                remfnam = os.path.join(rempath, locbzfn)
+                log.info(f'archiving {locbzfn}')
+                ftp.put(locbz, remfnam)
+        localbzs = glob.glob(f'{datadir}/RejectedFiles/*.zip')
+        for locbz in localbzs:
+            locbzfn = os.path.split(locbz)[1]
+            if yr != locbz[7:11]:
+                yr = locbzfn[7:11]
+                rempath = f'{localcfg["backup"]["remotepath"]}/{camid}/{yr}'
+                try:
+                    rembzs = ftp.listdir(rempath)
+                except Exception:
+                    ftp.mkdir(rempath)
+                    rembzs = []
+            if locbzfn not in rembzs:
+                remfnam = os.path.join(rempath, locbzfn)
+                log.info(f'archiving {locbzfn}')
+                ftp.put(locbz, remfnam)
+        ftp.close()
+    except Exception as e:
+        log.warning(f"unable to archive the bz2 file to {sitecfg['hostname']}")
+        log.warning(e, exc_info=True)
+
+
 def rmsExternal(cap_dir, arch_dir, config):
     rebootlockfile = os.path.join(config.data_dir, config.reboot_lock_file)
     with open(rebootlockfile, 'w') as f:
@@ -282,7 +366,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info(errmsg)
             log.info(e, exc_info=True)
     # copy the ML rejected files
-    copyMLRejects(cap_dir, arch_dir)
+    copyMLRejects(cap_dir, arch_dir, config)
     
     # upload the MP4 to S3 or a website
     if int(localcfg['postprocess']['upload']) == 1:
@@ -335,6 +419,8 @@ def rmsExternal(cap_dir, arch_dir, config):
         sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
                     'Warning',f'{hname}@themcintyres.ddns.net')
 
+    archiveBz2(config, localcfg)
+
     os.remove(rebootlockfile)
 
     # clear log handlers again
@@ -344,8 +430,6 @@ def rmsExternal(cap_dir, arch_dir, config):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('usage: dailyPostProc.py UK0006_20230318_184715_611839 {optional config file}')
     hname = os.uname()[1]
     if len(sys.argv) > 2: 
         rmscfg = os.path.expanduser(sys.argv[2])
@@ -353,11 +437,19 @@ if __name__ == '__main__':
         rmscfg = os.path.expanduser('~/source/RMS/.config')
     config = cr.parse(rmscfg)
     datadir = config.data_dir
-    cap_dir = os.path.join(datadir, 'CapturedFiles', sys.argv[1])
-    arch_dir = os.path.join(datadir, 'ArchivedFiles', sys.argv[1])
-  
-    #srcdir = os.path.split(os.path.abspath(__file__))[0]
-    #localcfg = configparser.ConfigParser()
-    #localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if len(sys.argv) < 2:
+        lastcap = sorted(os.listdir(os.path.join(datadir, 'CapturedFiles')))[-1]
+        if not os.path.isdir(os.path.join(datadir, 'ArchivedFiles', lastcap)): 
+            lastcap = sorted(os.listdir(os.path.join(datadir, 'CapturedFiles')))[-2]
+    else:
+        lastcap = sys.argv[1]
+    cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
+    arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
+    print('processing {}'.format(lastcap))
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
     #pushLatestDailyStack(config, arch_dir, localcfg)
+    #copyMLRejects(cap_dir, arch_dir, config)
+    #archiveBz2(config, localcfg)
     rmsExternal(cap_dir, arch_dir, config)

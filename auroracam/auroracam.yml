@@ -11,13 +11,13 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/reorganize.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/archAndFree.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/uploadLiveJpg.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/checkAuroracam.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/archiveData.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/logTemperature.sh', dest: '{{destdir}}/', mode: '754', backup: no }
+    - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '754', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
   - name: Copy shared files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
@@ -65,6 +65,21 @@
       path: '{{destdir}}/config.ini'
       regexp: 'UPLOADLOC='
       line: 'UPLOADLOC=s3://mjmm-data'
+  - name: update archserver
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'ARCHSERVER='
+      line: 'ARCHSERVER=thelinux'
+  - name: update archlocation
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'ARCHFLDR='
+      line: 'ARCHFLDR=/data3/astrodata/auroracam'
+  - name: update RGB adj
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'RGBADJ='
+      line: 'RGBADJ=0.75,1.0,1.0'
   - name: make sure modules are downloaded
     shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg

@@ -1,0 +1,38 @@
+---
+- hosts: thelinux
+  vars:
+    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/lnxserver
+    destdir: ~/scripts/radio
+  tasks:
+  - name: Copy files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    with_items:
+    - {src: '{{srcdir}}/getRadioData.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/radioData.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+  - name: update TARGETDIR
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export TARGETDIR='
+      line: 'export TARGETDIR=/data3/astrodata/meteorcam/radio/'
+  - name: update SRCDIR
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export SRCDIR='
+      line: 'export SRCDIR=c:/spectrum'
+  - name: remote password file
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export PASSFILE='
+      line: 'export PASSFILE=~/.ssh/astro3.pwd'
+  - name: remote user
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export SRCUSER='
+      line: 'export SRCUSER=dataxfer'
+  - name: remote server
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'export SRCHOST='
+      line: 'export SRCHOST=astro3'
+

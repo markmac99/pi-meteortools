@@ -26,3 +26,4 @@ variable "satdatabucket" { default = "mjmm-rawsatdata" }
 #data used by the code in several places
 data "aws_caller_identity" "current" {}
 
+variable "mjmmdomainname" {default = "markmcintyreastro.co.uk."}

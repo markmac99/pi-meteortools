@@ -28,10 +28,10 @@ sudo apt-get install python3-opencv
 virtualenv ~/vAuroracam  
 source ~/vAuroracam/bin/activate  
 pip install --upgrade pip
-pip install python-dvr python-crontab boto3 opencv-python ephem pillow
+pip install python-dvr python-crontab boto3 opencv-python ephem pillow MeteorTools
 mkdir -p ~/source/auroracam
 cd ~/source/auroracam
-flist=(uploadLiveJpg.sh archiveData.sh grabImage.py config.ini ../pi/annotateImage.py ../pi/SetExpo.py)
+flist=(uploadLiveJpg.sh archiveData.sh grabImage.py config.ini ../pi/setExpo.py)
 for f in ${flist[@]} ; do
 wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/${f}  
 done 
