@@ -1,7 +1,7 @@
 name: testing 
 on:
     push:
-        branches: dev
+        branches: master
 jobs:
     apitests:
         runs-on: thelinux
