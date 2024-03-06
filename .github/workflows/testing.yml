@@ -4,7 +4,7 @@ on:
         branches: dev
 jobs:
     apitests:
-        runs-on: ubuntu-latest
+        runs-on: pmt-runner
         steps:
         - uses: actions/checkout@v3
         - run: chmod +x ./tests/*.sh
