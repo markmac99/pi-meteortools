@@ -351,11 +351,17 @@ def rmsExternal(cap_dir, arch_dir, config):
                     tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
                     msg = '{:s} timelapse for {:s}'.format(hname, tod)
                     log.info('uploading {:s} to youtube'.format(mp4name))
-                    for retries in range(5):
-                        if stu.main(msg, os.path.join(arch_dir, mp4name)) == 0:
-                            break
-                        else:
+                    retries = 5
+                    while retries >= 0:
+                        try:
+                            if stu.main(msg, os.path.join(arch_dir, mp4name)):
+                                break
+                        except Exception as e:
+                            log.info('problem with youtube upload, retrying in 10s')
+                            log.debug(e, exc_info=True)
                             time.sleep(10)
+                    if retries == 0:
+                        log.info('unable to upload timelapse')
                 else:
                     log.info('already uploaded {:s}'.format(mp4name))
                     

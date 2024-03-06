@@ -84,17 +84,17 @@ def main(title, fname):
         if response is not None:
             if 'id' in response:
                 print("Video id '%s' was successfully uploaded." % response['id'])
-                return 0
+                return True
             else:
                 exit("The upload failed with an unexpected response: %s" % response)
-                return 1
+                return False
     except HttpError as e:
         error='HTTP error %d arose with status: \'%s\' ' % (e.resp.status, e.content)
         print(error)
-        return 1
+        return False
     except Exception:
         print('unknown error')
-        return 1
+        return False
 
 
 if __name__ == "__main__":
