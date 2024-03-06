@@ -1,7 +1,7 @@
 name: testing 
 on:
     push:
-        branches: master
+        branches: dev
 jobs:
     apitests:
         runs-on: pmt-runner
