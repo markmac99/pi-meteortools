@@ -28,7 +28,7 @@ def getFilesToUpload(datadir):
     Parameters
         datadir [string] datadir to look in
     """
-    dirnames = open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'r').readlines()
+    dirnames = open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'r').read().splitlines()
     return dirnames
 
 
@@ -172,7 +172,7 @@ def freeUpSpace(datadir, archserver, archfldr):
     for thisfile in filelist:
         for origpatt in filestoupload:
             patt = origpatt.strip()
-            if patt in thisfile:
+            if patt in thisfile and len(patt) > 8:
                 if compressAndUpload(datadir, thisfile, archserver, archfldr):
                     while origpatt in filestoupload:
                         filestoupload.remove(origpatt)

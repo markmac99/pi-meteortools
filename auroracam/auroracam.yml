@@ -79,7 +79,7 @@
     lineinfile: 
       path: '{{destdir}}/config.ini'
       regexp: 'RGBADJ='
-      line: 'RGBADJ=0.75,1.0,1.0'
+      line: 'RGBADJ=0.95,1.0,1.0'
   - name: make sure modules are downloaded
     shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg
