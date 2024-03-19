@@ -24,7 +24,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/mjmm-data.key'
+      line: 'IDFILE=~/.ssh/{{host}}'
   - name: update AWS host
     lineinfile:
       path: '{{destdir}}/config.ini'
@@ -35,6 +35,11 @@
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
       line: 'WEBSERVER=wordpresssite'
+  - name: update idserver
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'IDSERVER='
+      line: 'IDSERVER=wordpresssite'
   - name: update MQTT broker
     lineinfile:
       path: '{{destdir}}/config.ini'

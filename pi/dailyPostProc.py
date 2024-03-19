@@ -20,6 +20,7 @@ from dateutil.relativedelta import relativedelta
 import paramiko
 from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
+import tempfile
 
 
 import RMS.ConfigReader as cr
@@ -39,6 +40,54 @@ from sendToMQTT import sendToMqtt # noqa:E402
 
 
 log = logging.getLogger("logger")
+
+
+def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
+    """ 
+    This function retreives an AWS key/secret for uploading the live image. 
+    """
+    if uid is None:
+        config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+        sitecfg = config.lookup(servername)
+        if 'user' not in sitecfg.keys():
+            log.warning(f'unable to connect to {servername} - no entry in ssh config file')
+            return 
+    else:
+        sitecfg={}
+        sitecfg['hostname'] = servername
+        sitecfg['user'] = uid
+        sitecfg['identityfile'] = [os.path.expanduser(sshkeyfile)]
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
+    key = ''
+    try: 
+        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        try:
+            handle, tmpfnam = tempfile.mkstemp()
+            ftp_client.get(remotekeyname + '.csv', tmpfnam)
+        except Exception as e:
+            log.error('unable to find AWS key')
+            log.info(e, exc_info=True)
+        ftp_client.close()
+        try:
+            lis = open(tmpfnam, 'r').readlines()
+            os.close(handle)
+            os.remove(tmpfnam)
+            key, sec = lis[1].split(',')
+        except Exception as e:
+            log.error('malformed AWS key')
+            log.info(e, exc_info=True)
+    except Exception as e:
+        log.error('unable to retrieve AWS key')
+        log.info(e, exc_info=True)
+    ssh_client.close()
+    if key:
+        log.info('retrieved key details')
+        return key.strip(), sec.strip() 
+    else: 
+        return False, False
 
 
 def pushLatestMonthlyStack(targetname, imgname):
@@ -66,7 +115,7 @@ def pushLatestMonthlyStack(targetname, imgname):
     return 
 
 
-def pushLatestDailyStack(config, arch_dir, localcfg):
+def pushLatestDailyStack(config, arch_dir, localcfg, s3):
     stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack_*.jpg'))]
     if len(stacklist) ==0:
         return 
@@ -79,16 +128,9 @@ def pushLatestDailyStack(config, arch_dir, localcfg):
     metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
     camid = config.stationID
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
-    idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'dailystacks'))
-        with open(idfile, 'r') as f:
-            li = f.readline()
-            key = li.split('=')[1].rstrip().strip('"')
-            li = f.readline()
-            secret = li.split('=')[1].rstrip().strip('"')
-        s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
         target=hn[5:]
         outf = '{:s}/dailystacks/{:s}'.format(camid, fname[:15]+'.jpg')
         try: 
@@ -145,7 +187,7 @@ def copyMLRejects(cap_dir, arch_dir, config):
     return 
 
 
-def monthlyStack(cfg, arch_dir, localcfg):
+def monthlyStack(cfg, arch_dir, localcfg, s3):
     currdir = os.path.basename(os.path.normpath(arch_dir))
     lastmthstr = currdir[:7] + (datetime.datetime.strptime(currdir[7:13], '%Y%m')+ relativedelta(months=-1)).strftime('%Y%m')
     tmpdir = os.path.join(cfg.data_dir, 'tmpstack')
@@ -181,16 +223,9 @@ def monthlyStack(cfg, arch_dir, localcfg):
         annotateImage(jpgfile[0], stn, metcount=len(flist), rundate=currdir[7:13])
         targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
         shutil.copyfile(jpgfile[0], targ)
-        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
         hn = localcfg['postprocess']['host']
         if hn[:3] == 's3:':
             log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
-            with open(idfile, 'r') as f:
-                li = f.readline()
-                key = li.split('=')[1].rstrip().strip('"')
-                li = f.readline()
-                secret = li.split('=')[1].rstrip().strip('"')
-            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
             target=hn[5:]
             outf = '{:s}/stacks/{:s}'.format(stn, currdir[:13]+'.jpg')
             try: 
@@ -205,7 +240,7 @@ def monthlyStack(cfg, arch_dir, localcfg):
     return     
 
 
-def doTrackStack(arch_dir, cfg, localcfg):
+def doTrackStack(arch_dir, cfg, localcfg, s3):
     trackStack([arch_dir], cfg, draw_constellations=True, hide_plot=True, background_compensation=False)
     tflist = glob.glob(os.path.join(arch_dir, '*_track_stack.jpg'))
     if len(tflist) > 0:
@@ -236,16 +271,9 @@ def doTrackStack(arch_dir, cfg, localcfg):
         image_editable.text((20,height/2), "NO TRACKSTACK TODAY", font=fnt, fill=(255))
         my_image.save(trackfile)
 
-    idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, cfg.stationID, 'trackstacks'))
-        with open(idfile, 'r') as f:
-            li = f.readline()
-            key = li.split('=')[1].rstrip().strip('"')
-            li = f.readline()
-            secret = li.split('=')[1].rstrip().strip('"')
-        s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
         target=hn[5:]
         outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         try: 
@@ -375,6 +403,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     copyMLRejects(cap_dir, arch_dir, config)
     
     # upload the MP4 to S3 or a website
+    s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
         hn = localcfg['postprocess']['host']
         fn = os.path.join(arch_dir, mp4name)
@@ -382,15 +411,11 @@ def rmsExternal(cap_dir, arch_dir, config):
         stn = splits[0]
         yymm = splits[1]
         yymm = yymm[:6]
-        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
 
-        with open(idfile, 'r') as f:
-            li = f.readline()
-            key = li.split('=')[1].rstrip().strip('"')
-            li = f.readline()
-            secret = li.split('=')[1].rstrip().strip('"')
-
+        idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+        idserver = localcfg['postprocess']['webserver']
+        key, secret = getAWSKey(idserver, hname, hname, idfile)
         s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
             region_name='eu-west-2')
         target=hn[5:]
@@ -410,15 +435,15 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info(e, exc_info=True)
     # upload daily stack
     log.info('uploading daily stack')
-    pushLatestDailyStack(config, arch_dir, localcfg)
+    pushLatestDailyStack(config, arch_dir, localcfg, s3)
 
     # create monthly stack
     log.info('creating monthly stack')
-    monthlyStack(config, arch_dir, localcfg)
+    monthlyStack(config, arch_dir, localcfg, s3)
     # create trackstack
     log.info('creating trackstack')
     try: 
-        doTrackStack(arch_dir, config, localcfg)
+        doTrackStack(arch_dir, config, localcfg, s3)
     except Exception as e:
         log.warning('trackstack failed, probably too many detections')
         log.info(e, exc_info=True)
@@ -455,7 +480,4 @@ if __name__ == '__main__':
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    #pushLatestDailyStack(config, arch_dir, localcfg)
-    #copyMLRejects(cap_dir, arch_dir, config)
-    #archiveBz2(config, localcfg)
     rmsExternal(cap_dir, arch_dir, config)
