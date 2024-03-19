@@ -11,6 +11,7 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/archAndFree.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/uploadLiveJpg.sh', dest: '{{destdir}}/', mode: '755', backup: no }
@@ -19,11 +20,6 @@
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '754', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
-  - name: Copy shared files
-    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
-    with_items:
-    - {src: '{{shrdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{shrdir}}/networkCheck.sh', dest: '{{destdir}}/', mode: '754', backup: no }
 
   - name: update ipaddress
     lineinfile: 
@@ -80,6 +76,11 @@
       path: '{{destdir}}/config.ini'
       regexp: 'RGBADJ='
       line: 'RGBADJ=0.95,1.0,1.0'
+  - name: update idfile
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'IDFILE='
+      line: 'IDFILE=~/.ssh/auroracam'
   - name: make sure modules are downloaded
     shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg

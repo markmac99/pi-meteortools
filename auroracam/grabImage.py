@@ -17,6 +17,9 @@ from setExpo import setCameraExposure
 from crontab import CronTab
 import paho.mqtt.client as mqtt
 import platform 
+import paramiko
+from paramiko.config import SSHConfig
+import tempfile
 
 
 pausetime = 2 # time to wait between capturing frames 
@@ -56,6 +59,51 @@ def roundTime(dt):
     else:
         dt = dt + datetime.timedelta(microseconds = -dt.microsecond)
     return dt
+
+
+def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
+    if uid is None:
+        config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+        sitecfg = config.lookup(servername)
+        if 'user' not in sitecfg.keys():
+            log.warning(f'unable to connect to {servername} - no entry in ssh config file')
+            return 
+    else:
+        sitecfg={}
+        sitecfg['hostname'] = servername
+        sitecfg['user'] = uid
+        sitecfg['identityfile'] = [os.path.expanduser(sshkeyfile)]
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
+    key = ''
+    try: 
+        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        try:
+            handle, tmpfnam = tempfile.mkstemp()
+            ftp_client.get(remotekeyname + '.csv', tmpfnam)
+        except Exception as e:
+            log.error('unable to find AWS key')
+            log.info(e, exc_info=True)
+        ftp_client.close()
+        try:
+            lis = open(tmpfnam, 'r').readlines()
+            os.close(handle)
+            os.remove(tmpfnam)
+            key, sec = lis[1].split(',')
+        except Exception as e:
+            log.error('malformed AWS key')
+            log.info(e, exc_info=True)
+    except Exception as e:
+        log.error('unable to retrieve AWS key')
+        log.info(e, exc_info=True)
+    ssh_client.close()
+    if key:
+        log.info('retrieved key details')
+        return key.strip(), sec.strip() 
+    else: 
+        return False, False
 
 
 def getStartEndTimes(currdt, thiscfg):
@@ -188,7 +236,7 @@ def addCrontabEntry(local_path):
 
 if __name__ == '__main__':
     ipaddress = sys.argv[1]
-    hostname = sys.argv[2]
+    hostname = platform.uname().node
 
     thiscfg = configparser.ConfigParser()
     local_path =os.path.dirname(os.path.abspath(__file__))
@@ -197,7 +245,14 @@ if __name__ == '__main__':
 
     ulloc = thiscfg['auroracam']['uploadloc']
     if ulloc[:5] == 's3://':
-        s3 = boto3.resource('s3')
+        idserver = thiscfg['auroracam']['idserver']
+        sshkey = thiscfg['auroracam']['idfile']
+        awskey, awssec = getAWSKey(idserver, hostname, hostname, sshkey)
+        if not awskey:
+            log.error('unable to find AWS key')
+            exit(1)
+        conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
+        s3 = conn.resource('s3')
         bucket = ulloc[5:]
     else:
         print('not uploading to AWS S3')
