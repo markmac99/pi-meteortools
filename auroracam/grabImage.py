@@ -62,6 +62,9 @@ def roundTime(dt):
 
 
 def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
+    """ 
+    This function retreives an AWS key/secret for uploading the live image. 
+    """
     if uid is None:
         config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
         sitecfg = config.lookup(servername)
