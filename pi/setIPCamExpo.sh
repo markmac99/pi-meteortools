@@ -25,4 +25,4 @@ else
 fi
 
 logger  -s -t setIPCamExpo "Setting exposure for $1. Camera is $IPCAMADDR, gain is $NIGHTGAIN"
-python3 $here/SetExpo.py $IPCAMADDR $1 $NIGHTGAIN
+python3 $here/setExpo.py $IPCAMADDR $1 $NIGHTGAIN

@@ -21,7 +21,7 @@ import paramiko
 from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
 import tempfile
-
+from crontab import CronTab
 
 import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
@@ -37,9 +37,34 @@ import boto3
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
 from sendToMQTT import sendToMqtt # noqa:E402
-
+from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
 log = logging.getLogger("logger")
+
+
+def addCrontabs():
+    local_path =os.path.dirname(os.path.abspath(__file__))
+    cron = CronTab(user=True)
+    for job in cron:
+        if 'postMatchStats' in job.command or 'trackStarCount' in job.command \
+                or 'logTemperature' in job.command or 'setIPCamExpo' in job.command or 'logToMQTT' in job.command:
+            cron.remove(job)
+            cron.write()
+    job = cron.new(f'{local_path}/postMatchStats.sh >> /dev/null 2>&1')
+    job.setall('*/15', '9,10,11,12', '*', '*', '*')
+    cron.write()
+    job = cron.new(f'{local_path}/trackStarCount.sh >> /dev/null 2>&1')
+    job.setall('*/10', '*', '*', '*', '*')
+    cron.write()
+    job = cron.new(f'{local_path}/logToMQTT.sh >> /dev/null 2>&1')
+    job.setall('*/5', '*', '*', '*', '*')
+    cron.write()
+    cfg = configparser.ConfigParser(inline_comment_prefixes=';')
+    rmsdir = os.path.expanduser(os.getenv('RMSDIR', default='~/source/RMS'))
+    cfg.read(os.path.join(rmsdir,'.config'))
+    ipaddr = cfg['Capture']['device'].split('/')[2].split(':')[0]
+    setExpoAddCron(ipaddr, cfg)
+    return 
 
 
 def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
@@ -367,44 +392,38 @@ def rmsExternal(cap_dir, arch_dir, config):
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
-        try: 
-            if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
-                with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-                    f.write('dummy\n')
+        if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
+            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
+                f.write('dummy\n')
 
-            with open(os.path.join(srcdir, '.ytdone'), 'r') as f:
-                line = f.readline().rstrip()
-                if line != mp4name:
-                    tod = mp4name.split('_')[1]
-                    tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
-                    msg = '{:s} timelapse for {:s}'.format(hname, tod)
-                    log.info('uploading {:s} to youtube'.format(mp4name))
-                    retries = 5
-                    while retries >= 0:
-                        try:
-                            if stu.main(msg, os.path.join(arch_dir, mp4name)):
-                                break
-                        except Exception as e:
-                            log.info('problem with youtube upload, retrying in 10s')
-                            log.debug(e, exc_info=True)
-                            time.sleep(10)
-                    if retries == 0:
-                        log.info('unable to upload timelapse')
-                else:
-                    log.info('already uploaded {:s}'.format(mp4name))
-                    
-                with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-                    f.write(mp4name)
-        except Exception as e:
-            errmsg = 'unable to upload timelapse'
-            log.info(errmsg)
-            log.info(e, exc_info=True)
-    # copy the ML rejected files
-    copyMLRejects(cap_dir, arch_dir, config)
+        line = open(os.path.join(srcdir, '.ytdone'), 'r').readline().rstrip()
+        if line != mp4name:
+            tod = mp4name.split('_')[1]
+            tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
+            msg = '{:s} timelapse for {:s}'.format(hname, tod)
+            log.info('uploading {:s} to youtube'.format(mp4name))
+            for retries in range(0,5):
+                try:
+                    if stu.main(msg, os.path.join(arch_dir, mp4name)):
+                        break
+                except Exception as e:
+                    log.info('problem with youtube upload, retrying in 10s')
+                    log.debug(e, exc_info=True)
+                    time.sleep(10)
+                    retries -= 1
+            if retries == 5:
+                log.info('unable to upload timelapse after five retries')
+        else:
+            log.info('already uploaded {:s}'.format(mp4name))
+                
+        open(os.path.join(srcdir, '.ytdone'), 'w').write(mp4name)
     
-    # upload the MP4 to S3 or a website
     s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
+        # copy the ML rejected files
+        copyMLRejects(cap_dir, arch_dir, config)
+
+        # upload the MP4 to S3 or a website
         hn = localcfg['postprocess']['host']
         fn = os.path.join(arch_dir, mp4name)
         splits = mp4name.split('_')
@@ -426,6 +445,25 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.warning('upload to S3 failed')
             log.info(e, exc_info=True)
 
+        # upload daily stack
+        log.info('uploading daily stack')
+        pushLatestDailyStack(config, arch_dir, localcfg, s3)
+
+        # create monthly stack
+        log.info('creating monthly stack')
+        monthlyStack(config, arch_dir, localcfg, s3)
+        # create trackstack
+        log.info('creating trackstack')
+        try: 
+            doTrackStack(arch_dir, config, localcfg, s3)
+        except Exception as e:
+            log.warning('trackstack failed, probably too many detections')
+            log.info(e, exc_info=True)
+            sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
+                        'Warning',f'{hname}@themcintyres.ddns.net')
+
+        archiveBz2(config, localcfg)
+
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
         try:
@@ -433,24 +471,6 @@ def rmsExternal(cap_dir, arch_dir, config):
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
-    # upload daily stack
-    log.info('uploading daily stack')
-    pushLatestDailyStack(config, arch_dir, localcfg, s3)
-
-    # create monthly stack
-    log.info('creating monthly stack')
-    monthlyStack(config, arch_dir, localcfg, s3)
-    # create trackstack
-    log.info('creating trackstack')
-    try: 
-        doTrackStack(arch_dir, config, localcfg, s3)
-    except Exception as e:
-        log.warning('trackstack failed, probably too many detections')
-        log.info(e, exc_info=True)
-        sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
-                    'Warning',f'{hname}@themcintyres.ddns.net')
-
-    archiveBz2(config, localcfg)
 
     os.remove(rebootlockfile)
 
