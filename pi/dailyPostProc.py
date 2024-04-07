@@ -181,14 +181,15 @@ def copyMLRejects(cap_dir, arch_dir, config):
     dets = [li.strip() for li in open(detlist,'r').readlines() if 'FF_' in li]
     ufdets = [li.strip() for li in open(uflist,'r').readlines() if 'FF_' in li]
     rejs = [li for li in ufdets if li not in dets]
-    for ff_file in rejs:
-        srcfile = os.path.join(cap_dir, ff_file)
-        trgfile = os.path.join(rej_dir, ff_file)
-        if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
-            log.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
-            shutil.copyfile(srcfile, trgfile)
-    shutil.make_archive(rej_dir + '_rejected', 'zip', root_dir = rej_dir, base_dir=rej_dir)
-    # housekeep the Rejects
+    if len(rejs) > 0:
+        for ff_file in rejs:
+            srcfile = os.path.join(cap_dir, ff_file)
+            trgfile = os.path.join(rej_dir, ff_file)
+            if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
+                log.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
+                shutil.copyfile(srcfile, trgfile)
+        shutil.make_archive(rej_dir + '_rejected', 'zip', root_dir = rej_dir, base_dir=rej_dir)
+    log.info('housekeeping rejects')
     orig_count = 0
     final_count = 0
     base_dir, _ = os.path.split(rej_dir)
@@ -226,6 +227,7 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
     for oldjpg in oldjpgs:
         os.remove(oldjpg)
     # copy most recent fits files
+    log.info(f'looking in {arch_dir}')
     flist = glob.glob(f'{arch_dir}/*.fits')
     for ff in flist:
         targ = os.path.join(tmpdir, os.path.basename(ff))
@@ -421,6 +423,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
         # copy the ML rejected files
+        log.info('copying ML rejects')
         copyMLRejects(cap_dir, arch_dir, config)
 
         # upload the MP4 to S3 or a website
@@ -461,7 +464,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info(e, exc_info=True)
             sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
                         'Warning',f'{hname}@themcintyres.ddns.net')
-
+        log.info('backing up the ArchivedFiles data')
         archiveBz2(config, localcfg)
 
     if len(localcfg['mqtt']['broker']) > 1:
@@ -474,6 +477,7 @@ def rmsExternal(cap_dir, arch_dir, config):
 
     os.remove(rebootlockfile)
 
+    log.info('done')
     # clear log handlers again
     while len(log.handlers) > 0:
         log.removeHandler(log.handlers[0])
