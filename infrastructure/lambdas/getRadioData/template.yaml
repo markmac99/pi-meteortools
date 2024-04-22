@@ -18,7 +18,7 @@ Resources:
       FunctionName: processRadioData
       Description: creates colorgram and heatmaps from RMOB dat file
       Handler: processRadioData.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Timeout: 120
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
       Tags:
@@ -40,7 +40,7 @@ Resources:
                 - Name: suffix
                   Value: .csv
     Metadata:
-      BuildMethod: python3.8
+      BuildMethod: python3.11
       
   processRadioJpgs:
     Type: AWS::Serverless::Function
@@ -49,7 +49,7 @@ Resources:
       CodeUri: ./processRadioJpgs
       Description: uploads latest interesting jpgs
       Handler: processRadioJpgs.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Timeout: 30
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
       Tags:
@@ -67,8 +67,8 @@ Resources:
                   Value: raw/
                 - Name: suffix
                   Value: .jpg
-#    Metadata:
-#      BuildMethod: python3.8
+    Metadata:
+      BuildMethod: python3.11
 
   mjmmrawradiodata:
     Type: AWS::S3::Bucket

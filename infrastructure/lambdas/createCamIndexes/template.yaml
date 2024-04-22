@@ -19,13 +19,13 @@ Resources:
       FunctionName: createCamIndexes
       Description: Updates camera index files on my website as new files arrive
       Handler: createCamIndexes.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Timeout: 30
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
       Tags:
         billingtag: "MarksWebsite"
     Metadata:
-      BuildMethod: python3.8
+      BuildMethod: python3.11
   s3InvokeMyFunction:
     Type: AWS::Lambda::Permission
     Properties:

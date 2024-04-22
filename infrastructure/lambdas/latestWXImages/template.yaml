@@ -18,7 +18,7 @@ Resources:
       FunctionName: latestWXImages
       Description: creates latest versions of NOAA and M2 images
       Handler: latestWxImages.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Timeout: 120
       Role: arn:aws:iam::317976261112:role/lambda-s3-full-access-role
       Tags:
@@ -40,7 +40,7 @@ Resources:
                 - Name: suffix
                   Value: .jpg
     Metadata:
-      BuildMethod: python3.8
+      BuildMethod: python3.11
   mjmmrawsatdata:
     Type: AWS::S3::Bucket
     Properties:

@@ -7,7 +7,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: saveACapi.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       FunctionName: saveACapi
       Description: API backend that marks an auroracam dataset for saving
       Timeout: 30
@@ -29,4 +29,4 @@ Resources:
         billingtag: "auroracam"
         typetag: "api"
     Metadata:
-      BuildMethod: python3.8
+      BuildMethod: python3.11
