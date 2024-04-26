@@ -21,7 +21,10 @@ import platform
 import logging
 import requests
 
-import RMS.ConfigReader as cr
+try:
+    import RMS.ConfigReader as cr
+except Exception:
+    pass
 
 log = logging.getLogger("logger")
 
