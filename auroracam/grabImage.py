@@ -38,16 +38,21 @@ def on_publish(client, userdata, result):
     return
 
 
-def sendToMQTT(broker):
+def sendToMQTT(broker=None):
     if broker is None:
-        broker = 'wxsatpi'
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    broker = localcfg['mqtt']['broker']
     hname = platform.uname().node
     client = mqtt.Client(hname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     usage = shutil.disk_usage('.')
-    diskspace = round(usage.used/usage.total*100.0,2)
+    diskspace = round(usage.used/usage.total*100.0, 2)
     topic = f'meteorcams/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
     return ret

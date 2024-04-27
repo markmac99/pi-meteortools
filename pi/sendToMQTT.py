@@ -20,6 +20,7 @@ import glob
 import platform 
 import logging
 import requests
+import configparser
 
 try:
     import RMS.ConfigReader as cr
@@ -83,9 +84,10 @@ def getLoggedInfo(cfg):
 
 def sendMatchdataToMqtt(cfg, localcfg=None):
     if localcfg is None:
-        broker = 'wxsatpi' # localcfg['mqtt']['broker']
-    else:
-        broker = localcfg['mqtt']['broker']
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = cfg.stationID.lower()
     apiurl = 'https://api.ukmeteors.co.uk/matches'
@@ -108,6 +110,8 @@ def sendMatchdataToMqtt(cfg, localcfg=None):
     client = mqtt.Client(camname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     topic = f'{topicbase}/{camname}/matchcount'
     ret = client.publish(topic, payload=matchcount, qos=0, retain=False)
@@ -117,9 +121,10 @@ def sendMatchdataToMqtt(cfg, localcfg=None):
 
 def sendToMqtt(cfg, localcfg=None):
     if localcfg is None:
-        broker = 'wxsatpi' # localcfg['mqtt']['broker']
-    else:
-        broker = localcfg['mqtt']['broker']
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = cfg.stationID.lower()
 
@@ -129,6 +134,8 @@ def sendToMqtt(cfg, localcfg=None):
     client = mqtt.Client(camname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
 
     subtopics = ['detectioncount','meteorcount','timestamp']
@@ -141,9 +148,10 @@ def sendToMqtt(cfg, localcfg=None):
 
 def sendStarCountToMqtt(starcount, rmscfg=None, localcfg=None):
     if localcfg is None:
-        broker = 'wxsatpi' # localcfg['mqtt']['broker']
-    else:
-        broker = localcfg['mqtt']['broker']
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    broker = localcfg['mqtt']['broker']
     if rmscfg is None:
         rmscfg = '/home/pi/source/RMS/.config'        
     cfg = cr.parse(os.path.expanduser(rmscfg))
@@ -153,6 +161,8 @@ def sendStarCountToMqtt(starcount, rmscfg=None, localcfg=None):
     client = mqtt.Client(camname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
 
     topic = f'{topicbase}/{camname}/starcount'
@@ -162,13 +172,16 @@ def sendStarCountToMqtt(starcount, rmscfg=None, localcfg=None):
 
 def sendOtherData(cputemp, diskspace, localcfg=None):
     if localcfg is None:
-        broker = 'wxsatpi'
-    else:
-        broker = localcfg['mqtt']['broker']
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    broker = localcfg['mqtt']['broker']
     hname = platform.uname().node
     client = mqtt.Client(hname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     if len(cputemp) > 2:
         cputemp = cputemp[:-2]
@@ -187,14 +200,17 @@ def sendOtherData(cputemp, diskspace, localcfg=None):
 
 def test_mqtt(localcfg=None):
     if localcfg is None:
-        broker = 'wxsatpi'
-    else:
-        broker = localcfg['mqtt']['broker']
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    broker = localcfg['mqtt']['broker']
     hname = platform.uname().node
     topic = f'testing/{hname}/test'
     client = mqtt.Client(hname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     ret = client.publish(topic, payload=f'test from {hname}', qos=0, retain=False)
     print("send to {}, result {}".format(topic, ret))

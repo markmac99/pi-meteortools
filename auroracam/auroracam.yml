@@ -56,6 +56,16 @@
       path: '{{destdir}}/config.ini'
       regexp: 'BROKER='
       line: 'BROKER=wxsatpi'
+  - name: update MQTT username
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'USERNAME='
+      line: 'USERNAME=rmscams'
+  - name: update MQTT password
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'PASSWORD='
+      line: 'PASSWORD=Wombat33rpi'
   - name: update uploadloc
     lineinfile: 
       path: '{{destdir}}/config.ini'
