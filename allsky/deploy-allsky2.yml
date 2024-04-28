@@ -3,6 +3,7 @@
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/allsky
     destdir: ~/src/tackley-tools
+    allskydir: ~/src/allsky
   tasks:
   - name: Copy meteorhunting files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
@@ -12,6 +13,7 @@
     - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/upload.sh', dest: '{{allskydir}}/scripts/', mode: '754', backup: no }
 
   - name: update MQTT broker
     lineinfile:
