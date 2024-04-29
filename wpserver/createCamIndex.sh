@@ -17,7 +17,7 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-camlist=$(ls -1d UK* allsky/startrails allsky/videos)
+camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
 for cam in $camlist ; do 
     mkdir -p $cam/$currmth 
     aws s3 sync s3://mjmm-data/$cam/ ./$cam --exclude "*" --include "*.js" --include "*.html"
@@ -38,6 +38,8 @@ for mth in $mthlist ; do
             else
                 if [ "$mth" == "trackstacks" ] ; then
                     echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/startrails\\\"\\>startrails\\</a\\>\";" >> $idxfile
+                elif [ "$mth" == "dailystacks" ] ; then
+                    echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/keograms\\\"\\>keograms\\</a\\>\";" >> $idxfile
                 else
                     echo "cell.innerHTML = \"\";" >> $idxfile
                 fi 
@@ -73,7 +75,7 @@ if [ $? -gt 0 ] ; then
     echo deploying changes to $DATADIR
     cp $idxfile $DATADIR/cameraindex.js
 else
-    echo nothing changed
+    echo general data unchanged
 fi
 
 idxfile=$TMPDIR/cameraindex.js
@@ -109,10 +111,45 @@ if [ $? -gt 0 ] ; then
     echo deploying startrails changes
     cp $idxfile $DATADIR/allsky/startrails/cameraindex.js
 else
-    echo nothing changed
+    echo startrails data unchanged
 fi
 
-camlist=$(ls -1d UK* allsky/startrails allsky/videos)
+idxfile=$TMPDIR/cameraindex.js
+echo "\$(function() {" > $idxfile
+echo "var table = document.createElement(\"table\");" >> $idxfile
+echo "table.className = \"table table-striped table-bordered table-hover table-condensed\";" >> $idxfile
+echo "var header = table.createTHead(); " >> $idxfile
+echo "header.className = \"h4\"; " >> $idxfile
+
+mthlist=$(ls -1dr allsky/keograms/202* | awk -F/ '{print $3}')
+if [[ $mthlist != *"$currmth"* ]] ; then mthlist=$(echo $currmth $mthlist ) ; fi
+
+echo "var row = table.insertRow(-1);" >> $idxfile
+i=0
+for mth in $mthlist ; do 
+    if [ $i -eq 5 ] ; then
+        echo "var row = table.insertRow(-1);" >> $idxfile
+        i=0
+    fi
+    echo "var cell = row.insertCell(-1);" >> $idxfile
+    if compgen -G "allsky/startrails/$mth" > /dev/null ; then 
+        echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/allsky/keograms/$mth\\\"\\>$mth\\</a\\>\";" >> $idxfile
+    fi
+    i=$((i+1))
+done
+
+echo "var outer_div = document.getElementById(\"mthindex\");"   >> $idxfile
+echo "outer_div.appendChild(table);"  >> $idxfile
+echo "})"  >> $idxfile
+
+diff $idxfile $DATADIR/allsky/keograms/cameraindex.js > /dev/null 
+if [ $? -gt 0 ] ; then
+    echo deploying keograms changes
+    cp $idxfile $DATADIR/allsky/keograms/cameraindex.js
+else
+    echo keograms data unchanged
+fi
+camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
 for cam in $camlist ; do 
     aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html"
 done
