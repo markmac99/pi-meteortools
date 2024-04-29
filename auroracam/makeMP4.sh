@@ -3,6 +3,7 @@
 #
 
 FPS=60
+source ~/vAuroracam/bin/activate
 
 if [ $# -lt 1 ] ; then
     echo usage: ./makeMP4 yyyymmdd_hhmmss {day}
@@ -11,19 +12,30 @@ else
     source $here/config.ini > /dev/null 2>&1
 
     fldr=$1
-    camid=$CAMID
-    dayornight=$2
+    [ $# -gt 1 ] && dayornight=1 || dayornight=0
+    export fldr dayornight DATADIR
 
     touch $DATADIR/../.noreboot
-    cd ${DATADIR}/${fldr}
-    echo making an mp4 of $(pwd)
-    [ "$dayornight" == "" ] && mp4name=${camid}_${fldr}.mp4 || mp4name=${camid}_${fldr}_day.mp4
-    
-    ffmpeg -v quiet -r $FPS -pattern_type glob -i "*.jpg" \
-            -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
-            $mp4name
+    echo making an mp4 of $DATADIR/$fldr
 
-    mth=${fldr:0:6}
-    aws s3 cp $mp4name s3://mjmm-data/${camid}/${mth}/ 
+    python << EOD
+import platform, configparser, os, boto3, logging, logging.handlers
+from grabImage import makeTimelapse, getAWSKey, setupLogging
+hostname = platform.uname().node
+thiscfg = configparser.ConfigParser()
+local_path =os.path.dirname(os.path.abspath(__file__))
+thiscfg.read(os.path.join(local_path, 'config.ini'))
+idserver = thiscfg['auroracam']['idserver']
+sshkey = thiscfg['auroracam']['idfile']
+setupLogging(thiscfg,'makeMP4_')
+awskey, awssec = getAWSKey(idserver,hostname,hostname,sshkey)
+conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
+s3 = conn.resource('s3')
+ulloc = thiscfg['auroracam']['uploadloc']
+bucket = ulloc[5:]
+camid = thiscfg['auroracam']['camid']
+print('${fldr}', camid, bucket, ${dayornight})
+makeTimelapse('${DATADIR}/${fldr}', s3, camid, bucket, ${dayornight})
+EOD
     rm -f ${DATADIR}/../.noreboot
 fi

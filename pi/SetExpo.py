@@ -8,6 +8,7 @@ import time
 import os
 import ephem
 import configparser
+import datetime
 
 # if you have RMS and the ukmon-pitools installed, these libs will already be present
 # otherwise, use pip to install python-crontab==2.5.1 and python-dvr"
@@ -85,6 +86,8 @@ def addCrontabEntries(ipaddr, cfg):
     rmsdatadir = os.path.expanduser(cfg['Capture']['data_dir'])
 
     rise, set = getNextRiseSet(cfg)
+    rise = rise + datetime.timedelta(minutes=5)
+    set = set + datetime.timedelta(minutes=-5)
 
     cron = CronTab(user=True)
     found = False
@@ -93,11 +96,11 @@ def addCrontabEntries(ipaddr, cfg):
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
-            i.minute.on(rise.minute + 5)
+            i.minute.on(rise.minute)
     if found is False:
         job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {ipaddr} > {rmsdatadir}/logs/setday-{ipaddr}.log 2>&1')
         job.hour.on(rise.hour)
-        job.minute.on(rise.minute + 5)
+        job.minute.on(rise.minute)
         cron.write()
 
     found = False
@@ -106,11 +109,11 @@ def addCrontabEntries(ipaddr, cfg):
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
-            i.minute.on(set.minute - 5)
+            i.minute.on(set.minute)
     if found is False:
         job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {ipaddr} > {rmsdatadir}/logs/setnight-{ipaddr}.log 2>&1')
         job.hour.on(set.hour)
-        job.minute.on(set.minute - 5)
+        job.minute.on(set.minute)
         cron.write()
     cron.write()
     return 

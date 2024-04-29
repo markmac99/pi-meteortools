@@ -9,7 +9,7 @@ dt=$(date '+%d/%m/%Y %H:%M:%S')
 tm=$(vcgencmd measure_temp | cut -d= -f2)
 ds=$(df -h . | tail -1 | awk -F" " '{print $5 }')
 
-grep BROKER $here/config.ini
+#grep BROKER $here/config.ini
 if [ $? -eq 1 ] ; then 
     echo $dt $tm  >> /home/pi/RMS_data/logs/temperature-`date +%Y%m%d`.log
 else

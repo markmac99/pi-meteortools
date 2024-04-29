@@ -1,0 +1,4 @@
+# python requirements file
+
+python-crontab
+paho-mqtt

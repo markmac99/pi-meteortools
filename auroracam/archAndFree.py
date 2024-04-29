@@ -13,21 +13,30 @@ import shutil
 import os
 import configparser
 import datetime
+import platform
 import paramiko
 import logging
+import boto3
+from grabImage import getAWSKey
 
 from grabImage import setupLogging
 
 log = logging.getLogger("logger")
 
 
-def getFilesToUpload(datadir):
+def getFilesToUpload(datadir, bucket, awskey, awssec):
     """
     Load the current list of folders/files to be archived 
 
     Parameters
-        datadir [string] datadir to look in
+        datadir [string] datadir to store file in
+        bucket  [string] source bucket
+        awskey  [string] aws access key
+        awssec  [string] aws secret key
     """
+    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
+    s3 = conn.client('s3')
+    s3.download_file(bucket, 'auroracam/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
     dirnames = open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'r').read().splitlines()
     return dirnames
 
@@ -38,8 +47,25 @@ def saveFilesToUpload(datadir, dirs):
 
     Parameters
         datadir [string] datadir to save in
+        dirs [list] list of directory names to be kept
     """
     open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'w').writelines(dirs)
+    return 
+
+
+def pushFilesToUpload(datadir, bucket, awskey, awssec):
+    """
+    Upload current list of folders/files to be archived back to AWS
+
+    Parameters
+        datadir [string] datadir to save in
+        bucket  [string] target bucket
+        awskey  [string] aws access key
+        awssec  [string] aws secret key
+    """
+    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
+    s3 = conn.client('s3')
+    s3.upload_file(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), bucket, 'auroracam/FILES_TO_UPLOAD.inf')
     return 
 
 
@@ -145,7 +171,7 @@ def compressAndUpload(datadir, thisfile, archserver, archfldr):
         return False
 
 
-def freeUpSpace(datadir, archserver, archfldr):
+def freeUpSpace(thiscfg):
     """
     Free up space by deleting older data. 
     Free space is checked and required space determined. The routine then obtains a list
@@ -158,15 +184,26 @@ def freeUpSpace(datadir, archserver, archfldr):
     and if insufficient, the folder or file is deleted. This continues till there's sufficient space.
 
     Parameters:
-        datadir     [string] - the root folder containing the data files eg ~/RMS_data/auroracam
-        archserver  [string] - target server to archive files to
-        archfolder  [string] - target location on server. The current year will be appended to this. 
+        thiscfg     [object] - json object containing the configuration 
     """
+    idserver = thiscfg['auroracam']['idserver']
+    uid = platform.uname()[1]
+    sshkey = thiscfg['auroracam']['idfile']
+    awskey, awssec = getAWSKey(idserver, uid, uid, sshkey)
+    if not awskey:
+        log.error('unable to find AWS key')
+        exit(1)
+
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
+    archserver = thiscfg['archive']['archserver']
+    archfldr = thiscfg['archive']['archfldr']
+    uploadloc = thiscfg['auroracam']['uploadloc'][5:]
+    
     freekb = getFreeSpace()
     reqkb = getNeededSpace()
     log.info(f'need {reqkb/1024/1024:.3f} GB, have {freekb/1024/1024:.3f} GB')
     log.info(f'archiving to {archserver}:{archfldr}')     
-    filestoupload = getFilesToUpload(datadir)
+    filestoupload = getFilesToUpload(datadir, uploadloc, awskey, awssec)
     filelist = getDeletableFiles(datadir, daystokeep=3, filestokeep=filestoupload)
     log.info(f'want to keep {filestoupload}')
     for thisfile in filelist:
@@ -190,8 +227,12 @@ def freeUpSpace(datadir, archserver, archfldr):
         else:
             if newfree < reqkb:
                 log.info(f'removing folder {thisfile}')
-                shutil.rmtree(os.path.join(datadir, thisfile))
+                try:
+                    shutil.rmtree(os.path.join(datadir, thisfile))
+                except:
+                    log.warning(f'folder {thisfile} already pruned')
     newfree = getFreeSpace()
+    pushFilesToUpload(datadir, uploadloc, awskey, awssec)
     log.info(f'freed {(newfree - freekb)/1024/1024:.3f} GB, have {newfree/1024/1024:.3f} GB')
     return 
 
@@ -201,7 +242,4 @@ if __name__ == '__main__':
     local_path =os.path.dirname(os.path.abspath(__file__))
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg, 'archive_')
-    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
-    archserver = thiscfg['archive']['archserver']
-    archfldr = thiscfg['archive']['archfldr']
-    freeUpSpace(datadir, archserver, archfldr)
+    freeUpSpace(thiscfg)
