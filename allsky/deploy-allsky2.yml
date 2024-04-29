@@ -15,6 +15,8 @@
     - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/youtubeUploader.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/ytUpload.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/upload.sh', dest: '{{allskydir}}/scripts/', mode: '754', backup: no }
 
   - name: update MQTT broker

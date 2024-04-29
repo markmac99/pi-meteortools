@@ -1,4 +1,9 @@
 # python requirements file
 
+# used by the logging-to-MQ functionality
 python-crontab
 paho-mqtt
+# used by the send-to-youtube functionality
+google-api-python-client
+google_auth_oauthlib
+ephem

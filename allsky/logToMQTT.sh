@@ -3,7 +3,7 @@
 #
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-source ~/vRMS/bin/activate
+source ~/vAllsky/bin/activate
 
 dt=$(date '+%d/%m/%Y %H:%M:%S')
 tm=$(vcgencmd measure_temp | cut -d= -f2)
