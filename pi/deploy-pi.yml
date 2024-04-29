@@ -1,5 +1,7 @@
 ---
 - hosts: "{{host | default ('uk0006, uk000f, uk001l, uk002f, testpi4')}}"
+  vars_files: 
+    - /mnt/e/dev/apikeys/mqvariables.enc
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
     destdir: ~/source/tackley-tools
@@ -58,7 +60,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
-      line: 'PASSWORD=Wombat33rpi'
+      line: 'PASSWORD={{ rmscampassword }}'
   - name: install cronjobs and python modules
     shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
     args:

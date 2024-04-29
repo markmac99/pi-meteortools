@@ -1,5 +1,7 @@
 ---
 - hosts: "{{host | default ('allsky2')}}"
+  vars_files: 
+    - /mnt/e/dev/apikeys/mqvariables.enc
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/allsky
     destdir: ~/src/tackley-tools
@@ -29,7 +31,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
-      line: 'PASSWORD=Wombat33rpi'
+      line: 'PASSWORD={{ rmscampassword }}'
   - name: install cronjobs and python modules
     shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
     args:

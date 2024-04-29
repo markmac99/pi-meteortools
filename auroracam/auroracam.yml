@@ -1,5 +1,7 @@
 ---
 - hosts: auroracam
+  vars_files: 
+    - /mnt/e/dev/apikeys/mqvariables.enc
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/auroracam
     shrdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
@@ -65,7 +67,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
-      line: 'PASSWORD=Wombat33rpi'
+      line: 'PASSWORD={{ rmscampassword }}'
   - name: update uploadloc
     lineinfile: 
       path: '{{destdir}}/config.ini'
