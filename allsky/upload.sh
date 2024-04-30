@@ -150,7 +150,7 @@ if [[ ${PROTOCOL} == "s3" ]] ; then
 	if [[ ${SILENT} == "false" && ${ALLSKY_DEBUG_LEVEL} -ge 3 ]]; then
 		echo "${ME}: Uploading ${FILE_TO_UPLOAD} to ${DEST}"
 	fi
-	OUTPUT="$( "${AWS_CLI_DIR}/aws" s3 cp "${FILE_TO_UPLOAD}" "${DEST}" --acl "${S3_ACL}" 2>&1 )"
+	OUTPUT="$( "${AWS_CLI_DIR}/aws" s3 cp "${FILE_TO_UPLOAD}" "${DEST}" --quiet --acl "${S3_ACL}" 2>&1 )"
 	RET=$?
 
 
