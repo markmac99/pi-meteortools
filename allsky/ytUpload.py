@@ -98,7 +98,7 @@ def updateCrontab(here, offset=30, lati=51.88, longi=-1.31, elev=80):
     if 'youtubeUploader.sh' in job.command:
         cron.remove(job)
         cron.write()
-  job = cron.new(f'{here}/youtubeUploader.sh > /var/log/ytupload.log 2>&1')
+  job = cron.new(f'{here}/youtubeUploader.sh > /home/allsky/logs/ytupload.log 2>&1')
   job.setall(starttime.minute, starttime.hour, '*', '*', '*')
   cron.write()
   return
