@@ -17,10 +17,13 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
-for cam in $camlist ; do 
-    mkdir -p $cam/$currmth 
-    aws s3 sync s3://mjmm-data/$cam/ ./$cam --exclude "*" --include "*.js" --include "*.html"
+find . -type d -exec ls -1d {} \; | egrep -v "202|css|thumb|charts" | while read i ; do 
+    dname=$(echo ${i:2:99}) 
+    if [[ "${dname:7:99}" != "" || "$dname" == "UK9999" ]] ; then 
+        echo $dname 
+        aws s3 cp s3://mjmm-data/$dname/cameraindex.js ./$dname --quiet
+        aws s3 cp s3://mjmm-data/$dname/index.html ./$dname --quiet
+    fi 
 done
 
 camlist=$(ls -1d UK* allsky)
@@ -153,6 +156,15 @@ camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
 for cam in $camlist ; do 
     aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html"
 done
+find . -type d -exec ls -1d {} \; | egrep -v "202|css|thumb|charts" | while read i ; do 
+    dname=$(echo ${i:2:99}) 
+    if [[ "${dname:7:99}" != "" || "$dname" == "UK9999" ]] ; then 
+        echo $dname 
+        aws s3 cp ./$dname/cameraindex.js s3://mjmm-data/$dname/  --quiet
+        aws s3 cp  ./$dname/index.html s3://mjmm-data/$dname/ --quiet
+    fi 
+done
+
 
 delaymins=120
 
