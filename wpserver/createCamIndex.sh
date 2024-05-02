@@ -17,13 +17,9 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-find . -type d -exec ls -1d {} \; | egrep -v "202|css|thumb|charts" | while read i ; do 
-    dname=$(echo ${i:2:99}) 
-    if [[ "${dname:7:99}" != "" || "$dname" == "UK9999" ]] ; then 
-        echo $dname 
-        aws s3 cp s3://mjmm-data/$dname/cameraindex.js ./$dname --quiet
-        aws s3 cp s3://mjmm-data/$dname/index.html ./$dname --quiet
-    fi 
+camlist=(UK0006 UK000F UK001L UK002F UK9999 Radio allsky)
+for dname in $camlist ; do
+    aws s3 sync s3://mjmm-data/$dname ./$dname --exclude "*" --include "*.html" --include "*.js" --exact-timestamps
 done
 
 camlist=$(ls -1d UK* allsky)
@@ -31,6 +27,7 @@ mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
 if [[ $mthlist != *"$currmth"* ]] ; then mthlist=$(echo $currmth $mthlist ) ; fi
 mthlist=$(echo stacks dailystacks trackstacks $mthlist)
 
+# create main index page
 for mth in $mthlist ; do 
     echo "var row = table.insertRow(-1);" >> $idxfile
     for cam in $camlist; do
@@ -81,6 +78,8 @@ else
     echo general data unchanged
 fi
 
+# create specific pages for the  allsky camera 
+# Startrails index
 idxfile=$TMPDIR/cameraindex.js
 echo "\$(function() {" > $idxfile
 echo "var table = document.createElement(\"table\");" >> $idxfile
@@ -117,6 +116,7 @@ else
     echo startrails data unchanged
 fi
 
+# keogram index
 idxfile=$TMPDIR/cameraindex.js
 echo "\$(function() {" > $idxfile
 echo "var table = document.createElement(\"table\");" >> $idxfile
@@ -152,19 +152,12 @@ if [ $? -gt 0 ] ; then
 else
     echo keograms data unchanged
 fi
-camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
-for cam in $camlist ; do 
-    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html"
-done
-find . -type d -exec ls -1d {} \; | egrep -v "202|css|thumb|charts" | while read i ; do 
-    dname=$(echo ${i:2:99}) 
-    if [[ "${dname:7:99}" != "" || "$dname" == "UK9999" ]] ; then 
-        echo $dname 
-        aws s3 cp ./$dname/cameraindex.js s3://mjmm-data/$dname/  --quiet
-        aws s3 cp  ./$dname/index.html s3://mjmm-data/$dname/ --quiet
-    fi 
-done
 
+# sync modified indexes and js files back
+camlist=(UK0006 UK000F UK001L UK002F UK9999 Radio allsky)
+for cam in $camlist ; do 
+    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html" --exact-timestamps
+done
 
 delaymins=120
 
