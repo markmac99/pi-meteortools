@@ -17,9 +17,9 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-camlist=(UK0006 UK000F UK001L UK002F UK9999 Radio allsky)
+camlist="UK0006 UK000F UK001L UK002F UK9999 Radio allsky"
 for dname in $camlist ; do
-    aws s3 sync s3://mjmm-data/$dname ./$dname --exclude "*" --include "*.html" --include "*.js" --exact-timestamps
+    aws s3 sync s3://mjmm-data/$dname $DATADIR/$dname --exclude "*" --include "*.html" --include "*.js" --exact-timestamps --no-progress
 done
 
 camlist=$(ls -1d UK* allsky)
@@ -154,9 +154,9 @@ else
 fi
 
 # sync modified indexes and js files back
-camlist=(UK0006 UK000F UK001L UK002F UK9999 Radio allsky)
+camlist="UK0006 UK000F UK001L UK002F UK9999 Radio allsky"
 for cam in $camlist ; do 
-    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html" --exact-timestamps
+    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html" --exact-timestamps --no-progress
 done
 
 delaymins=120
