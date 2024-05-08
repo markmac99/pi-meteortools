@@ -15,9 +15,7 @@ if [ "$isrunning" == "running" ] ; then
     working=$(find /var/log -maxdepth 1 -name "allsky.log" -type f -mmin -5)
 
     if [ "$working" == "" ] ; then
-        echo allsky not logging, probably dead
-        echo sudo systemctl restart allsky
-    else
-        echo all fine
+        logger -s -t checkStatus "allsky not logging, probably dead"
+        sudo systemctl restart allsky
     fi
 fi
