@@ -13,6 +13,7 @@
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/archAndFree.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
@@ -87,7 +88,7 @@
     lineinfile: 
       path: '{{destdir}}/config.ini'
       regexp: 'RGBADJ='
-      line: 'RGBADJ=0.95,1.0,1.0'
+      line: 'RGBADJ=1.0,1.0,1.0'
   - name: update idfile
     lineinfile: 
       path: '{{destdir}}/config.ini'

@@ -20,6 +20,7 @@ import platform
 import paramiko
 from paramiko.config import SSHConfig
 import tempfile
+from sendToYoutube import sendToYoutube
 
 
 pausetime = 2 # time to wait between capturing frames 
@@ -198,7 +199,16 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
         except:
             log.info('unable to upload mp4')
     else:
-        print('created but not uploading mp4')
+        print('created but not uploading mp4 to s3')
+    # upload night video to youtube
+    if not daytimelapse:
+        try:
+            log.info(f'uploading to youtube')
+            dtstr = mp4shortname[:4] + '-' + mp4shortname[4:6] + '-' + mp4shortname[6:8]
+            title = f'Auroracam timelapse for {dtstr}'
+            sendToYoutube(title, mp4name)
+        except:
+            log.info('unable to upload mp4 to youtube')
     return 
 
 
