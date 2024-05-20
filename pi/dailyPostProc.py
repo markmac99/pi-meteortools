@@ -470,7 +470,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
         try:
-            sendToMqtt(config, localcfg)
+            sendToMqtt()
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
