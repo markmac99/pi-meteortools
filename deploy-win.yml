@@ -1,27 +1,28 @@
 ---
-- hosts: ukmonhelper
+- hosts: ukmonhelper2
   gather_facts: no
   tasks:
   - name: import variables 
     include_vars: ./vars.yml
-    tags: [dev,prod]
-  - name: Ensures {{destdir}} exists
-    file: path={{destdir}} state=directory  
-    delegate_to: localhost
     tags: [dev,prod]
   - name: Copy files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     tags: [dev,prod]
     delegate_to: localhost
     with_items:
-    - {src: '{{srcdir}}/', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: yes }
-  - name: Ensures {{emdestdir}} exists
-    file: path={{emdestdir}} state=directory  
-    delegate_to: localhost
-    tags: [dev,prod]
-  - name: Copy evt_mon files
-    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
-    tags: [dev,prod]
-    delegate_to: localhost
-    with_items:
-    - {src: '{{emsrcdir}}/', dest: '{{emdestdir}}/', mode: '755', backup: no, directory_mode: yes }
+    - {src: '{{srcdir}}/archive.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/UK0006.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/UK000F.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/UK001L.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/UK002F.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
+
+    - {src: '{{srcdir}}/backupAllData.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/grabInterestingFiles.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/syncFireballData.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/helperfunctions.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+
+    - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/restoreConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/getLogs.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/refreshLocalCodeCopy.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
+    - {src: '{{srcdir}}/upgradeAll.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }

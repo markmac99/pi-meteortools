@@ -1,0 +1,3 @@
+aws s3 sync 2024 s3://ukmon-shared/fireballs/2024/ --exclude "*" --include "2024*" --exclude "*.bz2" --exclude "*nogood*" --profile ukmon-markmcintyre
+aws s3 sync 2023 s3://ukmon-shared/fireballs/2023/ --exclude "*" --include "2023*"  --exclude "*.bz2" --exclude "*nogood*"  --profile ukmon-markmcintyre
+aws s3 sync nonukmon s3://ukmon-shared/fireballs/nonukmon/ --exclude "*" --include "nonukmon" --exclude "*.bz2" --exclude "*nogood*" --profile ukmon-markmcintyre
