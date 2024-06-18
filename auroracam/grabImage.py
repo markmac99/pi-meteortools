@@ -206,7 +206,7 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
     # upload night video to youtube
     if not daytimelapse:
         try:
-            log.info(f'uploading to youtube')
+            log.info('uploading to youtube')
             dtstr = mp4shortname[:4] + '-' + mp4shortname[4:6] + '-' + mp4shortname[6:8]
             title = f'Auroracam timelapse for {dtstr}'
             sendToYoutube(title, mp4name)
