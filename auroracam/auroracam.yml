@@ -12,6 +12,8 @@
   - name: Copy auroracam files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
+    - {src: '{{srcdir}}/redoTimelapse.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/uploadMissedMp4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }

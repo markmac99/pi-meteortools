@@ -174,7 +174,7 @@ def grabImage(ipaddress, fnam, hostname, now, thiscfg):
     return 
 
 
-def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
+def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False, maketimelapse=True):
     dirname = os.path.normpath(os.path.expanduser(dirname))
     _, mp4shortname = os.path.split(dirname)[:15]
     if daytimelapse:
@@ -183,14 +183,15 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
         mp4name = os.path.join(dirname, mp4shortname + '.mp4')
     log.info(f'creating {mp4name}')
     fps = int(125/pausetime)
-    if os.path.isfile(mp4name):
-        os.remove(mp4name)
-    cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
-        -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
-        {mp4name}'
-    log.info(f'making timelapse of {dirname}')
-    subprocess.call([cmdline], shell=True)
-    log.info('done')
+    if maketimelapse:
+        if os.path.isfile(mp4name):
+            os.remove(mp4name)
+        cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
+            -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
+            {mp4name}'
+        log.info(f'making timelapse of {dirname}')
+        subprocess.call([cmdline], shell=True)
+        log.info('done')
     if s3 is not None:
         if daytimelapse:
             targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}_day.mp4'
