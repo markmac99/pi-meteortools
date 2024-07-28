@@ -118,7 +118,7 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
         return False, False
 
 
-def getStartEndTimes(currdt, thiscfg):
+def getStartEndTimes(currdt, thiscfg, origdusk=None):
     lat = thiscfg['auroracam']['lat']
     lon = thiscfg['auroracam']['lon']
     ele = thiscfg['auroracam']['alt']
@@ -130,6 +130,10 @@ def getStartEndTimes(currdt, thiscfg):
     nextrise = roundTime(risetm) + datetime.timedelta(minutes=60)
     nextset = roundTime(settm) - datetime.timedelta(minutes=60)
     lastrise = roundTime(lastdawn) + datetime.timedelta(minutes=60)
+    # allow for small variations in dusk timing
+    if origdusk:
+        if (nextset - origdusk) < datetime.timedelta(seconds=10):
+            nextset = origdusk
     log.info(f'night starts at {nextset} and ends at {nextrise}')
     return nextset, nextrise, lastrise
 
@@ -310,7 +314,7 @@ if __name__ == '__main__':
         grabImage(ipaddress, fnam, hostname, now, thiscfg)
         log.info(f'grabbed {fnam}')
         lastdusk = dusk
-        dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg)
+        dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg, lastdusk)
         if isnight:
             capdirname = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
         else:
