@@ -56,6 +56,7 @@ def sendToMQTT(broker=None):
     diskspace = round(usage.used/usage.total*100.0, 2)
     topic = f'meteorcams/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
+    time.sleep(10)
     cputemp = int(open('/etc/armbianmonitor/datasources/soctemp').readline().strip())/1000
     topic = f'meteorcams/{hname}/cputemp'
     ret = client.publish(topic, payload=cputemp, qos=0, retain=False)
