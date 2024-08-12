@@ -29,6 +29,7 @@ from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
 from RMS.DeleteOldObservations import getNightDirs, deleteNightFolders
 from Utils.TrackStack import trackStack
+import Utils.BatchFFtoImage as bff2i
 
 from meteortools.utils import annotateImage
 from meteortools.utils import sendAnEmail
@@ -40,6 +41,15 @@ from sendToMQTT import sendToMqtt # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
 log = logging.getLogger("logger")
+
+
+def purgeOldLogs(config, logpref, days=30):
+    reftime = time.time() - 86400*days
+    log_dir = os.path.join(config.data_dir, config.log_dir)
+    for logf in glob.glob(os.path.join(log_dir, logpref + '*.log*')):
+        if os.path.getmtime(logf) < reftime:
+            os.remove(logf)
+    return 
 
 
 def addCrontabs():
@@ -316,6 +326,69 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
     return 
 
 
+def resendTrackStack(arch_dir):
+    # to reannotate and resend the trackstack if the automated process fails
+    hname = os.uname()[1][:6]
+    rmscfg = os.path.expanduser('~/source/RMS/.config')
+    cfg = cr.parse(rmscfg)
+    localcfg = configparser.ConfigParser()
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    hn = localcfg['postprocess']['host']
+    idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+    idserver = localcfg['postprocess']['webserver']
+    key, secret = getAWSKey(idserver, hname, hname, idfile)
+    s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
+    target=hn[5:]
+    tflist = glob.glob(os.path.join(arch_dir, '*_track_stack.jpg'))
+    trackfile = tflist[0]
+    currdir = os.path.basename(os.path.normpath(arch_dir))
+    lis = open(os.path.join(arch_dir, 'FTPdetectinfo_'+currdir+'.txt'), 'r').readlines()
+    metcount = lis[0].split('=')[1].strip()
+    currdir = os.path.basename(os.path.normpath(arch_dir))
+    annotateImage(trackfile, cfg.stationID, int(metcount), currdir[7:15])
+    outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
+    s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+    return 
+
+
+def getInterestingFiles(capdir, dt1, dt2):
+    # a function to get all fits files between two date/time ranges
+    t1 = datetime.datetime.strptime(dt1, '%Y%m%d_%H%M%S').timestamp()
+    t2 = datetime.datetime.strptime(dt2, '%Y%m%d_%H%M%S').timestamp()
+    currdir = os.path.basename(os.path.normpath(capdir))
+    tmp_folder = os.path.join('/tmp/', currdir)
+    os.makedirs(tmp_folder)
+    for ff in glob.glob(os.path.join(capdir, 'FF*.fits')):
+        fftime = os.path.getmtime(ff)
+        if fftime > t1 and fftime <=t2:
+            shutil.copyfile(ff, os.path.join(tmp_folder, os.path.basename(ff)))
+            
+    bff2i.batchFFtoImage(tmp_folder, 'jpg', True)
+    zipf = shutil.make_archive(tmp_folder, 'zip', root_dir = tmp_folder, base_dir=tmp_folder)
+    rmscfg = os.path.expanduser('~/source/RMS/.config')
+    cfg = cr.parse(rmscfg)
+    localcfg = configparser.ConfigParser()
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    camid = cfg.stationID.lower()
+    sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
+    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+    ftp = ssh_client.open_sftp()
+   
+    rempath = f'{localcfg["backup"]["remotepath"]}/{camid}/{currdir[7:11]}/{currdir}_saved.zip'
+    ftp.put(zipf, rempath)
+    ftp.close()
+    ssh_client.close()
+    shutil.rmtree(tmp_folder)
+    os.remove(zipf)
+    return 
+
+
 def archiveBz2(config=None, localcfg=None):
     if localcfg is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
@@ -420,6 +493,17 @@ def rmsExternal(cap_dir, arch_dir, config):
                 
         open(os.path.join(srcdir, '.ytdone'), 'w').write(mp4name)
     
+    if len(localcfg['mqtt']['broker']) > 1:
+        log.info('sending to MQ')
+        try:
+            sendToMqtt()
+        except Exception as e:
+            log.warning('problem sending to MQTT')
+            log.info(e, exc_info=True)
+
+    # clear out older logfiles
+    purgeOldLogs(config, 'tackley_', days=30)
+
     s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
         # copy the ML rejected files
@@ -455,6 +539,8 @@ def rmsExternal(cap_dir, arch_dir, config):
         # create monthly stack
         log.info('creating monthly stack')
         monthlyStack(config, arch_dir, localcfg, s3)
+        # archive data to my server
+        archiveBz2(config, localcfg)
         # create trackstack
         log.info('creating trackstack')
         try: 
@@ -464,16 +550,8 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info(e, exc_info=True)
             sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
                         'Warning',f'{hname}@themcintyres.ddns.net')
+            os.remove(rebootlockfile)
         log.info('backing up the ArchivedFiles data')
-        archiveBz2(config, localcfg)
-
-    if len(localcfg['mqtt']['broker']) > 1:
-        log.info('sending to MQ')
-        try:
-            sendToMqtt()
-        except Exception as e:
-            log.warning('problem sending to MQTT')
-            log.info(e, exc_info=True)
 
     os.remove(rebootlockfile)
 
