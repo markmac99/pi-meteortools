@@ -151,16 +151,20 @@ def pushLatestMonthlyStack(targetname, imgname):
 
 
 def pushLatestDailyStack(config, arch_dir, localcfg, s3):
-    stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack_*.jpg'))]
-    if len(stacklist) ==0:
-        return 
+    stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack*_meteors.jpg'))]
+    if len(stacklist) == 0:
+        log.info('no daily stack today')
+        stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_captured_stack.jpg'))]
     imgname = stacklist[0]
     _, fname = os.path.split(imgname)
     tmpfname = os.path.join('/tmp', fname)
     if os.path.isfile(tmpfname):
         os.remove(tmpfname)
     shutil.copyfile(imgname, tmpfname)
-    metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
+    if 'captured' in fname:
+        metcount = 0
+    else:
+        metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
     camid = config.stationID
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
     hn = localcfg['postprocess']['host']
@@ -289,11 +293,13 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         annotateImage(trackfile, cfg.stationID, int(metcount), currdir[7:15])
     else:
         log.info('no trackstack available today')
-        sflist = glob.glob(os.path.join(arch_dir, '*_stack_*.jpg'))
-        if len(sflist) ==0: 
-            return 
+        stackfile = os.path.join(arch_dir, '*_stack.jpg')
+        sflist = glob.glob(stackfile)
+        if len(sflist) == 0: 
+            log.info('no stack file available either, using thumbs')
+            sflist = glob.glob(os.path.join(arch_dir, '*_thumbs.jpg'))
         sfil = sflist[0]
-        trackfile = sfil[:sfil.find('_stack_')] + '_track_stack.jpg'
+        trackfile = os.path.split(sfil.replace('_stack.jpg','_track_stack.jpg'))[1]
         trackfile = os.path.join('/tmp', os.path.split(trackfile)[1])
         shutil.copyfile(sfil, trackfile)
         my_image = Image.open(trackfile)
@@ -307,6 +313,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         #fnt = ImageFont.load_default()
         image_editable.text((20,height/2), "NO TRACKSTACK TODAY", font=fnt, fill=(255))
         my_image.save(trackfile)
+    #log.info(f'trackstack is {trackfile}')
 
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
@@ -540,6 +547,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         log.info('creating monthly stack')
         monthlyStack(config, arch_dir, localcfg, s3)
         # archive data to my server
+        log.info('backing up the ArchivedFiles data')
         archiveBz2(config, localcfg)
         # create trackstack
         log.info('creating trackstack')
@@ -551,10 +559,7 @@ def rmsExternal(cap_dir, arch_dir, config):
             sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
                         'Warning',f'{hname}@themcintyres.ddns.net')
             os.remove(rebootlockfile)
-        log.info('backing up the ArchivedFiles data')
-
     os.remove(rebootlockfile)
-
     log.info('done')
     # clear log handlers again
     while len(log.handlers) > 0:
