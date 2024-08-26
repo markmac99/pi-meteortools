@@ -26,21 +26,11 @@
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '754', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
 
-  - name: update ipaddress
+  - name: update camera ipaddress
     lineinfile: 
       path: '{{destdir}}/config.ini'
       regexp: 'IPADDRESS='
       line: 'IPADDRESS=192.168.1.40'
-  - name: update data folder
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'DATADIR='
-      line: 'DATADIR=~/RMS_data/auroracam'
-  - name: update logs folder
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'LOGDIR='
-      line: 'LOGDIR=~/RMS_data/logs'
   - name: update latitude
     lineinfile: 
       path: '{{destdir}}/config.ini'
