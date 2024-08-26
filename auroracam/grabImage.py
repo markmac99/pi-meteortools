@@ -43,7 +43,7 @@ def sendToMQTT(broker=None):
     if broker is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
+        localcfg.read(os.path.join(srcdir, 'mqtt.cfg'))
     broker = localcfg['mqtt']['broker']
     hname = platform.uname().node
     client = mqtt.Client(hname)
@@ -54,11 +54,13 @@ def sendToMQTT(broker=None):
     client.connect(broker, 1883, 60)
     usage = shutil.disk_usage('.')
     diskspace = round(usage.used/usage.total*100.0, 2)
-    topic = f'meteorcams/{hname}/diskspace'
+    topicroot = localcfg['mqtt']['topic']
+    topic = f'{topicroot}/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
     time.sleep(10)
-    cputemp = int(open('/etc/armbianmonitor/datasources/soctemp').readline().strip())/1000
-    topic = f'meteorcams/{hname}/cputemp'
+    cpuf = '/sys/class/thermal/thermal_zone0/temp'
+    cputemp = int(open(cpuf).readline().strip())/1000
+    topic = f'{topicroot}/{hname}/cputemp'
     ret = client.publish(topic, payload=cputemp, qos=0, retain=False)
     return ret
 
@@ -246,6 +248,21 @@ def setupLogging(thiscfg, prefix='auroracam_'):
     return 
 
 
+def uploadOneFile(fnam, ulloc, ftpserver, userid, sshkey):
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(sshkey))
+    try: 
+        targloc = os.path.join(ulloc, os.path.basename(fnam))
+        ssh_client.connect(ftpserver, userid, pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        ftp_client.put(fnam, targloc)
+        ftp_client.close()
+        ssh_client.close()
+    except Exception:
+        log.warn(f'unable to upload to {ftpserver}:{targloc}')
+    return 
+
 
 def addCrontabEntry(local_path):
     cron = CronTab(user=True)
@@ -270,21 +287,33 @@ if __name__ == '__main__':
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg)
 
-    ulloc = thiscfg['auroracam']['uploadloc']
+    s3 = None
+    bucket = None
+    ftpserver = None
+    userid = None
+    ulloc = thiscfg['uploads']['uploadloc']
     if ulloc[:5] == 's3://':
-        idserver = thiscfg['auroracam']['idserver']
-        sshkey = thiscfg['auroracam']['idfile']
-        awskey, awssec = getAWSKey(idserver, hostname, hostname, sshkey)
-        if not awskey:
-            log.error('unable to find AWS key')
-            exit(1)
-        conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
-        s3 = conn.resource('s3')
+        log.info(f'upload target {ulloc}')
+        # try to retrieve an AWS key from the sftp server
+        idserver = thiscfg['uploads']['ftpserver']
+        if idserver != '':
+            sshkey = thiscfg['uploads']['idfile']
+            awskey, awssec = getAWSKey(idserver, hostname, hostname, sshkey)
+            if awskey:
+                conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
+                s3 = conn.resource('s3')
+        if s3 is None:
+            log.warning('no AWS key retrieved, trying current AWS profile')
+            s3 = boto3.resource('s3')
         bucket = ulloc[5:]
     else:
-        print('not uploading to AWS S3')
-        s3 = None
-        bucket = None
+        ftpserver = thiscfg['uploads']['ftpserver']
+        userid = thiscfg['uploads']['userid']
+        if ftpserver != '':
+            log.info(f'upload target {ftpserver}')
+            sshkey = thiscfg['uploads']['idfile']
+        else:
+            log.info('not uploading files')
     addCrontabEntry(local_path)
 
     nightgain = int(thiscfg['auroracam']['nightgain'])
@@ -356,16 +385,23 @@ if __name__ == '__main__':
         uploadcounter += pausetime
         testmode = int(os.getenv('TESTMODE', default=0))
         if uploadcounter > 9 and testmode == 0 and s3 is not None:
-            log.info('uploading live image')
             if os.path.isfile(fnam):
                 try:
                     s3.meta.client.upload_file(fnam, bucket, f'{hostname}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
-                except:
-                    log.info('unable to upload live image')
-                    pass
+                    log.info(f'uploaded live image to {bucket}')
+                except Exception:
+                    log.warning(f'upload to {bucket} failed')
                 uploadcounter = 0
             else:
                 uploadcounter -= pausetime
+        if uploadcounter > 9 and testmode == 0 and ftpserver is not None:
+            if os.path.isfile(fnam):
+                try:
+                    uploadOneFile(fnam, ulloc, ftpserver, userid, sshkey)
+                    log.info(f'uploaded live image to {ftpserver}')
+                except Exception:
+                    log.warning(f'upload to {ftpserver} failed')
+            uploadcounter = 0
         if testmode == 1:
             log.info(f'would have uploaded {fnam}')
         log.info(f'sleeping for {pausetime} seconds')
