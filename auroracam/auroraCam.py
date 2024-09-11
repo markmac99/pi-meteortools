@@ -18,9 +18,9 @@ from crontab import CronTab
 import paho.mqtt.client as mqtt
 import platform 
 import paramiko
-from paramiko.config import SSHConfig
 import tempfile
 from sendToYoutube import sendToYoutube
+from makeImageIndex import createLatestIndex
 
 
 pausetime = 2 # time to wait between capturing frames 
@@ -73,27 +73,18 @@ def roundTime(dt):
     return dt
 
 
-def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
+def getAWSConn(thiscfg, remotekeyname, uid):
     """ 
     This function retreives an AWS key/secret for uploading the live image. 
     """
-    if uid is None:
-        config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-        sitecfg = config.lookup(servername)
-        if 'user' not in sitecfg.keys():
-            log.warning(f'unable to connect to {servername} - no entry in ssh config file')
-            return 
-    else:
-        sitecfg={}
-        sitecfg['hostname'] = servername
-        sitecfg['user'] = uid
-        sitecfg['identityfile'] = [os.path.expanduser(sshkeyfile)]
+    servername = thiscfg['uploads']['ftpserver']
+    sshkeyfile = thiscfg['uploads']['idfile']
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(sshkeyfile))
     key = ''
     try: 
-        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ssh_client.connect(servername, username=uid, pkey=pkey, look_for_keys=False)
         ftp_client = ssh_client.open_sftp()
         try:
             handle, tmpfnam = tempfile.mkstemp()
@@ -114,11 +105,19 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
         log.error('unable to retrieve AWS key')
         log.info(e, exc_info=True)
     ssh_client.close()
+    s3 = None
     if key:
         log.info('retrieved key details')
-        return key.strip(), sec.strip() 
-    else: 
-        return False, False
+        try:
+            conn = boto3.Session(aws_access_key_id=key.strip(), aws_secret_access_key=sec.strip())
+            s3 = conn.resource('s3')
+            log.info('obtained s3 resource')
+        except Exception:
+            pass
+    if s3 is None:
+        log.warning('no AWS key retrieved, trying current AWS profile')
+        s3 = boto3.resource('s3')
+    return s3
 
 
 def getStartEndTimes(currdt, thiscfg, origdusk=None):
@@ -267,13 +266,13 @@ def uploadOneFile(fnam, ulloc, ftpserver, userid, sshkey):
 def addCrontabEntry(local_path):
     cron = CronTab(user=True)
     #found = False
-    iter=cron.find_command('uploadLiveJpg.sh')
+    iter=cron.find_command('startAuroraCam.sh')
     for i in iter:
         if i.is_enabled():
             #found = True
             cron.remove(i)
     #dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh') # > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
+    job = cron.new(f'sleep 60 && {local_path}/startAuroraCam.sh') # > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
     job.every_reboot()
     cron.write()
 
@@ -295,16 +294,8 @@ if __name__ == '__main__':
     if ulloc[:5] == 's3://':
         log.info(f'upload target {ulloc}')
         # try to retrieve an AWS key from the sftp server
-        idserver = thiscfg['uploads']['ftpserver']
-        if idserver != '':
-            sshkey = thiscfg['uploads']['idfile']
-            awskey, awssec = getAWSKey(idserver, hostname, hostname, sshkey)
-            if awskey:
-                conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
-                s3 = conn.resource('s3')
-        if s3 is None:
-            log.warning('no AWS key retrieved, trying current AWS profile')
-            s3 = boto3.resource('s3')
+        sshkey = thiscfg['uploads']['idfile']
+        s3 = getAWSConn(thiscfg, hostname, hostname)
         bucket = ulloc[5:]
     else:
         ftpserver = thiscfg['uploads']['ftpserver']
@@ -358,6 +349,7 @@ if __name__ == '__main__':
             os.makedirs(capdirname, exist_ok=True)
             fnam2 = os.path.join(capdirname, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             shutil.copyfile(fnam, fnam2)
+            createLatestIndex(capdirname)
             log.info(f'and copied to {capdirname}')
         # when we move from day to night, make the day timelapse then switch exposure and flag
         if now < dawn and now > dusk and isnight is False:
@@ -366,6 +358,7 @@ if __name__ == '__main__':
                 norebootflag = os.path.join(datadir, '..', '.noreboot')
                 open(norebootflag, 'w')
                 makeTimelapse(capdirname, s3, camid, bucket, daytimelapse)
+                createLatestIndex(capdirname)
                 os.remove(norebootflag)
             isnight = True
             setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
@@ -377,6 +370,7 @@ if __name__ == '__main__':
             norebootflag = os.path.join(datadir, '..', '.noreboot')
             open(norebootflag, 'w')
             makeTimelapse(capdirname, s3, camid, bucket)
+            createLatestIndex(capdirname)
             log.info('switched to daytime mode, now rebooting')
             setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
             os.remove(norebootflag)

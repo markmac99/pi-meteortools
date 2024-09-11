@@ -1,4 +1,4 @@
-from grabImage import makeTimelapse, getAWSKey, setupLogging
+from auroraCam import makeTimelapse, getAWSKey, setupLogging
 import platform
 import os
 import sys
