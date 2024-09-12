@@ -21,7 +21,12 @@ import platform
 import logging
 import requests
 import configparser
+import configparser
 
+try:
+    import RMS.ConfigReader as cr
+except Exception:
+    pass
 try:
     import RMS.ConfigReader as cr
 except Exception:
@@ -128,6 +133,8 @@ def sendMatchdataToMqtt(rmscfg=None, localcfg=None):
     client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     topic = f'{topicbase}/{camname}/matchcount'
     ret = client.publish(topic, payload=matchcount, qos=0, retain=False)
@@ -153,6 +160,8 @@ def sendToMqtt(rmscfg=None, localcfg=None):
     client = mqtt.Client(camname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
@@ -182,6 +191,8 @@ def sendStarCountToMqtt(rmscfg=None, localcfg=None):
     client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
 
     topic = f'{topicbase}/{camname}/starcount'
@@ -204,6 +215,8 @@ def sendOtherData(cputemp, diskspace, rmscfg=None, localcfg=None):
     client = mqtt.Client(camname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
@@ -237,6 +250,8 @@ def test_mqtt(rmscfg=None, localcfg=None):
     topic = f'testing/{camname}/test'
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)

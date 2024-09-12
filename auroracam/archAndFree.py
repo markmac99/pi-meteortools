@@ -14,6 +14,7 @@ import os
 import configparser
 import datetime
 import platform
+import platform
 import paramiko
 import logging
 import boto3
@@ -25,6 +26,7 @@ log = logging.getLogger("logger")
 
 
 def getFilesToUpload(datadir, bucket, awskey, awssec):
+def getFilesToUpload(datadir, bucket, awskey, awssec):
     """
     Load the current list of folders/files to be archived 
 
@@ -33,7 +35,14 @@ def getFilesToUpload(datadir, bucket, awskey, awssec):
         bucket  [string] source bucket
         awskey  [string] aws access key
         awssec  [string] aws secret key
+        datadir [string] datadir to store file in
+        bucket  [string] source bucket
+        awskey  [string] aws access key
+        awssec  [string] aws secret key
     """
+    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
+    s3 = conn.client('s3')
+    s3.download_file(bucket, 'auroracam/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
     conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
     s3 = conn.client('s3')
     s3.download_file(bucket, 'auroracam/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
@@ -66,6 +75,22 @@ def getListOfNew(datadir, thiscfg):
         flist = []
     dirnames = [x for x in allfiles if x in flist]
     return dirnames
+
+
+def pushFilesToUpload(datadir, bucket, awskey, awssec):
+    """
+    Upload current list of folders/files to be archived back to AWS
+
+    Parameters
+        datadir [string] datadir to save in
+        bucket  [string] target bucket
+        awskey  [string] aws access key
+        awssec  [string] aws secret key
+    """
+    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
+    s3 = conn.client('s3')
+    s3.upload_file(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), bucket, 'auroracam/FILES_TO_UPLOAD.inf')
+    return 
 
 
 def getFreeSpace():
@@ -240,4 +265,5 @@ if __name__ == '__main__':
     local_path =os.path.dirname(os.path.abspath(__file__))
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg, 'archive_')
+    freeUpSpace(thiscfg)
     freeUpSpace(thiscfg)

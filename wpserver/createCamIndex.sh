@@ -40,6 +40,8 @@ for mth in $mthlist ; do
                     echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/startrails\\\"\\>startrails\\</a\\>\";" >> $idxfile
                 elif [ "$mth" == "dailystacks" ] ; then
                     echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/keograms\\\"\\>keograms\\</a\\>\";" >> $idxfile
+                elif [ "$mth" == "dailystacks" ] ; then
+                    echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/keograms\\\"\\>keograms\\</a\\>\";" >> $idxfile
                 else
                     echo "cell.innerHTML = \"\";" >> $idxfile
                 fi 
@@ -75,6 +77,7 @@ if [ $? -gt 0 ] ; then
     echo deploying changes to $DATADIR
     cp $idxfile $DATADIR/cameraindex.js
 else
+    echo general data unchanged
     echo general data unchanged
 fi
 

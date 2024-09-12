@@ -40,6 +40,7 @@ def on_publish(client, userdata, result):
 
 
 def sendToMQTT(broker=None):
+def sendToMQTT(broker=None):
     if broker is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
@@ -49,6 +50,8 @@ def sendToMQTT(broker=None):
     client = mqtt.Client(hname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
@@ -279,6 +282,7 @@ def addCrontabEntry(local_path):
 
 if __name__ == '__main__':
     ipaddress = sys.argv[1]
+    hostname = platform.uname().node
     hostname = platform.uname().node
 
     thiscfg = configparser.ConfigParser()

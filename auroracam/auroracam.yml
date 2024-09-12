@@ -2,6 +2,8 @@
 - hosts: auroracam
   vars_files: 
     - /mnt/e/dev/apikeys/mqvariables.enc
+  vars_files: 
+    - /mnt/e/dev/apikeys/mqvariables.enc
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/auroracam
     shrdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
