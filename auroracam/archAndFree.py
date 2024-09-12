@@ -17,9 +17,7 @@ import platform
 import paramiko
 import logging
 import boto3
-from auroraCam import getAWSConn
-
-from auroracam.auroraCam import setupLogging
+from auroraCam import getAWSConn, setupLogging
 
 log = logging.getLogger("logger")
 
