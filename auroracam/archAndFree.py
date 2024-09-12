@@ -14,7 +14,6 @@ import os
 import configparser
 import datetime
 import platform
-import platform
 import paramiko
 import logging
 import boto3
@@ -25,7 +24,6 @@ from auroracam.auroraCam import setupLogging
 log = logging.getLogger("logger")
 
 
-def getFilesToUpload(datadir, bucket, awskey, awssec):
 def getFilesToUpload(datadir, bucket, awskey, awssec):
     """
     Load the current list of folders/files to be archived 
@@ -249,6 +247,10 @@ def freeUpSpace(thiscfg):
         else:
             if newfree < reqkb:
                 log.info(f'removing folder {thisfile}')
+                try:
+                    shutil.rmtree(os.path.join(datadir, thisfile))
+                except:
+                    log.warning(f'folder {thisfile} already pruned')
                 try:
                     shutil.rmtree(os.path.join(datadir, thisfile))
                 except:
