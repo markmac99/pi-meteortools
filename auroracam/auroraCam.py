@@ -40,7 +40,6 @@ def on_publish(client, userdata, result):
 
 
 def sendToMQTT(broker=None):
-def sendToMQTT(broker=None):
     if broker is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
