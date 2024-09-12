@@ -5,9 +5,9 @@ google-api-python-client
 google-auth-httplib2 
 python-dvr>=0.0.1 ; python_version >='3.6'
 boto3
-opencv-python
+#opencv-python
 python-crontab
-paho-mqtt
+paho-mqtt==1.6.0
 ephem
 pillow
 meteortools

@@ -13,3 +13,4 @@ windows/creds/credentials.allsky
 infrastructure/terraform/.terraform.tfstate.lock.info
 infrastructure/lambdas/saveACApi/__pycache__
 auroracam/__pycache__
+disused/*

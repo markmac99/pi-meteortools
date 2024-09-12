@@ -18,8 +18,9 @@ from crontab import CronTab
 import paho.mqtt.client as mqtt
 import platform 
 import paramiko
-from paramiko.config import SSHConfig
 import tempfile
+from sendToYoutube import sendToYoutube
+from makeImageIndex import createLatestIndex
 
 
 pausetime = 2 # time to wait between capturing frames 
@@ -39,10 +40,11 @@ def on_publish(client, userdata, result):
 
 
 def sendToMQTT(broker=None):
+def sendToMQTT(broker=None):
     if broker is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
+        localcfg.read(os.path.join(srcdir, 'mqtt.cfg'))
     broker = localcfg['mqtt']['broker']
     hname = platform.uname().node
     client = mqtt.Client(hname)
@@ -50,11 +52,19 @@ def sendToMQTT(broker=None):
     client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     usage = shutil.disk_usage('.')
     diskspace = round(usage.used/usage.total*100.0, 2)
-    topic = f'meteorcams/{hname}/diskspace'
+    topicroot = localcfg['mqtt']['topic']
+    topic = f'{topicroot}/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
+    time.sleep(10)
+    cpuf = '/sys/class/thermal/thermal_zone0/temp'
+    cputemp = int(open(cpuf).readline().strip())/1000
+    topic = f'{topicroot}/{hname}/cputemp'
+    ret = client.publish(topic, payload=cputemp, qos=0, retain=False)
     return ret
 
 
@@ -66,27 +76,18 @@ def roundTime(dt):
     return dt
 
 
-def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
+def getAWSConn(thiscfg, remotekeyname, uid):
     """ 
     This function retreives an AWS key/secret for uploading the live image. 
     """
-    if uid is None:
-        config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-        sitecfg = config.lookup(servername)
-        if 'user' not in sitecfg.keys():
-            log.warning(f'unable to connect to {servername} - no entry in ssh config file')
-            return 
-    else:
-        sitecfg={}
-        sitecfg['hostname'] = servername
-        sitecfg['user'] = uid
-        sitecfg['identityfile'] = [os.path.expanduser(sshkeyfile)]
+    servername = thiscfg['uploads']['ftpserver']
+    sshkeyfile = thiscfg['uploads']['idfile']
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(sshkeyfile))
     key = ''
     try: 
-        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ssh_client.connect(servername, username=uid, pkey=pkey, look_for_keys=False)
         ftp_client = ssh_client.open_sftp()
         try:
             handle, tmpfnam = tempfile.mkstemp()
@@ -107,14 +108,22 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
         log.error('unable to retrieve AWS key')
         log.info(e, exc_info=True)
     ssh_client.close()
+    s3 = None
     if key:
         log.info('retrieved key details')
-        return key.strip(), sec.strip() 
-    else: 
-        return False, False
+        try:
+            conn = boto3.Session(aws_access_key_id=key.strip(), aws_secret_access_key=sec.strip())
+            s3 = conn.resource('s3')
+            log.info('obtained s3 resource')
+        except Exception:
+            pass
+    if s3 is None:
+        log.warning('no AWS key retrieved, trying current AWS profile')
+        s3 = boto3.resource('s3')
+    return s3
 
 
-def getStartEndTimes(currdt, thiscfg):
+def getStartEndTimes(currdt, thiscfg, origdusk=None):
     lat = thiscfg['auroracam']['lat']
     lon = thiscfg['auroracam']['lon']
     ele = thiscfg['auroracam']['alt']
@@ -126,6 +135,10 @@ def getStartEndTimes(currdt, thiscfg):
     nextrise = roundTime(risetm) + datetime.timedelta(minutes=60)
     nextset = roundTime(settm) - datetime.timedelta(minutes=60)
     lastrise = roundTime(lastdawn) + datetime.timedelta(minutes=60)
+    # allow for small variations in dusk timing
+    if origdusk:
+        if (nextset - origdusk) < datetime.timedelta(seconds=10):
+            nextset = origdusk
     log.info(f'night starts at {nextset} and ends at {nextrise}')
     return nextset, nextrise, lastrise
 
@@ -170,7 +183,7 @@ def grabImage(ipaddress, fnam, hostname, now, thiscfg):
     return 
 
 
-def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
+def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False, maketimelapse=True):
     dirname = os.path.normpath(os.path.expanduser(dirname))
     _, mp4shortname = os.path.split(dirname)[:15]
     if daytimelapse:
@@ -179,14 +192,15 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
         mp4name = os.path.join(dirname, mp4shortname + '.mp4')
     log.info(f'creating {mp4name}')
     fps = int(125/pausetime)
-    if os.path.isfile(mp4name):
-        os.remove(mp4name)
-    cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
-        -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
-        {mp4name}'
-    log.info(f'making timelapse of {dirname}')
-    subprocess.call([cmdline], shell=True)
-    log.info('done')
+    if maketimelapse:
+        if os.path.isfile(mp4name):
+            os.remove(mp4name)
+        cmdline = f'ffmpeg -v quiet -r {fps} -pattern_type glob -i "{dirname}/*.jpg" \
+            -vcodec libx264 -pix_fmt yuv420p -crf 25 -movflags faststart -g 15 -vf "hqdn3d=4:3:6:4.5,lutyuv=y=gammaval(0.77)"  \
+            {mp4name}'
+        log.info(f'making timelapse of {dirname}')
+        subprocess.call([cmdline], shell=True)
+        log.info('done')
     if s3 is not None:
         if daytimelapse:
             targkey = f'{camname}/{mp4shortname[:6]}/{camname}_{mp4shortname}_day.mp4'
@@ -198,7 +212,16 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False):
         except:
             log.info('unable to upload mp4')
     else:
-        print('created but not uploading mp4')
+        print('created but not uploading mp4 to s3')
+    # upload night video to youtube
+    if not daytimelapse:
+        try:
+            log.info('uploading to youtube')
+            dtstr = mp4shortname[:4] + '-' + mp4shortname[4:6] + '-' + mp4shortname[6:8]
+            title = f'Auroracam timelapse for {dtstr}'
+            sendToYoutube(title, mp4name)
+        except:
+            log.info('unable to upload mp4 to youtube')
     return 
 
 
@@ -227,17 +250,32 @@ def setupLogging(thiscfg, prefix='auroracam_'):
     return 
 
 
+def uploadOneFile(fnam, ulloc, ftpserver, userid, sshkey):
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(sshkey))
+    try: 
+        targloc = os.path.join(ulloc, os.path.basename(fnam))
+        ssh_client.connect(ftpserver, userid, pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        ftp_client.put(fnam, targloc)
+        ftp_client.close()
+        ssh_client.close()
+    except Exception:
+        log.warn(f'unable to upload to {ftpserver}:{targloc}')
+    return 
+
 
 def addCrontabEntry(local_path):
     cron = CronTab(user=True)
     #found = False
-    iter=cron.find_command('uploadLiveJpg.sh')
+    iter=cron.find_command('startAuroraCam.sh')
     for i in iter:
         if i.is_enabled():
             #found = True
             cron.remove(i)
     #dtstr = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    job = cron.new(f'sleep 60 && {local_path}/uploadLiveJpg.sh') # > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
+    job = cron.new(f'sleep 60 && {local_path}/startAuroraCam.sh') # > {logdir}/uploadLiveJpg-{dtstr}.log 2>&1')
     job.every_reboot()
     cron.write()
 
@@ -245,27 +283,32 @@ def addCrontabEntry(local_path):
 if __name__ == '__main__':
     ipaddress = sys.argv[1]
     hostname = platform.uname().node
+    hostname = platform.uname().node
 
     thiscfg = configparser.ConfigParser()
     local_path =os.path.dirname(os.path.abspath(__file__))
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg)
 
-    ulloc = thiscfg['auroracam']['uploadloc']
+    s3 = None
+    bucket = None
+    ftpserver = None
+    userid = None
+    ulloc = thiscfg['uploads']['uploadloc']
     if ulloc[:5] == 's3://':
-        idserver = thiscfg['auroracam']['idserver']
-        sshkey = thiscfg['auroracam']['idfile']
-        awskey, awssec = getAWSKey(idserver, hostname, hostname, sshkey)
-        if not awskey:
-            log.error('unable to find AWS key')
-            exit(1)
-        conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
-        s3 = conn.resource('s3')
+        log.info(f'upload target {ulloc}')
+        # try to retrieve an AWS key from the sftp server
+        sshkey = thiscfg['uploads']['idfile']
+        s3 = getAWSConn(thiscfg, hostname, hostname)
         bucket = ulloc[5:]
     else:
-        print('not uploading to AWS S3')
-        s3 = None
-        bucket = None
+        ftpserver = thiscfg['uploads']['ftpserver']
+        userid = thiscfg['uploads']['userid']
+        if ftpserver != '':
+            log.info(f'upload target {ftpserver}')
+            sshkey = thiscfg['uploads']['idfile']
+        else:
+            log.info('not uploading files')
     addCrontabEntry(local_path)
 
     nightgain = int(thiscfg['auroracam']['nightgain'])
@@ -296,7 +339,7 @@ if __name__ == '__main__':
         grabImage(ipaddress, fnam, hostname, now, thiscfg)
         log.info(f'grabbed {fnam}')
         lastdusk = dusk
-        dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg)
+        dusk, dawn, lastdawn = getStartEndTimes(now, thiscfg, lastdusk)
         if isnight:
             capdirname = os.path.join(datadir, dusk.strftime('%Y%m%d_%H%M%S'))
         else:
@@ -310,6 +353,7 @@ if __name__ == '__main__':
             os.makedirs(capdirname, exist_ok=True)
             fnam2 = os.path.join(capdirname, now.strftime('%Y%m%d_%H%M%S') + '.jpg')
             shutil.copyfile(fnam, fnam2)
+            createLatestIndex(capdirname)
             log.info(f'and copied to {capdirname}')
         # when we move from day to night, make the day timelapse then switch exposure and flag
         if now < dawn and now > dusk and isnight is False:
@@ -318,6 +362,7 @@ if __name__ == '__main__':
                 norebootflag = os.path.join(datadir, '..', '.noreboot')
                 open(norebootflag, 'w')
                 makeTimelapse(capdirname, s3, camid, bucket, daytimelapse)
+                createLatestIndex(capdirname)
                 os.remove(norebootflag)
             isnight = True
             setCameraExposure(ipaddress, 'NIGHT', nightgain, True, True)
@@ -329,6 +374,7 @@ if __name__ == '__main__':
             norebootflag = os.path.join(datadir, '..', '.noreboot')
             open(norebootflag, 'w')
             makeTimelapse(capdirname, s3, camid, bucket)
+            createLatestIndex(capdirname)
             log.info('switched to daytime mode, now rebooting')
             setCameraExposure(ipaddress, 'DAY', nightgain, True, True)
             os.remove(norebootflag)
@@ -337,16 +383,23 @@ if __name__ == '__main__':
         uploadcounter += pausetime
         testmode = int(os.getenv('TESTMODE', default=0))
         if uploadcounter > 9 and testmode == 0 and s3 is not None:
-            log.info('uploading live image')
             if os.path.isfile(fnam):
                 try:
                     s3.meta.client.upload_file(fnam, bucket, f'{hostname}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
-                except:
-                    log.info('unable to upload live image')
-                    pass
+                    log.info(f'uploaded live image to {bucket}')
+                except Exception:
+                    log.warning(f'upload to {bucket} failed')
                 uploadcounter = 0
             else:
                 uploadcounter -= pausetime
+        if uploadcounter > 9 and testmode == 0 and ftpserver is not None:
+            if os.path.isfile(fnam):
+                try:
+                    uploadOneFile(fnam, ulloc, ftpserver, userid, sshkey)
+                    log.info(f'uploaded live image to {ftpserver}')
+                except Exception:
+                    log.warning(f'upload to {ftpserver} failed')
+            uploadcounter = 0
         if testmode == 1:
             log.info(f'would have uploaded {fnam}')
         log.info(f'sleeping for {pausetime} seconds')

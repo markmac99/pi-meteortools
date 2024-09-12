@@ -1,0 +1,12 @@
+<body>
+<script src="https://markmcintyreastro.co.uk/js/jquery.js"></script>
+<script src="https://markmcintyreastro.co.uk/js/jquery.magnific-popup.js"></script>
+
+
+<div class="vid-list" id="vid-list"></div>
+<div class="cam-list" id="cam-list"></div>
+<script src="./latestindex.js"></script>
+<script>$('.vid-list').magnificPopup({delegate:'a',type:'iframe',image:{verticalFit:false},gallery:{enabled:true}});</script>
+<script>$('.cam-list').magnificPopup({delegate:'a',type:'image',image:{verticalFit:false},gallery:{enabled:true}});</script>
+
+</body>

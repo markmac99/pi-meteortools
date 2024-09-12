@@ -17,9 +17,9 @@ import platform
 import paramiko
 import logging
 import boto3
-from grabImage import getAWSKey
+from auroraCam import getAWSConn
 
-from grabImage import setupLogging
+from auroracam.auroraCam import setupLogging
 
 log = logging.getLogger("logger")
 
@@ -33,7 +33,14 @@ def getFilesToUpload(datadir, bucket, awskey, awssec):
         bucket  [string] source bucket
         awskey  [string] aws access key
         awssec  [string] aws secret key
+        datadir [string] datadir to store file in
+        bucket  [string] source bucket
+        awskey  [string] aws access key
+        awssec  [string] aws secret key
     """
+    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
+    s3 = conn.client('s3')
+    s3.download_file(bucket, 'auroracam/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
     conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
     s3 = conn.client('s3')
     s3.download_file(bucket, 'auroracam/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
@@ -41,16 +48,31 @@ def getFilesToUpload(datadir, bucket, awskey, awssec):
     return dirnames
 
 
-def saveFilesToUpload(datadir, dirs):
-    """
-    Save the current list of folders/files to be archived 
+def getListOfNew(datadir, thiscfg):
+    log.info('getting list of files to upload')
+    tod = datetime.datetime.now().strftime('%Y%m%d')
+    allfiles = os.listdir(os.path.expanduser(datadir))
+    allfiles = [x for x in allfiles if 'FILES' not in x]
+    allfiles = [x for x in allfiles if tod not in x]
 
-    Parameters
-        datadir [string] datadir to save in
-        dirs [list] list of directory names to be kept
-    """
-    open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'w').writelines(dirs)
-    return 
+    archserver = thiscfg['archive']['archserver']
+    archuser = thiscfg['archive']['archuser']
+    archid = thiscfg['archive']['archid']
+    archfldr = thiscfg['archive']['archfldr']
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(archid))
+    try:
+        ssh_client.connect(archserver, username=archuser, pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        targfldr = os.path.join(archfldr, tod[:4])
+        flist = ftp_client.listdir(targfldr)
+        flist = [x for x in flist if '.zip' in x]
+        flist = [x.replace('.zip','') for x in flist]
+    except:
+        flist = []
+    dirnames = [x for x in allfiles if x in flist]
+    return dirnames
 
 
 def pushFilesToUpload(datadir, bucket, awskey, awssec):
@@ -113,7 +135,7 @@ def getDeletableFiles(datadir, daystokeep=3, filestokeep=None):
     return allfiles
 
 
-def compressAndUpload(datadir, thisfile, archserver, archfldr):
+def compressAndUpload(datadir, thisfile, thiscfg):
     """
     Compress and upload data.
     If thisfile is a folder name, the folder is compressed into a zip archive.
@@ -136,16 +158,15 @@ def compressAndUpload(datadir, thisfile, archserver, archfldr):
         zfname = os.path.join(datadir, thisfile)
         shutil.make_archive(zfname,'zip',zfname)
     log.info(f'uploading {thisfile}')
-    config=paramiko.config.SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    sitecfg = config.lookup(archserver)
-    if 'user' not in sitecfg.keys():
-        log.warning(f'unable to connect to {archserver} - no entry in ssh config file')
-        return False
+    archserver = thiscfg['archive']['archserver']
+    archuser = thiscfg['archive']['archuser']
+    archid = thiscfg['archive']['archid']
+    archfldr = thiscfg['archive']['archfldr']
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(archid))
     try:
-        ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
+        ssh_client.connect(archserver, username=archuser, pkey=pkey, look_for_keys=False)
         ftp_client = ssh_client.open_sftp()
         uploadfile = os.path.join(archfldr, thisfile[:4], thisfile +'.zip')
         try:
@@ -166,7 +187,7 @@ def compressAndUpload(datadir, thisfile, archserver, archfldr):
         ssh_client.close()
         return True
     except Exception as e:
-        log.warning(f'connection to {sitecfg["hostname"]} failed')
+        log.warning(f'connection to {archserver} failed')
         log.info(e, exc_info=True)
         return False
 
@@ -186,34 +207,33 @@ def freeUpSpace(thiscfg):
     Parameters:
         thiscfg     [object] - json object containing the configuration 
     """
-    idserver = thiscfg['auroracam']['idserver']
     uid = platform.uname()[1]
-    sshkey = thiscfg['auroracam']['idfile']
-    awskey, awssec = getAWSKey(idserver, uid, uid, sshkey)
-    if not awskey:
-        log.error('unable to find AWS key')
-        exit(1)
-
     datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
-    archserver = thiscfg['archive']['archserver']
-    archfldr = thiscfg['archive']['archfldr']
-    uploadloc = thiscfg['auroracam']['uploadloc'][5:]
-    
+    s3 = None
+    uploadloc = None
+    filestoupload = None
+    uploadloc = thiscfg['uploads']['uploadloc']
+    if uploadloc[:5] == 's3://':
+        log.info(f'getting list of files to upload from {uploadloc}')
+        # try to retrieve an AWS key from the sftp server
+        s3 = getAWSConn(thiscfg, uid, uid)
+        filestoupload = getFilesToUpload(datadir, uploadloc[5:], s3)
+    else:
+        filestoupload = getListOfNew(datadir, thiscfg)
+    log.info(f'want to keep {filestoupload}')
     freekb = getFreeSpace()
     reqkb = getNeededSpace()
     log.info(f'need {reqkb/1024/1024:.3f} GB, have {freekb/1024/1024:.3f} GB')
-    log.info(f'archiving to {archserver}:{archfldr}')     
-    filestoupload = getFilesToUpload(datadir, uploadloc, awskey, awssec)
+    log.info(f'archiving to {thiscfg["archive"]["archserver"]}:{thiscfg["archive"]["archfl;dr"]}')
     filelist = getDeletableFiles(datadir, daystokeep=3, filestokeep=filestoupload)
-    log.info(f'want to keep {filestoupload}')
     for thisfile in filelist:
         for origpatt in filestoupload:
             patt = origpatt.strip()
             if patt in thisfile and len(patt) > 8:
-                if compressAndUpload(datadir, thisfile, archserver, archfldr):
+                if compressAndUpload(datadir, thisfile, thiscfg):
                     while origpatt in filestoupload:
                         filestoupload.remove(origpatt)
-                    saveFilesToUpload(datadir, filestoupload)
+                    open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'w').writelines(filestoupload)                        
                     newfree = getFreeSpace()
                     if newfree < reqkb:
                         shutil.rmtree(os.path.join(datadir, thisfile))
@@ -231,8 +251,13 @@ def freeUpSpace(thiscfg):
                     shutil.rmtree(os.path.join(datadir, thisfile))
                 except:
                     log.warning(f'folder {thisfile} already pruned')
+                try:
+                    shutil.rmtree(os.path.join(datadir, thisfile))
+                except:
+                    log.warning(f'folder {thisfile} already pruned')
     newfree = getFreeSpace()
-    pushFilesToUpload(datadir, uploadloc, awskey, awssec)
+    if s3:
+        s3.upload_file(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), uploadloc[5:], 'auroracam/FILES_TO_UPLOAD.inf')
     log.info(f'freed {(newfree - freekb)/1024/1024:.3f} GB, have {newfree/1024/1024:.3f} GB')
     return 
 
@@ -242,4 +267,5 @@ if __name__ == '__main__':
     local_path =os.path.dirname(os.path.abspath(__file__))
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg, 'archive_')
+    freeUpSpace(thiscfg)
     freeUpSpace(thiscfg)

@@ -12,32 +12,29 @@
   - name: Copy auroracam files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
-    - {src: '{{srcdir}}/grabImage.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/makeImageIndex.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/imgindex.html.template', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/index.html', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/redoTimelapse.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/uploadMissedMp4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/auroraCam.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/archAndFree.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/makeMP4.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/uploadLiveJpg.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/startAuroraCam.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/checkAuroracam.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/archiveData.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '754', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
-
-  - name: update ipaddress
+    - {src: '{{srcdir}}/mqtt.cfg', dest: '{{destdir}}/', mode: '644', backup: no }
+  # auroracam settings
+  - name: update camera ipaddress
     lineinfile: 
       path: '{{destdir}}/config.ini'
       regexp: 'IPADDRESS='
       line: 'IPADDRESS=192.168.1.40'
-  - name: update data folder
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'DATADIR='
-      line: 'DATADIR=~/RMS_data/auroracam'
-  - name: update logs folder
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'LOGDIR='
-      line: 'LOGDIR=~/RMS_data/logs'
   - name: update latitude
     lineinfile: 
       path: '{{destdir}}/config.ini'
@@ -53,26 +50,48 @@
       path: '{{destdir}}/config.ini'
       regexp: 'ALT='
       line: 'ALT=80'
-  - name: update mqtt broker
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'BROKER='
-      line: 'BROKER=wxsatpi'
-  - name: update MQTT username
-    lineinfile:
-      path: '{{destdir}}/config.ini'
-      regexp: 'USERNAME='
-      line: 'USERNAME=rmscams'
-  - name: update MQTT password
-    lineinfile:
-      path: '{{destdir}}/config.ini'
-      regexp: 'PASSWORD='
-      line: 'PASSWORD={{ rmscampassword }}'
   - name: update uploadloc
     lineinfile: 
       path: '{{destdir}}/config.ini'
       regexp: 'UPLOADLOC='
       line: 'UPLOADLOC=s3://mjmm-data'
+  - name: update RGB adj
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'RGBADJ='
+      line: 'RGBADJ=1.0,1.0,1.0'
+  - name: update sftp server
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'FTPSERVER='
+      line: 'FTPSERVER=wordpresssite'
+  - name: update sftp user
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'USERID='
+      line: 'USERID=notused'
+  - name: update idfile
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'IDFILE='
+      line: 'IDFILE=~/.ssh/auroracam'
+  # mqtt settings
+  - name: update mqtt broker
+    lineinfile: 
+      path: '{{destdir}}/mqtt.cfg'
+      regexp: 'BROKER='
+      line: 'BROKER=wxsatpi'
+  - name: update MQTT username
+    lineinfile:
+      path: '{{destdir}}/mqtt.cfg'
+      regexp: 'USERNAME='
+      line: 'USERNAME=rmscams'
+  - name: update MQTT password
+    lineinfile:
+      path: '{{destdir}}/mqtt.cfg'
+      regexp: 'PASSWORD='
+      line: 'PASSWORD={{ rmscampassword }}'
+  # archive settings
   - name: update archserver
     lineinfile: 
       path: '{{destdir}}/config.ini'
@@ -83,19 +102,23 @@
       path: '{{destdir}}/config.ini'
       regexp: 'ARCHFLDR='
       line: 'ARCHFLDR=/data3/astrodata/auroracam'
-  - name: update RGB adj
+  - name: update arch userid
     lineinfile: 
       path: '{{destdir}}/config.ini'
-      regexp: 'RGBADJ='
-      line: 'RGBADJ=0.95,1.0,1.0'
-  - name: update idfile
+      regexp: 'ARCHUSER='
+      line: 'ARCHUSER=mark'
+  - name: update arch ssh keyname
     lineinfile: 
       path: '{{destdir}}/config.ini'
-      regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/auroracam'
+      regexp: 'ARCHID='
+      line: 'ARCHID=~/.ssh/markskey.pem'
   - name: make sure modules are downloaded
     shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg
+    args:
+      executable: /bin/bash
+  - name: install webserver index
+    shell: sudo cp {{destdir}}/index.html /var/www/html
     args:
       executable: /bin/bash
 

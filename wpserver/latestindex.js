@@ -74,7 +74,7 @@ a.href='https://d3jdcxriig76vh.cloudfront.net/UK002FTRACKTEMPLATE';
 outer_div.appendChild(a);
 
 h3 = document.createElement('h3');
-h3.innerText = "Allsky Stack";
+h3.innerText = "Allsky Stack and Keogram";
 outer_div.appendChild(h3);
 
 a = document.createElement('a');
@@ -83,6 +83,14 @@ img.src='https://d3jdcxriig76vh.cloudfront.net/ALLSKYSTILLTEMPLATE';
 img.style.width="40%";
 a.appendChild(img);
 a.href='https://d3jdcxriig76vh.cloudfront.net/ALLSKYSTILLTEMPLATE';
+outer_div.appendChild(a);
+
+a = document.createElement('a');
+img = document.createElement('img');
+img.src='https://d3jdcxriig76vh.cloudfront.net/ALLSKYKEOGRAMTEMPLATE';
+img.style.width="40%";
+a.appendChild(img);
+a.href='https://d3jdcxriig76vh.cloudfront.net/ALLSKYKEOGRAMTEMPLATE';
 outer_div.appendChild(a);
 
 var outer_div = document.getElementById("vid-list");

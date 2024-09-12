@@ -17,10 +17,9 @@ echo "table.className = \"table table-striped table-bordered table-hover table-c
 echo "var header = table.createTHead(); " >> $idxfile
 echo "header.className = \"h4\"; " >> $idxfile
 
-camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
-for cam in $camlist ; do 
-    mkdir -p $cam/$currmth 
-    aws s3 sync s3://mjmm-data/$cam/ ./$cam --exclude "*" --include "*.js" --include "*.html"
+camlist="UK0006 UK000F UK001L UK002F UK9999 Radio allsky"
+for dname in $camlist ; do
+    aws s3 sync s3://mjmm-data/$dname $DATADIR/$dname --exclude "*" --include "*.html" --include "*.js" --exact-timestamps --no-progress
 done
 
 camlist=$(ls -1d UK* allsky)
@@ -28,6 +27,7 @@ mthlist=$(ls -1dr UK0006/202* | awk -F/ '{print $2}')
 if [[ $mthlist != *"$currmth"* ]] ; then mthlist=$(echo $currmth $mthlist ) ; fi
 mthlist=$(echo stacks dailystacks trackstacks $mthlist)
 
+# create main index page
 for mth in $mthlist ; do 
     echo "var row = table.insertRow(-1);" >> $idxfile
     for cam in $camlist; do
@@ -38,6 +38,8 @@ for mth in $mthlist ; do
             else
                 if [ "$mth" == "trackstacks" ] ; then
                     echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/startrails\\\"\\>startrails\\</a\\>\";" >> $idxfile
+                elif [ "$mth" == "dailystacks" ] ; then
+                    echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/keograms\\\"\\>keograms\\</a\\>\";" >> $idxfile
                 elif [ "$mth" == "dailystacks" ] ; then
                     echo "cell.innerHTML = \"\\<a href=\\\"/data/mjmm-data/$cam/keograms\\\"\\>keograms\\</a\\>\";" >> $idxfile
                 else
@@ -76,8 +78,11 @@ if [ $? -gt 0 ] ; then
     cp $idxfile $DATADIR/cameraindex.js
 else
     echo general data unchanged
+    echo general data unchanged
 fi
 
+# create specific pages for the  allsky camera 
+# Startrails index
 idxfile=$TMPDIR/cameraindex.js
 echo "\$(function() {" > $idxfile
 echo "var table = document.createElement(\"table\");" >> $idxfile
@@ -114,6 +119,7 @@ else
     echo startrails data unchanged
 fi
 
+# keogram index
 idxfile=$TMPDIR/cameraindex.js
 echo "\$(function() {" > $idxfile
 echo "var table = document.createElement(\"table\");" >> $idxfile
@@ -149,9 +155,11 @@ if [ $? -gt 0 ] ; then
 else
     echo keograms data unchanged
 fi
-camlist=$(ls -1d UK* allsky/startrails allsky/videos allsky/keograms)
+
+# sync modified indexes and js files back
+camlist="UK0006 UK000F UK001L UK002F UK9999 Radio allsky"
 for cam in $camlist ; do 
-    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html"
+    aws s3 sync ./$cam s3://mjmm-data/$cam/  --exclude "*" --include "*.js" --include "*.html" --exact-timestamps --no-progress
 done
 
 delaymins=120

@@ -21,7 +21,12 @@ import platform
 import logging
 import requests
 import configparser
+import configparser
 
+try:
+    import RMS.ConfigReader as cr
+except Exception:
+    pass
 try:
     import RMS.ConfigReader as cr
 except Exception:
@@ -62,31 +67,47 @@ def getLoggedInfo(cfg):
     if len(totli) > 0:
         detectedcount = int(totli[0].split(' ')[4].strip())
 
+    logf = logfs[-1]
+    lis = open(logf,'r').readlines()
+    sc = [li for li in lis if 'Detected stars' in li]
+    starcount = 0
+    if len(sc) > 0:
+        try:
+            starcount = int(sc[-1].split()[5])
+        except Exception:
+            pass
+
     capdir = os.path.join(cfg.data_dir, 'CapturedFiles')
     caps = glob.glob(os.path.join(capdir, f'{cfg.stationID}*'))
     caps.sort(key=lambda x: os.path.getmtime(x))
-    capdir = caps[-1]
-    ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
-    ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
-    meteorcount = 0
-    if len(ftpf) > 0:
-        lis = open(ftpf[0],'r').readlines()
-        mc = [li for li in lis if 'Meteor Count' in li]
-        meteorcount = int(mc[0].split('=')[1].strip())
-    
+    try:
+        capdir = caps[-1]
+        ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
+        ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
+        meteorcount = 0
+        if len(ftpf) > 0:
+            lis = open(ftpf[0],'r').readlines()
+            mc = [li for li in lis if 'Meteor Count' in li]
+            meteorcount = int(mc[0].split('=')[1].strip())
+    except Exception:
+        # probably no captured data yet
+        meteorcount = 0    
     # if meteorcount is nonzero but detected count is zero then the logfile was malformed
     if detectedcount == 0:
         detectedcount = meteorcount
 
     datestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
-    return detectedcount, meteorcount, datestamp
+    return detectedcount, meteorcount, starcount, datestamp
 
 
-def sendMatchdataToMqtt(cfg, localcfg=None):
+def sendMatchdataToMqtt(rmscfg=None, localcfg=None):
     if localcfg is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
         localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if rmscfg is None:
+        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
+    cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = cfg.stationID.lower()
@@ -112,6 +133,8 @@ def sendMatchdataToMqtt(cfg, localcfg=None):
     client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
     topic = f'{topicbase}/{camname}/matchcount'
     ret = client.publish(topic, payload=matchcount, qos=0, retain=False)
@@ -119,21 +142,26 @@ def sendMatchdataToMqtt(cfg, localcfg=None):
     return ret
 
 
-def sendToMqtt(cfg, localcfg=None):
+def sendToMqtt(rmscfg=None, localcfg=None):
     if localcfg is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
         localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if rmscfg is None:
+        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
+    cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = cfg.stationID.lower()
 
-    metcount, detectioncount, datestamp = getLoggedInfo(cfg)
+    metcount, detectioncount, _, datestamp = getLoggedInfo(cfg)
     msgs =[metcount, detectioncount, datestamp]
 
     client = mqtt.Client(camname)
     client.on_connect = on_connect
     client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
@@ -146,16 +174,42 @@ def sendToMqtt(cfg, localcfg=None):
     return ret
 
 
-def sendStarCountToMqtt(starcount, rmscfg=None, localcfg=None):
+def sendStarCountToMqtt(rmscfg=None, localcfg=None):
     if localcfg is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
         localcfg.read(os.path.join(srcdir, 'config.ini'))
-    broker = localcfg['mqtt']['broker']
     if rmscfg is None:
-        rmscfg = '/home/pi/source/RMS/.config'        
+        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
     cfg = cr.parse(os.path.expanduser(rmscfg))
+    broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
+    camname = cfg.stationID.lower()
+    _, _, starcount, _ = getLoggedInfo(cfg)
+    client = mqtt.Client(camname)
+    client.on_connect = on_connect
+    client.on_publish = on_publish
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    client.connect(broker, 1883, 60)
+
+    topic = f'{topicbase}/{camname}/starcount'
+    print(f'starcount is {starcount}')
+    ret = client.publish(topic, payload=starcount, qos=0, retain=False)
+    return ret
+
+
+def sendOtherData(cputemp, diskspace, rmscfg=None, localcfg=None):
+    if localcfg is None:
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg = configparser.ConfigParser()
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if rmscfg is None:
+        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
+    cfg = cr.parse(os.path.expanduser(rmscfg))
+    broker = localcfg['mqtt']['broker']
     camname = cfg.stationID.lower()
 
     client = mqtt.Client(camname)
@@ -163,23 +217,6 @@ def sendStarCountToMqtt(starcount, rmscfg=None, localcfg=None):
     client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    client.connect(broker, 1883, 60)
-
-    topic = f'{topicbase}/{camname}/starcount'
-    ret = client.publish(topic, payload=starcount, qos=0, retain=False)
-    return ret
-
-
-def sendOtherData(cputemp, diskspace, localcfg=None):
-    if localcfg is None:
-        srcdir = os.path.split(os.path.abspath(__file__))[0]
-        localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
-    broker = localcfg['mqtt']['broker']
-    hname = platform.uname().node
-    client = mqtt.Client(hname)
-    client.on_connect = on_connect
-    client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
@@ -191,39 +228,39 @@ def sendOtherData(cputemp, diskspace, localcfg=None):
         diskspace = diskspace[:-1]
     else:
         diskspace = 0
-    topic = f'meteorcams/{hname}/cputemp'
+    topic = f'meteorcams/{camname}/cputemp'
     ret = client.publish(topic, payload=cputemp, qos=0, retain=False)
-    topic = f'meteorcams/{hname}/diskspace'
+    topic = f'meteorcams/{camname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
     return ret
 
 
-def test_mqtt(localcfg=None):
+def test_mqtt(rmscfg=None, localcfg=None):
     if localcfg is None:
         srcdir = os.path.split(os.path.abspath(__file__))[0]
         localcfg = configparser.ConfigParser()
         localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if rmscfg is None:
+        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
+    cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
-    hname = platform.uname().node
-    topic = f'testing/{hname}/test'
-    client = mqtt.Client(hname)
+    camname = cfg.stationID.lower()
+
+    client = mqtt.Client(camname)
+    topic = f'testing/{camname}/test'
     client.on_connect = on_connect
     client.on_publish = on_publish
     if localcfg['mqtt']['username'] != '':
         client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+    if localcfg['mqtt']['username'] != '':
+        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
     client.connect(broker, 1883, 60)
-    ret = client.publish(topic, payload=f'test from {hname}', qos=0, retain=False)
+    ret = client.publish(topic, payload=f'test from {camname}', qos=0, retain=False)
     print("send to {}, result {}".format(topic, ret))
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        rmscfg = '/home/pi/source/RMS/.config'
+    if len(sys.argv) > 1:
+        test_mqtt(None, None)
     else:
-        rmscfg = sys.argv[1]
-    if rmscfg == 'test':
-        test_mqtt()
-    else:
-        cfg = cr.parse(os.path.expanduser(rmscfg))
-        localcfg = None
-        sendToMqtt(cfg, localcfg)
+        sendToMqtt(None, None)

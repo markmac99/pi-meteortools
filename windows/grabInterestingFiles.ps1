@@ -3,17 +3,16 @@
 # not picked up by the automated process for some reason but 
 # which you would like to examine. 
 # The script takes two parameters
-#   grabInterestingFiles.ps1 uk0006.ini 20200619_023417
-# the camera config file and date/time you want
-# The datetime does not need to be exact, the script grabs files from +/- 20 seconds
-# around the target. The files are converted to JPG so you can easily check them.
+#   grabInterestingFiles.ps1 uk0006.ini 20200619_023000 20200619_033000
+# the camera config file and date/time range you want
+# The files are converted to JPG so you can easily check them.
 
 set-location $PSScriptRoot
 # load the helper functions
 . .\helperfunctions.ps1
 # read the inifile
-if ($args.count -eq 0) {
-    write-output "Usage: grabInterestingFiles.ps1 UK0006.ini yyyymmdd_hhmmss"
+if ($args.count -lt 3) {
+    write-output "Usage: grabInterestingFiles.ps1 UK0006.ini yyyymmdd_hhmmss yyyymmdd_hhmmss"
     exit 1
 }
 $inifname = $args[0]
@@ -31,7 +30,8 @@ $rms_loc=$ini['rms']['rms_loc']
 $rms_env=$ini['rms']['rms_env']
 
 # datetime of interest in YYYYMMDD_HHMMSS  format
-$dtim=[datetime]::parseexact($args[1],'yyyyMMdd_HHmmss', $null)
+$dtim1=[datetime]::parseexact($args[1],'yyyyMMdd_HHmmss', $null)
+$dtim2=[datetime]::parseexact($args[2],'yyyyMMdd_HHmmss', $null)
 # data is stored in a folder based on start time.
 # so captures after midnight are stored in the prior days folder
 $ftim = $dtim

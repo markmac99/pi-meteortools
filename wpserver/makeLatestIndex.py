@@ -20,7 +20,7 @@ def createLatestIndex():
         dtstr = (datetime.datetime.now() + datetime.timedelta(days=-offs)).strftime('%Y%m%d')
         #print(dtstr)
         uk06files =[os.key for os in buck.objects.filter(Prefix='UK0006') if dtstr in os.key] 
-        #print(uk06files)
+        print('meteorcams')
         if any('dailystacks' in s for s in uk06files) and 'UK0006STILLTEMPLATE' in templdata:
             templdata = templdata.replace('UK0006STILLTEMPLATE', [x for x in uk06files if 'dailystacks' in x][0])
         if any('trackstacks' in s for s in uk06files) and 'UK0006TRACKTEMPLATE' in templdata:
@@ -52,6 +52,7 @@ def createLatestIndex():
         if any('timelapse' in s for s in uk2ffiles) and 'UK002FVIDEOTEMPLATE' in templdata:
             templdata = templdata.replace('UK002FVIDEOTEMPLATE', [x for x in uk2ffiles if 'timelapse' in x][0])
 
+        print('auroracam')
         acmfiles = [os.key for os in buck.objects.filter(Prefix='UK9999') if dtstr in os.key] 
         acmnonday = [x for x in acmfiles if 'day' not in x]
         if 'AURCAMVIDEOTEMPLATE' in templdata and len(acmnonday) > 0:
@@ -59,9 +60,11 @@ def createLatestIndex():
 
         askfiles = [os.key for os in buck.objects.filter(Prefix='allsky') if dtstr in os.key]
         asknonday = [x for x in askfiles if 'day' not in x]
-        #print(asknonday)
+        print('allsky')
         if any('startrails' in s for s in asknonday) and 'ALLSKYSTILLTEMPLATE' in templdata:
             templdata = templdata.replace('ALLSKYSTILLTEMPLATE', [x for x in asknonday if 'startrails' in x][0])
+        if any('keogram' in s for s in asknonday) and 'ALLSKYKEOGRAMTEMPLATE' in templdata:
+            templdata = templdata.replace('ALLSKYKEOGRAMTEMPLATE', [x for x in asknonday if 'keogram' in x][0])
         if any('videos' in s for s in asknonday) and 'ALLSKYVIDEOTEMPLATE' in templdata:
             templdata = templdata.replace('ALLSKYVIDEOTEMPLATE', [x for x in asknonday if 'videos' in x][0])
         #print(templdata)
