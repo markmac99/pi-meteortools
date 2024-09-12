@@ -4,9 +4,10 @@ The scripts in this folder implement a very simple aurora camera using a barebon
 
 ## How it works
 A python script captures an image from the camera every few seconds. During the day it writes the image to $DATADIR/../live.jpg. At night it writes it to a datestamped directory. At the end of the night, the saved images are made into an MP4 and thhe host is rebooted to ensure a clean start for the next day. 
+The software also captures during the day, creating a separate set of data and timelapse. 
 
 ### Scheduling the job
-Each time the script is run, it creates or updates a scheduled job in the Pi's crontab so there's no need to do this manually. 
+Each time the script is run it creates or updates a scheduled job in the Pi's crontab so there's no need to do this manually. 
 
 ### Uploads to S3
 The images and MP4 can also be uploaded to an AWS S3 bucket by specifying an upload bucket in the config file.Images are uploaded every 30 seconds.  
@@ -24,29 +25,43 @@ I'm running the software on an Intel ATOM Z8350 miniPC with 4GB memory running A
 ### Installation
 On the target computer, run the following  
 <pre>
-sudo apt-get install python3-opencv 
+sudo apt-get install python3-opencv lighttpd
 virtualenv ~/vAuroracam  
 source ~/vAuroracam/bin/activate  
 pip install --upgrade pip
 pip install python-dvr python-crontab boto3 opencv-python ephem pillow MeteorTools
 mkdir -p ~/source/auroracam
 cd ~/source/auroracam
-flist=(uploadLiveJpg.sh archiveData.sh grabImage.py config.ini ../pi/setExpo.py)
+flist=(startAuroraCam.sh archiveData.sh auroraCam.py config.ini setExpo.py makeImageIndex.py imageindex.html.template index.html redoTimelapse.py archAndFree.py mqtt.cfg)
 for f in ${flist[@]} ; do
 wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/${f}  
 done 
 chmod +x *.sh
+sudo cp index.html /var/www/html
+sudo ln -s $HOME/RMS_data /var/www/html
 </pre>
 * Now edit *config.ini* and fill in following
     * IPADDRESS - the IP address of your camera
-    * DATADIR, LOGDIR - locations on the Pi where logfiles should be written and a location on the Pi where data files should be written. I suggest something like *~/data/logs* and *~/data/auroracam*
     * CAMID - a camera ID which will be used as part of the filenames. 
     * LAT, LON, ALT - your latitude & longitude in degrees (+ for East) and elevation above sealevel in metres. 
     * UPLOADLOC - if you want to upload to AWS S3 storage, provide a bucket name eg *s3://mybucket*. You'll have to configure AWS connectivity yourself. 
+
+Other variables can be left as set. 
   
-Now run *uploadLiveJpg.sh* and it should start capture.  
- 
-**Note that this is a commandline tool - do not close the terminal window that it is running in or the programme will stop.**
+Now run *startAuroraCam.sh* and it should complete the installation and start capturing data.
+
+After the first few images have been captured, press Ctrl-C to abort, then reboot the Pi. Log in again and wait one minute, then you should find that the software has automatically started up and is saving images.
+
+## webserver
+A webserver is installed as part of the above and can be used to view the latest data
+and historical images. 
 
 ## Data Archival
 The process generates a lot of data and does not perform any housekeeping. You can use the script *archiveData.sh* to compress and delete data older than two weeks. 
+
+If you have access to an sftp server you can also configure the system to upload tarballs of each night's data for safe keeping. You will need to add update the ARCHSERVER and ARCHFLDR values in the config file. You will also need to add an entry to `~/.ssh/config` with the security details, eg:  
+``` bash
+host myserver
+    User someuser
+    IdentityFile ~/.ssh/somekey
+```
