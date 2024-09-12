@@ -1,4 +1,4 @@
-from meteortools.utils import getNextRiseSet
+from auroraCam import getNextRiseSet
 import datetime
 import os
 import glob

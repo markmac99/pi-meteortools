@@ -19,27 +19,31 @@ This holds the IP address, camera location and name, and the location of data an
 The camera is configured by the software (using the DVRIP library) and no manual tweaks should be needed. The exposure and gain are automatically changed at dawn and dusk. 
 
 ## Hardware
+
 The camera module I'm using is an IMX307 but an IMX291 should also work.   
 I'm running the software on an Intel ATOM Z8350 miniPC with 4GB memory running Armbian but it should work on pretty much any hardware. 
 
 ### Installation
+
 On the target computer, run the following  
-<pre>
+
+``` bash
 sudo apt-get install python3-opencv lighttpd
 virtualenv ~/vAuroracam  
 source ~/vAuroracam/bin/activate  
 pip install --upgrade pip
-pip install python-dvr python-crontab boto3 opencv-python ephem pillow MeteorTools
 mkdir -p ~/source/auroracam
 cd ~/source/auroracam
-flist=(startAuroraCam.sh archiveData.sh auroraCam.py config.ini setExpo.py makeImageIndex.py imageindex.html.template index.html redoTimelapse.py archAndFree.py mqtt.cfg)
+flist=(startAuroraCam.sh archiveData.sh auroraCam.py config.ini setExpo.py makeImageIndex.py imageindex.html.template index.html redoTimelapse.py archAndFree.py mqtt.cfg requirements.txt) 
 for f in ${flist[@]} ; do
 wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/${f}  
 done 
 chmod +x *.sh
+pip install -r requirements.txt
 sudo cp index.html /var/www/html
 sudo ln -s $HOME/RMS_data /var/www/html
-</pre>
+```
+
 * Now edit *config.ini* and fill in following
     * IPADDRESS - the IP address of your camera
     * CAMID - a camera ID which will be used as part of the filenames. 

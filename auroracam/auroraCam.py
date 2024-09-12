@@ -9,7 +9,6 @@ import datetime
 import time 
 import subprocess
 import configparser
-from meteortools.utils import annotateImageArbitrary, getNextRiseSet
 import boto3 
 import logging 
 import logging.handlers
@@ -21,10 +20,64 @@ import paramiko
 import tempfile
 from sendToYoutube import sendToYoutube
 from makeImageIndex import createLatestIndex
+from PIL import Image, ImageFont, ImageDraw 
+import ephem
 
 
 pausetime = 2 # time to wait between capturing frames 
 log = logging.getLogger("logger")
+
+
+def annotateImageArbitrary(img_path, message, color='#000'):
+    """
+    Annotate an image with an arbitrary message in the selected colour at the bottom left  
+
+    Arguments:  
+        img_path:   [str] full path and filename of the image to be annotated  
+        message:    [str] message to put on the image  
+        color:      [str] hex colour string, default '#000' which is black  
+
+    """
+    my_image = Image.open(img_path)
+    width, height = my_image.size
+    image_editable = ImageDraw.Draw(my_image)
+    fntheight=30
+    try:
+        fnt = ImageFont.truetype("arial.ttf", fntheight)
+    except:
+        fnt = ImageFont.truetype("DejaVuSans.ttf", fntheight)
+    #fnt = ImageFont.load_default()
+    image_editable.text((15,height-fntheight-15), message, font=fnt, fill=color)
+    my_image.save(img_path)
+
+
+def getNextRiseSet(lati, longi, elev, fordate=None):
+    """ Calculate the next rise and set times for a given lat, long, elev  
+
+    Paramters:  
+        lati:   [float] latitude in degrees  
+        longi:  [float] longitude in degrees (+E)  
+        elev:   [float] latitude in metres  
+        fordate:[datetime] date to calculate for, today if none
+
+    Returns:  
+        rise, set:  [date tuple] next rise and set as datetimes  
+
+    Note that set may be earlier than rise, if you're invoking the function during daytime.  
+
+    """
+    obs = ephem.Observer()
+    obs.lat = float(lati) / 57.3 # convert to radians, close enough for this
+    obs.lon = float(longi) / 57.3
+    obs.elev = float(elev)
+    obs.horizon = -6.0 / 57.3 # degrees below horizon for darkness
+    if fordate is not None:
+        obs.date = fordate
+
+    sun = ephem.Sun()
+    rise = obs.next_rising(sun).datetime()
+    set = obs.next_setting(sun).datetime()
+    return rise, set
 
 
 def on_connect(client, userdata, flags, rc):
