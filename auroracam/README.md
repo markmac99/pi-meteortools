@@ -28,6 +28,8 @@ I'm running the software on an Intel ATOM Z8350 miniPC with 4GB memory running A
 On the target computer, run the following  
 
 ``` bash
+mkdir -p ~/source/auroracam
+cd ~/source/auroracam
 wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/install.sh
 bash ./install.sh
 ```
