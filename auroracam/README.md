@@ -28,30 +28,8 @@ I'm running the software on an Intel ATOM Z8350 miniPC with 4GB memory running A
 On the target computer, run the following  
 
 ``` bash
-sudo apt-get install python3-opencv lighttpd virtualenv
-virtualenv ~/vAuroracam  
-source ~/vAuroracam/bin/activate  
-pip install --upgrade pip
-mkdir -p ~/source/auroracam
-mkdir -p ~/RMS_data/{auroracam,logs}
-chmod 755 ~
-cd ~/source/auroracam
-flist=(startAuroraCam.sh archiveData.sh auroraCam.py config.ini setExpo.py sendToYoutube.py makeImageIndex.py imgindex.html.template index.html redoTimelapse.py archAndFree.py mqtt.cfg requirements.txt) 
-for f in ${flist[@]} ; do
-wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/${f}  
-done 
-chmod +x *.sh
-pip install -r requirements.txt
-sudo cp index.html /var/www/html
-sudo ln -s $HOME/RMS_data /var/www/html
-grep dir-listing /etc/lighttpd/lighttpd.conf
-if [ $? -eq 1 ] ; then 
-sudo chmod 666 /etc/lighttpd/lighttpd.conf 
-echo server.dir-listing = \"enable\" >> /etc/lighttpd/lighttpd.conf 
-sudo chmod 644 /etc/lighttpd/lighttpd.conf
-sudo systemctl restart lighttpd
-fi 
-
+wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/install.sh
+bash ./install.sh
 ```
 
 * Now edit *config.ini* and fill in following
