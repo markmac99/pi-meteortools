@@ -48,18 +48,21 @@ def getFilesToUpload(datadir, bucket, awskey, awssec):
 
 def getListOfNew(datadir, thiscfg):
     log.info('getting list of files to upload')
+    archserver = thiscfg['archive']['archserver']
+    if archserver == '':
+        # not archiving files, so do nothing
+        return []
     tod = datetime.datetime.now().strftime('%Y%m%d')
     allfiles = os.listdir(os.path.expanduser(datadir))
     allfiles = [x for x in allfiles if 'FILES' not in x]
     allfiles = [x for x in allfiles if tod not in x]
 
-    archserver = thiscfg['archive']['archserver']
     archuser = thiscfg['archive']['archuser']
-    archid = thiscfg['archive']['archid']
+    archkeyfile = thiscfg['archive']['archkey']
     archfldr = thiscfg['archive']['archfldr']
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(archid))
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(archkeyfile))
     try:
         ssh_client.connect(archserver, username=archuser, pkey=pkey, look_for_keys=False)
         ftp_client = ssh_client.open_sftp()
@@ -158,11 +161,11 @@ def compressAndUpload(datadir, thisfile, thiscfg):
     log.info(f'uploading {thisfile}')
     archserver = thiscfg['archive']['archserver']
     archuser = thiscfg['archive']['archuser']
-    archid = thiscfg['archive']['archid']
+    archkeyfile = thiscfg['archive']['archkey']
     archfldr = thiscfg['archive']['archfldr']
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(archid))
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(archkeyfile))
     try:
         ssh_client.connect(archserver, username=archuser, pkey=pkey, look_for_keys=False)
         ftp_client = ssh_client.open_sftp()
@@ -210,7 +213,7 @@ def freeUpSpace(thiscfg):
     s3 = None
     uploadloc = None
     filestoupload = None
-    uploadloc = thiscfg['uploads']['uploadloc']
+    uploadloc = thiscfg['uploads']['s3uploadloc']
     if uploadloc[:5] == 's3://':
         log.info(f'getting list of files to upload from {uploadloc}')
         # try to retrieve an AWS key from the sftp server
@@ -262,8 +265,7 @@ def freeUpSpace(thiscfg):
 
 if __name__ == '__main__':
     thiscfg = configparser.ConfigParser()
-    local_path =os.path.dirname(os.path.abspath(__file__))
+    local_path = os.path.dirname(os.path.abspath(__file__))
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg, 'archive_')
-    freeUpSpace(thiscfg)
     freeUpSpace(thiscfg)

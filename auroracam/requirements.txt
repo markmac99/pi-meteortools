@@ -5,6 +5,7 @@ ephem
 numpy
 Pillow
 python-dvr
+paramiko
 paho-mqtt
 google-auth-oauthlib
 google-api-python-client 

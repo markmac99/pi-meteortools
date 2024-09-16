@@ -50,31 +50,33 @@
       path: '{{destdir}}/config.ini'
       regexp: 'ALT='
       line: 'ALT=80'
-  - name: update uploadloc
-    lineinfile: 
-      path: '{{destdir}}/config.ini'
-      regexp: 'UPLOADLOC='
-      line: 'UPLOADLOC=s3://mjmm-data'
   - name: update RGB adj
     lineinfile: 
       path: '{{destdir}}/config.ini'
       regexp: 'RGBADJ='
       line: 'RGBADJ=1.0,1.0,1.0'
-  - name: update sftp server
+  # upload settings
+  - name: update uploadloc
     lineinfile: 
       path: '{{destdir}}/config.ini'
-      regexp: 'FTPSERVER='
-      line: 'FTPSERVER=wordpresssite'
-  - name: update sftp user
+      regexp: 'S3UPLOADLOC='
+      line: 'S3UPLOADLOC=s3://mjmm-data'
+  - name: update idserver
     lineinfile: 
       path: '{{destdir}}/config.ini'
-      regexp: 'USERID='
-      line: 'USERID=notused'
-  - name: update idfile
+      regexp: 'IDSERVER='
+      line: 'IDSERVER=wordpresssite'
+  - name: update idserver key
     lineinfile: 
       path: '{{destdir}}/config.ini'
-      regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/auroracam'
+      regexp: 'IDKEY='
+      line: 'IDKEY=~/.ssh/auroracam'
+  # youtube settings 
+  - name: update youtube setting
+    lineinfile: 
+      path: '{{destdir}}/config.ini'
+      regexp: 'DOUPLOAD=0'
+      line: 'DOUPLOAD=1'
   # mqtt settings
   - name: update mqtt broker
     lineinfile: 
@@ -110,8 +112,8 @@
   - name: update arch ssh keyname
     lineinfile: 
       path: '{{destdir}}/config.ini'
-      regexp: 'ARCHID='
-      line: 'ARCHID=~/.ssh/markskey.pem'
+      regexp: 'ARCHKEY='
+      line: 'ARCHKEY=~/.ssh/markskey.pem'
   - name: make sure modules are downloaded
     shell: source ~/vAuroracam/bin/activate && pip install -r {{destdir}}/requirements.txt
     # also need sudo apt-get install python3-opencv ffmpeg

@@ -28,13 +28,15 @@ I'm running the software on an Intel ATOM Z8350 miniPC with 4GB memory running A
 On the target computer, run the following  
 
 ``` bash
-sudo apt-get install python3-opencv lighttpd
+sudo apt-get install python3-opencv lighttpd virtualenv
 virtualenv ~/vAuroracam  
 source ~/vAuroracam/bin/activate  
 pip install --upgrade pip
 mkdir -p ~/source/auroracam
+mkdir -p ~/RMS_data/{auroracam,logs}
+chmod 755 ~
 cd ~/source/auroracam
-flist=(startAuroraCam.sh archiveData.sh auroraCam.py config.ini setExpo.py makeImageIndex.py imageindex.html.template index.html redoTimelapse.py archAndFree.py mqtt.cfg requirements.txt) 
+flist=(startAuroraCam.sh archiveData.sh auroraCam.py config.ini setExpo.py sendToYoutube.py makeImageIndex.py imgindex.html.template index.html redoTimelapse.py archAndFree.py mqtt.cfg requirements.txt) 
 for f in ${flist[@]} ; do
 wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam/${f}  
 done 
@@ -42,23 +44,34 @@ chmod +x *.sh
 pip install -r requirements.txt
 sudo cp index.html /var/www/html
 sudo ln -s $HOME/RMS_data /var/www/html
+grep dir-listing /etc/lighttpd/lighttpd.conf
+if [ $? -eq 1 ] ; then 
+sudo chmod 666 /etc/lighttpd/lighttpd.conf 
+echo server.dir-listing = \"enable\" >> /etc/lighttpd/lighttpd.conf 
+sudo chmod 644 /etc/lighttpd/lighttpd.conf
+sudo systemctl restart lighttpd
+fi 
+
 ```
 
 * Now edit *config.ini* and fill in following
-    * IPADDRESS - the IP address of your camera
-    * CAMID - a camera ID which will be used as part of the filenames. 
-    * LAT, LON, ALT - your latitude & longitude in degrees (+ for East) and elevation above sealevel in metres. 
-    * UPLOADLOC - if you want to upload to AWS S3 storage, provide a bucket name eg *s3://mybucket*. You'll have to configure AWS connectivity yourself. 
-
-Other variables can be left as set. 
+  * IPADDRESS - the IP address of your camera
+  * CAMID - a camera ID which will be used as part of the filenames. 
+  * LAT, LON, ALT - your latitude & longitude in degrees (+ for East) and elevation above sealevel in metres. 
+  * other values can be left at their defauults. 
+* uploading to AWS S3 or an FTP server
+  * S3UPLOADLOC - if you want to upload to AWS S3 storage, provide a bucket name eg *s3://mybucket*. 
+  * IDKEY - a CSV file containing the AWS key and secret.
+* uploading to an FTP server
+  * FTPSERVER, FTPUSER, FTPKEY - the server, userid and ssh keyfile to use
+  * FTPUPLOADLOC - the folder on the server to upload to
   
 Now run *startAuroraCam.sh* and it should complete the installation and start capturing data.
 
 After the first few images have been captured, press Ctrl-C to abort, then reboot the Pi. Log in again and wait one minute, then you should find that the software has automatically started up and is saving images.
 
 ## webserver
-A webserver is installed as part of the above and can be used to view the latest data
-and historical images. 
+A webserver is set up during installation and can be used to view the latest data, historical images and logs. 
 
 ## Data Archival
 The process generates a lot of data and does not perform any housekeeping. You can use the script *archiveData.sh* to compress and delete data older than two weeks. 
