@@ -28,6 +28,246 @@ pausetime = 2 # time to wait between capturing frames
 log = logging.getLogger("logger")
 
 
+def getFilesToUpload(thiscfg, uid=None):
+    """
+    Load the current list of folders/files to be archived 
+
+    Parameters
+        thiscfg  [object] config 
+    """
+    if uid is None:
+        uid = platform.uname()[1]
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
+    if thiscfg['uploads']['s3uploadloc'] != '':
+        log.info('getting list of files to upload from S3')
+        s3 = getAWSConn(thiscfg, uid, uid)
+        bucket = thiscfg['uploads']['s3uploadloc'][5:]
+        camid = thiscfg['auroracam']['camid']
+        try:
+            log.info(f'looking for {camid}/FILES_TO_UPLOAD.inf')
+            s3.meta.client.download_file(bucket, f'{camid}/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
+        except Exception:
+            log.info('no files-to-keep list in S3')
+    elif thiscfg['archive']['archserver'] != '':
+        log.info('getting list of files to upload from archive server')
+        archuser = thiscfg['archive']['archuser']
+        archfldr = thiscfg['archive']['archfldr']
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(thiscfg['archive']['archkey']))
+        try:
+            ssh_client.connect(thiscfg['archive']['archserver'], username=archuser, pkey=pkey, look_for_keys=False)
+            ftp_client = ssh_client.open_sftp()
+            ftp_client.get(os.path.join(archfldr,'FILES_TO_UPLOAD.inf'), os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
+        except Exception:
+            log.info('no files-to-keep list on server')
+
+    dirnames = []
+    if os.path.isfile(os.path.join(datadir, 'FILES_TO_UPLOAD.inf')):
+        dirnames = open(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), 'r').read().splitlines()
+    else:
+        log.warning('no FILES_TO_UPLOAD.inf')
+    return dirnames
+
+
+def pushFilesToUpload(datadir, bucket, awskey, awssec):
+    """
+    Upload current list of folders/files to be archived back to AWS
+
+    Parameters
+        datadir [string] datadir to save in
+        bucket  [string] target bucket
+        awskey  [string] aws access key
+        awssec  [string] aws secret key
+    """
+    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
+    s3 = conn.client('s3')
+    s3.upload_file(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), bucket, 'auroracam/FILES_TO_UPLOAD.inf')
+    return 
+
+
+def getFreeSpace():
+    free = shutil.disk_usage('/').free
+    freekb = free/1024
+    return freekb
+
+
+def getNeededSpace():
+    """
+    Calculate space required for next 24 hours of operation. 
+    each jpg is about 100kB, and we capture about 20,000 per day - about one every 4 seconds 
+    plus extra for the timelapses and tarballs, and a bit of overhead 
+    """
+    jpgspace = 20000 * 100 # 100 kB per file
+    mp4space = 100 * 1024  # 100 MB
+    tarballspace = 1500 * 1024 # 1.5 GB 
+    extraspace = 50 * 1024 # 50 MB extra just in case
+    reqspace = jpgspace + extraspace + tarballspace + mp4space
+    return reqspace
+
+
+def getDeletableFiles(thiscfg, filestokeep=[]):
+    """
+    Get a list of files and folders that can be deleted
+
+    Parameters:
+        datadir     [string] - the root folder containing the data files eg ~/RMS_data/auroracam
+        daystokeep  [int]    - number of recent days to keep and consider not deletable
+        filestokeep [string] - a list of files or folders we want to archive before deleting
+    """
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
+    try:
+        daystokeep = int(thiscfg['auroracam']['daystokeep'])
+    except Exception:
+        daystokeep = 3
+    allfiles = os.listdir(datadir)
+    allfiles = [x for x in allfiles if 'FILES' not in x]
+    origallfiles = allfiles
+    for d in range(0,daystokeep):
+        yest = (datetime.datetime.now() - datetime.timedelta(days=d)).strftime('%Y%m%d')
+        allfiles = [x for x in allfiles if yest not in x]
+    for patt in filestokeep:
+        toarch = [x for x in origallfiles if patt.strip() in x]
+        allfiles += toarch
+    allfiles.sort()
+    return allfiles
+
+
+def compressAndDelete(thiscfg, thisfile):
+    """
+    Compress and delete a data folder.
+
+    Parameters:
+        thiscfg     [object] - the configuration
+        thisfile    [string] - the name of the file or folder to process
+    
+    """
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
+    if '.zip' in thisfile or '.tgz' in thisfile:
+        zfname = os.path.join(datadir, thisfile)
+        os.remove(zfname)
+        return zfname
+    else:
+        log.info(f'Archiving {thisfile}')
+        zfname = os.path.join(datadir, thisfile)
+        archname = shutil.make_archive(zfname, 'zip', zfname)
+        if os.path.isfile(archname):
+            shutil.rmtree(zfname)
+    return archname
+
+
+def compressAndUpload(thiscfg, thisdir):
+    """
+    Compress and upload data.
+
+    Parameters:
+        thiscfg     [object] - the configuration
+        thisdir    [string] - the name of the file or folder to process
+    
+    """
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
+    if '.zip' in thisdir or '.tgz' in thisdir:
+        archname = os.path.join(datadir, thisdir)
+    else:
+        log.info(f'Compressing {thisdir}')
+        zfname = os.path.join(datadir, thisdir)
+        archname = shutil.make_archive(zfname,'zip',zfname)
+        log.info(f'{zfname}')
+
+    archserver = thiscfg['archive']['archserver']
+    if archserver == '':
+        log.info('not uploading zip file')
+        return archname
+    
+    log.info(f'Uploading {archname}')
+    archuser = thiscfg['archive']['archuser']
+    archfldr = thiscfg['archive']['archfldr']
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(thiscfg['archive']['archkey']))
+    try:
+        ssh_client.connect(archserver, username=archuser, pkey=pkey, look_for_keys=False)
+        ftp_client = ssh_client.open_sftp()
+        uploadfile = os.path.join(archfldr, thisdir +'.zip')
+        try:
+            ftp_client.put(archname, uploadfile)
+            try:
+                filestat = ftp_client.stat(uploadfile)
+                log.info(f'uploaded {filestat.st_size} bytes')
+                os.remove(zfname + '.zip')
+            except Exception as e:
+                log.error(f'unable to upload {thisdir}')
+                log.info(e, exc_info=True)
+                return None
+        except Exception as e:
+            log.error(f'unable to upload {thisdir}')
+            log.info(e, exc_info=True)
+            return None
+        ftp_client.close()
+        ssh_client.close()
+    except Exception as e:
+        log.warning(f'connection to {archserver} failed')
+        log.info(e, exc_info=True)
+        return None
+    
+    return archname
+
+ 
+def freeSpaceAndArchive(thiscfg):
+    """
+    Free up space by compressing and deleting older data. 
+
+    First we obtain the free space and estimate the required space. 
+    
+    Next we check for data that the user wants specifically to keep. 
+    This info is stored in FILES_TO_UPLOAD.inf which may be on S3, the archive server or locally. 
+    The user can also specify they want to keep N days uncompressd. 
+
+    We then get a list of all folders, minus the ones we want to keep, and start compressing them 
+    from the oldest forward, deleting the folder once compressed. As soon as this frees up enough 
+    space, we stop. 
+
+    Finally, we revisit the data we want to preserve, and compress it. If an archive server is
+    configured we push the compressed file to the archive.
+
+    If compressing and deleting does not free enough space, we can't proceed so we abort. 
+
+    """    
+    log.info('check free space')
+    freekb = getFreeSpace()
+    reqkb = getNeededSpace()
+    log.info(f'Available {freekb} need {reqkb}')
+
+    log.info('checking for data to save')
+    dirstoupload = getFilesToUpload(thiscfg)
+
+    log.info('checking for deletable data')
+    deletable = getDeletableFiles(thiscfg, dirstoupload)
+    for dir in deletable:
+        if freekb > reqkb:
+            log.info('sufficient space available')
+            break
+        compressAndDelete(thiscfg, dir)
+        freekb = getFreeSpace()
+        log.info(f'free space now {freekb}')
+
+    log.info('space freed up, now archiving if needed')
+    for dir in dirstoupload:
+        compressAndUpload(thiscfg, dir)
+
+    log.info('rechecking for deletable data')
+    deletable = getDeletableFiles(thiscfg, dirstoupload)
+    for dir in deletable:
+        if freekb > reqkb:
+            log.info('sufficient space available')
+            break
+        compressAndDelete(thiscfg, dir)
+        freekb = getFreeSpace()
+        log.info(f'free space now {freekb}')
+    log.info('finished')
+    return True
+
+
 def annotateImageArbitrary(img_path, message, color='#000'):
     """
     Annotate an image with an arbitrary message in the selected colour at the bottom left  
@@ -135,14 +375,18 @@ def getAWSConn(thiscfg, remotekeyname, uid):
     servername = thiscfg['uploads']['idserver']
     if servername == '':
         # look for a local key file
+        log.info('looking for local AWS key')
         awskeyfile = thiscfg['uploads']['idkey']
-        lis = open(os.path.expanduser(awskeyfile), 'r').readlines()
-        keyline = lis[1].split(',')
-        key = keyline[-2]
-        sec = keyline[-1]
-        pass
+        try:
+            lis = open(os.path.expanduser(awskeyfile), 'r').readlines()
+            keyline = lis[1].split(',')
+            key = keyline[-2]
+            sec = keyline[-1]
+        except Exception:
+            key = None
     else:
         # retrieve a keyfile from the server
+        log.info('retrieving AWS key')
         sshkeyfile = thiscfg['uploads']['idkey']
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -370,6 +614,7 @@ if __name__ == '__main__':
     thiscfg.read(os.path.join(local_path, 'config.ini'))
     setupLogging(thiscfg)
 
+    freeSpaceAndArchive(thiscfg)
     s3 = None
     bucket = None
     ftpserver = None

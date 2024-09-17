@@ -34,15 +34,17 @@ wget https://raw.githubusercontent.com/markmac99/pi-meteortools/master/auroracam
 bash ./install.sh
 ```
 
-* Now edit *config.ini* and fill in following
+### Now edit `config.ini` and fill in following
   * IPADDRESS - the IP address of your camera
   * CAMID - a camera ID which will be used as part of the filenames. 
   * LAT, LON, ALT - your latitude & longitude in degrees (+ for East) and elevation above sealevel in metres. 
   * other values can be left at their defauults. 
-* uploading to AWS S3 or an FTP server
+  
+### uploading to AWS S3 or an FTP server
   * S3UPLOADLOC - if you want to upload to AWS S3 storage, provide a bucket name eg *s3://mybucket*. 
   * IDKEY - a CSV file containing the AWS key and secret.
-* uploading to an FTP server
+ 
+### uploading to an FTP server
   * FTPSERVER, FTPUSER, FTPKEY - the server, userid and ssh keyfile to use
   * FTPUPLOADLOC - the folder on the server to upload to
   
@@ -54,11 +56,7 @@ After the first few images have been captured, press Ctrl-C to abort, then reboo
 A webserver is set up during installation and can be used to view the latest data, historical images and logs. 
 
 ## Data Archival
-The process generates a lot of data and does not perform any housekeeping. You can use the script *archiveData.sh* to compress and delete data older than two weeks. 
+The process generates a lot of data. Automatic housekeeping is performed and will compress, then delete
+older data. You can specify how many days to keep via the ini file.
 
-If you have access to an sftp server you can also configure the system to upload tarballs of each night's data for safe keeping. You will need to add update the ARCHSERVER and ARCHFLDR values in the config file. You will also need to add an entry to `~/.ssh/config` with the security details, eg:  
-``` bash
-host myserver
-    User someuser
-    IdentityFile ~/.ssh/somekey
-```
+If you have access to an sftp server you can also configure the system to upload zipo files of data for safe keeping. You will need to  update the ARCHIVE section of the config file with the server, user, user's ssh key location, and the target folder. 
