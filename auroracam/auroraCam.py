@@ -44,7 +44,6 @@ def getFilesToUpload(thiscfg, uid=None):
         bucket = thiscfg['uploads']['s3uploadloc'][5:]
         camid = thiscfg['auroracam']['camid']
         try:
-            log.info(f'looking for {camid}/FILES_TO_UPLOAD.inf')
             s3.meta.client.download_file(bucket, f'{camid}/FILES_TO_UPLOAD.inf', os.path.join(datadir,'FILES_TO_UPLOAD.inf'))
         except Exception:
             log.info('no files-to-keep list in S3')
@@ -70,19 +69,39 @@ def getFilesToUpload(thiscfg, uid=None):
     return dirnames
 
 
-def pushFilesToUpload(datadir, bucket, awskey, awssec):
+def pushFilesToUpload(thiscfg):
     """
     Upload current list of folders/files to be archived back to AWS
 
     Parameters
-        datadir [string] datadir to save in
-        bucket  [string] target bucket
-        awskey  [string] aws access key
-        awssec  [string] aws secret key
+        thiscfg [object] the config object
     """
-    conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec) 
-    s3 = conn.client('s3')
-    s3.upload_file(os.path.join(datadir, 'FILES_TO_UPLOAD.inf'), bucket, 'auroracam/FILES_TO_UPLOAD.inf')
+    uid = platform.uname()[1]
+    datadir = os.path.expanduser(thiscfg['auroracam']['datadir'])
+    locfnam = os.path.join(datadir, 'FILES_TO_UPLOAD.inf')
+    open(locfnam, 'w').write('') # empty the file, we've processed it
+    if thiscfg['uploads']['s3uploadloc'] != '':
+        log.info('pushing FILES_TO_UPLOAD back to S3')
+        s3 = getAWSConn(thiscfg, uid, uid)
+        bucket = thiscfg['uploads']['s3uploadloc'][5:]
+        camid = thiscfg['auroracam']['camid']
+        try:
+            s3.meta.client.upload_file(locfnam, bucket, f'{camid}/FILES_TO_UPLOAD.inf')
+        except Exception:
+            log.warning('unable to update files-to-upload')
+    elif thiscfg['archive']['archserver'] != '':
+        log.info('pushing FILES_TO_UPLOAD back to ftpserver')
+        archuser = thiscfg['archive']['archuser']
+        archfldr = thiscfg['archive']['archfldr']
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser(thiscfg['archive']['archkey']))
+        try:
+            ssh_client.connect(thiscfg['archive']['archserver'], username=archuser, pkey=pkey, look_for_keys=False)
+            ftp_client = ssh_client.open_sftp()
+            ftp_client.put(locfnam, os.path.join(archfldr,'FILES_TO_UPLOAD.inf'))
+        except Exception:
+            log.warning('unable to update files-to-upload')
     return 
 
 
@@ -254,6 +273,7 @@ def freeSpaceAndArchive(thiscfg):
     log.info('space freed up, now archiving if needed')
     for dir in dirstoupload:
         compressAndUpload(thiscfg, dir)
+    pushFilesToUpload(thiscfg)
 
     log.info('rechecking for deletable data')
     deletable = getDeletableFiles(thiscfg, dirstoupload)
@@ -465,26 +485,34 @@ def grabImage(ipaddress, fnam, hostname, now, thiscfg):
     # log.info(capstr)
     try:
         cap = cv2.VideoCapture(capstr)
-        ret, frame = cap.read()
-        cap.release()
     except Exception as e:
-        log.info('unable to grab frame')
-        log.info(e, exc_info=True)
+        log.warning('unable to connect to camera')
+        log.warning(e, exc_info=True)
         return 
-    x = 0
-    done = False
-    while x < 5:
+    ret = False
+    retries = 0
+    while not ret and retries < 10:
         try:
-            cv2.imwrite(fnam, frame)
-            done = True
-            break
+            ret, frame = cap.read()
+        except Exception as e:
+            log.warning('unable to read frame')
+            log.warning(e, exc_info=True)
+        retries += 1
+    cap.release()
+    if not ret:
+        log.warning('unable to grab frame')
+        return 
+    ret = False
+    retries = 0
+    while not ret and retries < 10:
+        try:
+            ret = cv2.imwrite(fnam, frame)
         except Exception as e:
             log.info(f'unable to save image {fnam}')
-            x = x + 1
             log.info(e, exc_info=True)
-    cap.release()
+        retries += 1
     cv2.destroyAllWindows()
-    if done:
+    if ret:
         title = f'{hostname} {now.strftime("%Y-%m-%d %H:%M:%S")}'
         radj, gadj, badj = (thiscfg['auroracam']['rgbadj']).split(',')
         radj = float(radj)
@@ -724,24 +752,29 @@ if __name__ == '__main__':
 
         uploadcounter += pausetime
         testmode = int(os.getenv('TESTMODE', default=0))
+        log.info(f'fnam is {fnam}, uploadcounter {uploadcounter}')
         if uploadcounter > 9 and testmode == 0 and os.path.isfile(fnam):
+            log.info('uploading image')
             if s3 is not None:
                 try:
                     s3.meta.client.upload_file(fnam, bucket, f'{hostname}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
                     log.info(f'uploaded live image to {bucket}')
+                    uploadcounter = 0
                 except Exception as e:
                     log.warning(f'upload to {bucket} failed')
                     log.info(e, exc_info=True)
+            else:
+                log.info('s3 not configured')
             if ftpserver is not None:
                 try:
                     uploadOneFile(fnam, ftploc, ftpserver, userid, sshkey)
                     log.info(f'uploaded live image to {ftpserver}')
+                    uploadcounter = 0
                 except Exception as e:
                     log.warning(f'upload to {ftpserver} failed')
                     log.info(e, exc_info=True)
-            uploadcounter = 0
-        else:
-            uploadcounter -= pausetime
+            else:
+                log.info('ftpserver not configured')
         if testmode == 1:
             log.info(f'would have uploaded {fnam}')
         log.info(f'sleeping for {pausetime} seconds')
