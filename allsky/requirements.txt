@@ -2,7 +2,7 @@
 
 # used by the logging-to-MQ functionality
 python-crontab
-paho-mqtt
+paho-mqtt==1.6.0
 # used by the send-to-youtube functionality
 google-api-python-client
 google_auth_oauthlib
