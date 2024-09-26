@@ -1,0 +1,7 @@
+# python requirements file
+
+# used by the logging-to-MQ functionality
+python-crontab
+paho-mqtt==1.6.0
+ephem
+paramiko

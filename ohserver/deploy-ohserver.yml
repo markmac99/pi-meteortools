@@ -1,0 +1,38 @@
+---
+- hosts: "{{host | default ('ohserver')}}"
+  vars_files: 
+    - /mnt/e/dev/apikeys/mqvariables.enc
+  vars:
+    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/ohserver
+    destdir: ~/src/tackley-tools
+  tasks:
+  - name: Copy supporting files
+    copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
+    with_items:
+    - {src: '{{srcdir}}/install.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+
+  - name: update MQTT broker
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'BROKER='
+      line: 'BROKER=wxsatpi'
+  - name: update MQTT username
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'USERNAME='
+      line: 'USERNAME=rmscams'
+  - name: update MQTT password
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'PASSWORD='
+      line: 'PASSWORD={{ rmscampassword }}'
+  - name: install cronjobs and python modules
+    shell: '{{ destdir }}/install.sh'
+    args:
+      executable: /bin/bash
+
+  
