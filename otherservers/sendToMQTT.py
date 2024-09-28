@@ -62,9 +62,9 @@ def sendOtherData(cputemp, diskspace, localcfg=None):
         diskspace = diskspace[:-1]
     else:
         diskspace = 0
-    topic = f'meteorcams/{hname}/cputemp'
+    topic = f'servers/{hname}/cputemp'
     ret = client.publish(topic, payload=cputemp, qos=0, retain=False)
-    topic = f'meteorcams/{hname}/diskspace'
+    topic = f'servers/{hname}/diskspace'
     ret = client.publish(topic, payload=diskspace, qos=0, retain=False)
     return ret
 

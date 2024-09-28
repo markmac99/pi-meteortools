@@ -1,10 +1,10 @@
 ---
-- hosts: "{{host | default ('ohserver')}}"
+- hosts: "{{host | default ('wxsatpi')}}"
   vars_files: 
     - /mnt/e/dev/apikeys/mqvariables.enc
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/otherservers
-    destdir: ~/src/tackley-tools
+    destdir: ~/source/tackley-tools
   tasks:
   - name: Copy supporting files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
@@ -30,9 +30,20 @@
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
       line: 'PASSWORD={{ rmscampassword }}'
+  - name: update venv
+    lineinfile:
+      path: '{{destdir}}/logToMQTT.sh'
+      regexp: 'conda activate openhabstuff'
+      line: 'source ~/venvs/openhabstuff/bin/activate'
+  - name: update venv in install.sh
+    lineinfile:
+      path: '{{destdir}}/install.sh'
+      regexp: 'conda activate openhabstuff'
+      line: 'source ~/venvs/openhabstuff/bin/activate'
   - name: install cronjobs and python modules
     shell: '{{ destdir }}/install.sh'
     args:
       executable: /bin/bash
+
 
   
