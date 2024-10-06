@@ -5,8 +5,8 @@ ephem
 numpy
 Pillow
 python-dvr
-paho-mqtt
+paramiko
+paho-mqtt==1.6.0
 google-auth-oauthlib
 google-api-python-client 
 google-auth-httplib2 
-paramiko

@@ -4,6 +4,7 @@
 
 
 <div class="vid-list" id="vid-list"></div>
+Click an image to view a larger version, and use the left/right arrow keys to page through the images.
 <div class="cam-list" id="cam-list"></div>
 <script src="./latestindex.js"></script>
 <script>$('.vid-list').magnificPopup({delegate:'a',type:'iframe',image:{verticalFit:false},gallery:{enabled:true}});</script>

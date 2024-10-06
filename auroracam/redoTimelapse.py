@@ -25,8 +25,8 @@ hostname = platform.uname().node
 
 setupLogging(thiscfg)
 if ulloc[:5] == 's3://':
-    idserver = thiscfg['auroracam']['idserver']
-    sshkey = thiscfg['auroracam']['idfile']
+    idserver = thiscfg['uploads']['idserver']
+    sshkey = thiscfg['uploads']['idkey']
     awskey, awssec = getAWSKey(idserver, hostname, hostname, sshkey)
     if not awskey:
         log.error('unable to find AWS key')

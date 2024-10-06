@@ -3,6 +3,8 @@
 #
 source ~/source/auroracam/config.ini > /dev/null 2>&1
 filetocheck=$DATADIR/../live.jpg
+here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source ~/vAuroracam/bin/activate
 
 while true
 do
@@ -16,9 +18,9 @@ do
                 ping -c 1  -w 1 192.168.1.10 > /dev/null 2>&1
                 if [ $? -eq 0 ] ; then 
                     logger -s -t checkAuroracam "trying to force address change"
-                    source ~/venvs/vRMS/bin/activate
-                    cd ~/source/RMS 
-                    timeout 5 python -m Utils.SetCameraAddress 192.168.1.10 $IPADDRESS
+                    pushd $here
+                    python -c "from setExpo import setCameraNetWorkDets;setCameraNetWorkDets('192.168.1.10','$IPADDRESS')"
+                     logger -s -t $(ping -c 1 $IPADDRESS| tail -2 | head -1)
                     logger -s -t checkAuroracam "address changed"
                 else
                     logger -s -t checkAuroracam "camera seems dead"

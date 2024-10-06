@@ -25,13 +25,13 @@ hostname = platform.uname().node
 thiscfg = configparser.ConfigParser()
 local_path =os.path.dirname(os.path.abspath(__file__))
 thiscfg.read(os.path.join(local_path, 'config.ini'))
-idserver = thiscfg['auroracam']['idserver']
-sshkey = thiscfg['auroracam']['idfile']
+idserver = thiscfg['uploads']['idserver']
+sshkey = thiscfg['uploads']['idkey']
 setupLogging(thiscfg,'makeMP4_')
 awskey, awssec = getAWSKey(idserver,hostname,hostname,sshkey)
 conn = boto3.Session(aws_access_key_id=awskey, aws_secret_access_key=awssec)
 s3 = conn.resource('s3')
-ulloc = thiscfg['auroracam']['uploadloc']
+ulloc = thiscfg['uploads']['s3uploadloc']
 bucket = ulloc[5:]
 camid = thiscfg['auroracam']['camid']
 print('${fldr}', camid, bucket, ${dayornight})
