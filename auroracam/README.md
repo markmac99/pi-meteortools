@@ -3,8 +3,7 @@
 The scripts in this folder implement a very simple aurora camera using a barebones IP camera. Python 3.7 or later required. 
 
 ## How it works
-A python script captures an image from the camera every few seconds. During the day it writes the image to $DATADIR/../live.jpg. At night it writes it to a datestamped directory. At the end of the night, the saved images are made into an MP4 and thhe host is rebooted to ensure a clean start for the next day. 
-The software also captures during the day, creating a separate set of data and timelapse. 
+A python script captures an image from the camera every few seconds. At the end of the night, the saved images are made into an MP4 and hhe host is rebooted to ensure a clean start for the next day. The software also captures during the day, creating a separate set of data and timelapse. 
 
 ### Scheduling the job
 Each time the script is run it creates or updates a scheduled job in the Pi's crontab so there's no need to do this manually. 
@@ -16,7 +15,7 @@ The images and MP4 can also be uploaded to an AWS S3 bucket by specifying an upl
 This holds the IP address, camera location and name, and the location of data and logs as well as the name of any S3 bucket if thats being used. You can also tweak the gain to set the camera to at night though the default should be good.  See the section on Installation for more information. 
 
 ### Camera Configuration
-The camera is configured by the software (using the DVRIP library) and no manual tweaks should be needed. The exposure and gain are automatically changed at dawn and dusk. 
+The camera is configured by the software (using the python-dvr library) and no manual tweaks should be needed. The exposure and gain are automatically changed at dawn and dusk. 
 
 ## Hardware
 
@@ -59,4 +58,4 @@ A webserver is set up during installation and can be used to view the latest dat
 The process generates a lot of data. Automatic housekeeping is performed and will compress, then delete
 older data. You can specify how many days to keep via the ini file.
 
-If you have access to an sftp server you can also configure the system to upload zipo files of data for safe keeping. You will need to  update the ARCHIVE section of the config file with the server, user, user's ssh key location, and the target folder. 
+If you have access to an sftp server you can also configure the system to upload zip files of data for safe keeping. You will need to  update the ARCHIVE section of the config file with the server, user, user's ssh key location, and the target folder. 

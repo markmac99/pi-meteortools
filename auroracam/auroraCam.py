@@ -556,7 +556,8 @@ def makeTimelapse(dirname, s3, camname, bucket, daytimelapse=False, maketimelaps
             log.info('unable to upload mp4')
             log.info(e, exc_info=True)
     else:
-        print('created but not uploading mp4 to s3')
+        #log.info('created but not uploading mp4 to s3')
+        pass
     # upload night video to youtube
     if not daytimelapse and youtube is True:
         try:
@@ -614,11 +615,9 @@ def uploadOneFile(fnam, ulloc, ftpserver, userid, sshkey):
 
 def addCrontabEntry(local_path):
     cron = CronTab(user=True)
-    #found = False
     iter=cron.find_command('startAuroraCam.sh')
     for i in iter:
         if i.is_enabled():
-            #found = True
             cron.remove(i)
     job = cron.new(f'sleep 60 && {local_path}/startAuroraCam.sh > /tmp/startup.log 2>&1')
     job.every_reboot()
@@ -626,9 +625,9 @@ def addCrontabEntry(local_path):
     iter=cron.find_command('archiveData.sh')
     for i in iter:
         if i.is_enabled():
-            #found = True
             cron.remove(i)
-    job = cron.new(f'0 12 * * * {local_path}/archiveData.sh > /dev/null 2>&1')
+    job = cron.new(f'{local_path}/archiveData.sh > /dev/null 2>&1')
+    job.setall('0 12 * * *')
     cron.write()
 
 
@@ -656,7 +655,7 @@ if __name__ == '__main__':
         bucket = s3loc[5:]
     else:
         s3loc = None
-        log.info('not uploading to S3')
+        #log.info('not uploading to S3')
 
     ftpserver = thiscfg['uploads']['ftpserver']
     if ftpserver != '':
@@ -666,7 +665,7 @@ if __name__ == '__main__':
         ftploc = thiscfg['uploads']['ftpuploadloc']
     else:
         ftpserver = None
-        log.info('not uploading to ftpserver')
+        #log.info('not uploading to ftpserver')
 
     yt = False
     try: 
@@ -754,7 +753,7 @@ if __name__ == '__main__':
         testmode = int(os.getenv('TESTMODE', default=0))
         log.info(f'fnam is {fnam}, uploadcounter {uploadcounter}')
         if uploadcounter > 9 and testmode == 0 and os.path.isfile(fnam):
-            log.info('uploading image')
+            #log.info('uploading image')
             if s3 is not None:
                 try:
                     s3.meta.client.upload_file(fnam, bucket, f'{hostname}/live.jpg', ExtraArgs = {'ContentType': 'image/jpeg'})
@@ -764,7 +763,8 @@ if __name__ == '__main__':
                     log.warning(f'upload to {bucket} failed')
                     log.info(e, exc_info=True)
             else:
-                log.info('s3 not configured')
+                #log.info('s3 not configured')
+                pass
             if ftpserver is not None:
                 try:
                     uploadOneFile(fnam, ftploc, ftpserver, userid, sshkey)
@@ -774,7 +774,8 @@ if __name__ == '__main__':
                     log.warning(f'upload to {ftpserver} failed')
                     log.info(e, exc_info=True)
             else:
-                log.info('ftpserver not configured')
+                #log.info('ftpserver not configured')
+                pass
         if testmode == 1:
             log.info(f'would have uploaded {fnam}')
         log.info(f'sleeping for {pausetime} seconds')
