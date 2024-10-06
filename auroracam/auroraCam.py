@@ -288,6 +288,7 @@ def freeSpaceAndArchive(thiscfg):
     return True
 
 
+
 def annotateImageArbitrary(img_path, message, color='#000'):
     """
     Annotate an image with an arbitrary message in the selected colour at the bottom left  
