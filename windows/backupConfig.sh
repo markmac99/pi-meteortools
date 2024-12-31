@@ -15,20 +15,20 @@ function backuphost() {
 
     mkdir $hn > /dev/null 2>&1
 
-    rsync ${hn}:source/RMS/platepar* $hn/
-    rsync ${hn}:source/RMS/mask* $hn/
-    rsync ${hn}:source/RMS/.config $hn/
-    rsync ${hn}:.rmsautorunflag $hn/ > /dev/null 2>&1
+    rsync -v ${hn}:source/RMS/platepar* $hn/
+    rsync -v ${hn}:source/RMS/mask* $hn/
+    rsync -v ${hn}:source/RMS/.config $hn/
+    rsync -v ${hn}:.rmsautorunflag $hn/ > /dev/null 2>&1
 
     #ssh keys and config
     rsync -avz ${hn}:.ssh/* $hn/.ssh/
 
     # ukmon settings
-    rsync ${hn}:source/ukmon-pitools/ukmon.ini $hn
-    rsync ${hn}:source/ukmon-pitools/.firstrun $hn > /dev/null 2>&1
-    rsync ${hn}:source/ukmon-pitools/domp4s $hn > /dev/null 2>&1
-    rsync ${hn}:source/ukmon-pitools/dotimelapse $hn > /dev/null 2>&1
-    rsync ${hn}:source/ukmon-pitools/extrascript $hn > /dev/null 2>&1
+    rsync -avz ${hn}:source/ukmon-pitools/ukmon.ini $hn
+    rsync -avz ${hn}:source/ukmon-pitools/.firstrun $hn > /dev/null 2>&1
+    rsync -avz ${hn}:source/ukmon-pitools/domp4s $hn > /dev/null 2>&1
+    rsync -avz ${hn}:source/ukmon-pitools/dotimelapse $hn > /dev/null 2>&1
+    rsync -avz ${hn}:source/ukmon-pitools/extrascript $hn > /dev/null 2>&1
 
     # mjmm settings
     scp $hn:mjmm/*.pickle $hn/ > /dev/null 2>&1
