@@ -22,8 +22,6 @@ from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
 import tempfile
 from crontab import CronTab
-import tempfile
-from crontab import CronTab
 
 import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
@@ -40,7 +38,6 @@ import boto3
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
 from sendToMQTT import sendToMqtt # noqa:E402
-from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
 log = logging.getLogger("logger")
@@ -240,7 +237,6 @@ def copyMLRejects(cap_dir, arch_dir, config):
 
 
 def monthlyStack(cfg, arch_dir, localcfg, s3):
-def monthlyStack(cfg, arch_dir, localcfg, s3):
     currdir = os.path.basename(os.path.normpath(arch_dir))
     lastmthstr = currdir[:7] + (datetime.datetime.strptime(currdir[7:13], '%Y%m')+ relativedelta(months=-1)).strftime('%Y%m')
     tmpdir = os.path.join(cfg.data_dir, 'tmpstack')
@@ -295,7 +291,6 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
     return     
 
 
-def doTrackStack(arch_dir, cfg, localcfg, s3):
 def doTrackStack(arch_dir, cfg, localcfg, s3):
     trackStack([arch_dir], cfg, draw_constellations=True, hide_plot=True, background_compensation=False)
     tflist = glob.glob(os.path.join(arch_dir, '*_track_stack.jpg'))
