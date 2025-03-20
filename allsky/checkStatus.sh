@@ -8,7 +8,7 @@ srcdir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 cd $srcdir
 source ~/vAllsky/bin/activate
-LATETIME=30
+LATETIME=60
 isrunning=$(systemctl show -p SubState --value allsky)
 
 if [ "$isrunning" == "running" ] ; then
