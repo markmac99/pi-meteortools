@@ -1,0 +1,12 @@
+[Unit]
+Description=Check allsky is running properly
+After=network.target
+
+[Service]
+ExecStart=SRCDIR/checkStatus.sh
+ExecStop=/usr/bin/touch LOGDIR/stopcheckallsky
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
