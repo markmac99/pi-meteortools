@@ -5,7 +5,7 @@
   vars:
     srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/allsky
     destdir: "{{ ansible_env.HOME }}/src/tackley-tools"
-    allskydir: "{{ ansible_env.HOME }}/src/allsky"
+    allskydir: "{{ ansible_env.HOME }}/allsky"
     logdir: "{{ ansible_env.HOME }}/logs"
   tasks:
   - name: Copy supporting files
