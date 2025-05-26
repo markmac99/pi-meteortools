@@ -132,7 +132,7 @@ outer_div.appendChild(a);
 
 a = document.createElement('a');
 img = document.createElement('img');
-img.src='https://d3jdcxriig76vh.cloudfront.net/auroracam/live.jpg';
+img.src='https://d3jdcxriig76vh.cloudfront.net/UK9999/live.jpg';
 img.style.width="40%";
 a.appendChild(img);
 a.href='https://d3jdcxriig76vh.cloudfront.net/AURCAMVIDEOTEMPLATE';

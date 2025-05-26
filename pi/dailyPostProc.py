@@ -22,8 +22,6 @@ from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
 import tempfile
 from crontab import CronTab
-import tempfile
-from crontab import CronTab
 
 import RMS.ConfigReader as cr
 from RMS.Logger import initLogging
@@ -40,7 +38,6 @@ import boto3
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
 from sendToMQTT import sendToMqtt # noqa:E402
-from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
 log = logging.getLogger("logger")
