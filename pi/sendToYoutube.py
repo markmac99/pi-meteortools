@@ -14,6 +14,8 @@
 import os
 import sys
 import pickle
+import glob
+import configparser
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
@@ -21,6 +23,11 @@ import googleapiclient.errors
 from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
+
+try:
+    import RMS.ConfigReader as cr
+except Exception:
+    pass
 
 scopes = ["https://www.googleapis.com/auth/youtube.upload"]
 
@@ -99,6 +106,23 @@ def main(title, fname):
 
 if __name__ == "__main__":
     # Parameters: title to use and the file to upload
-    title=sys.argv[1]
-    fname=sys.argv[2]
-    main(title, fname)
+    dt=sys.argv[1]
+
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
+    cfg = cr.parse(os.path.expanduser(rmscfg))
+    base_dir = os.path.join(cfg.data_dir, "ArchivedFiles")
+    arch_dir = glob.glob1(base_dir, f'*{dt}*')
+    if len(arch_dir) > 0:
+        arch_dir = [x for x in arch_dir if '.bz2' not in x]
+        if len(arch_dir) > 1:
+            print('multiple possible folders, please be more precise')
+            print(arch_dir)
+        else:
+            fname = glob.glob(os.path.join(base_dir, arch_dir[0], '*timelapse.mp4'))[0]
+            hname = os.uname()[1]
+            title = f'{hname} timelapse for {dt[:4]}-{dt[4:6]}-{dt[6:8]}'
+            print(f'sending {title}, {fname}')
+            main(title, fname)
