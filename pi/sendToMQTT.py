@@ -17,10 +17,8 @@ import datetime
 import os
 import sys
 import glob
-import platform 
 import logging
 import requests
-import configparser
 import configparser
 
 try:
@@ -28,7 +26,7 @@ try:
 except Exception:
     pass
 try:
-    import RMS.ConfigReader as cr
+    import RMS.ConfigReader as cr # noqa: F811
 except Exception:
     pass
 
@@ -55,8 +53,8 @@ def getLoggedInfo(cfg):
     dd=[]
     i=1
     while len(dd) == 0 and i < 10:
-        logf = logfs[-i]
-        lis = open(logf,'r').readlines()
+        last_log = logfs[-i]
+        lis = open(last_log,'r').readlines()
         dd = [li for li in lis if 'Data directory' in li]
         if len(dd) > 0:
             break
@@ -67,8 +65,8 @@ def getLoggedInfo(cfg):
     if len(totli) > 0:
         detectedcount = int(totli[0].split(' ')[4].strip())
 
-    logf = logfs[-1]
-    lis = open(logf,'r').readlines()
+    current_log = logfs[-1]
+    lis = open(current_log,'r').readlines()
     sc = [li for li in lis if 'Detected stars' in li]
     starcount = 0
     if len(sc) > 0:
@@ -77,23 +75,21 @@ def getLoggedInfo(cfg):
         except Exception:
             pass
 
+    meteorcount = 0
     capdir = os.path.join(cfg.data_dir, 'CapturedFiles')
-    caps = glob.glob(os.path.join(capdir, f'{cfg.stationID}*'))
+    datedir = os.path.basename(last_log)[4:20]
+    caps = glob.glob(os.path.join(capdir, f'{datedir}*'))
     caps.sort(key=lambda x: os.path.getmtime(x))
-    try:
-        capdir = caps[-1]
-        ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
-        ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
-        meteorcount = 0
-        if len(ftpf) > 0:
-            lis = open(ftpf[0],'r').readlines()
-            mc = [li for li in lis if 'Meteor Count' in li]
-            meteorcount = int(mc[0].split('=')[1].strip())
-    except Exception:
-        # probably no captured data yet
-        meteorcount = 0    
+    capdir = caps[-1]
+    ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
+    ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
+    meteorcount = 0
+    if len(ftpf) > 0:
+        lis = open(ftpf[0],'r').readlines()
+        mc = [li for li in lis if 'Meteor Count' in li]
+        meteorcount = int(mc[0].split('=')[1].strip())
     # if meteorcount is nonzero but detected count is zero then the logfile was malformed
-    if detectedcount == 0:
+    if detectedcount == 0 and meteorcount > 0:
         detectedcount = meteorcount
 
     datestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -154,8 +150,8 @@ def sendToMqtt(rmscfg=None, localcfg=None):
     topicbase = 'meteorcams' 
     camname = cfg.stationID.lower()
 
-    metcount, detectioncount, _, datestamp = getLoggedInfo(cfg)
-    msgs =[metcount, detectioncount, datestamp]
+    detectioncount, metcount, _, datestamp = getLoggedInfo(cfg)
+    msgs =[detectioncount, metcount, datestamp]
 
     client = mqtt.Client(camname)
     client.on_connect = on_connect
