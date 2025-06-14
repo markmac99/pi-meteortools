@@ -24,7 +24,6 @@ import tempfile
 from crontab import CronTab
 
 import RMS.ConfigReader as cr
-from RMS.Logger import initLogging
 from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
 from RMS.DeleteOldObservations import getNightDirs, deleteNightFolders
@@ -40,7 +39,33 @@ import sendToYoutube as stu # noqa:E402
 from sendToMQTT import sendToMqtt # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
-log = logging.getLogger("logger")
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+
+
+def setupLogging(logpath, prefix='tackley_'):
+    print('about to initialise logger')
+    logdir = os.path.expanduser(logpath)
+    os.makedirs(logdir, exist_ok=True)
+
+    logfilename = os.path.join(logdir, prefix + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f') + '.log')
+    handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(fmt='%(asctime)s-%(levelname)s-%(module)s-line:%(lineno)d - %(message)s', 
+        datefmt='%Y/%m/%d %H:%M:%S')
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.WARNING)
+    formatter = logging.Formatter(fmt='%(asctime)s-%(levelname)s-%(module)s-line:%(lineno)d - %(message)s', 
+        datefmt='%Y/%m/%d %H:%M:%S')
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+
+    log.setLevel(logging.INFO)
+    log.info('logging initialised')
+    return 
 
 
 def purgeOldLogs(config, logpref, days=30):
@@ -165,7 +190,10 @@ def pushLatestDailyStack(config, arch_dir, localcfg, s3):
         metcount = 0
     else:
         metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
-    camid = config.stationID
+    camid = os.uname()[1]
+    if 'test' not in camid:
+        camid = config.stationID
+
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
@@ -188,6 +216,8 @@ def copyMLRejects(cap_dir, arch_dir, config):
     os.makedirs(rej_dir, exist_ok=True)
     ftplist = [f for f in glob.glob(os.path.join(arch_dir,'FTPdetectinfo*.txt')) if 'backup' not in f and 'uncalibrated' not in f]
     detlist = [f for f in ftplist if 'unfiltered' not in f]
+    if len(detlist)==0: 
+        return 
     detlist = detlist[0]
     uflist = [f for f in ftplist if 'unfiltered' in f]
     uflist = uflist[0]
@@ -269,7 +299,9 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
     stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask) 
     jpgfile = glob.glob(os.path.join(tmpdir, '*.jpg'))
     if len(jpgfile) > 0:
-        stn = cfg.stationID
+        stn = os.uname()[1]
+        if 'test' not in stn:
+            stn = cfg.stationID
         flist = glob.glob(os.path.join(tmpdir, '*.fits'))
         annotateImage(jpgfile[0], stn, metcount=len(flist), rundate=currdir[7:13])
         targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
@@ -300,7 +332,10 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         lis = open(os.path.join(arch_dir, 'FTPdetectinfo_'+currdir+'.txt'), 'r').readlines()
         metcount = lis[0].split('=')[1].strip()
         currdir = os.path.basename(os.path.normpath(arch_dir))
-        annotateImage(trackfile, cfg.stationID, int(metcount), currdir[7:15])
+        camid = os.uname()[1]
+        if 'test' not in camid:
+            camid = cfg.stationID
+        annotateImage(trackfile, camid, int(metcount), currdir[7:15])
     else:
         log.info('no trackstack available today')
         stackfile = os.path.join(arch_dir, '*_stack.jpg')
@@ -327,9 +362,12 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
-        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, cfg.stationID, 'trackstacks'))
+        camid = os.uname()[1]
+        if 'test' not in camid:
+            camid = cfg.stationID
+        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
         target=hn[5:]
-        outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
+        outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         try: 
             s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
         except Exception as e:
@@ -345,7 +383,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
 def resendTrackStack(arch_dir):
     # to reannotate and resend the trackstack if the automated process fails
-    hname = os.uname()[1][:6]
+    hname = os.uname()[1][:7]
     rmscfg = os.path.expanduser('~/source/RMS/.config')
     cfg = cr.parse(rmscfg)
     localcfg = configparser.ConfigParser()
@@ -363,8 +401,11 @@ def resendTrackStack(arch_dir):
     lis = open(os.path.join(arch_dir, 'FTPdetectinfo_'+currdir+'.txt'), 'r').readlines()
     metcount = lis[0].split('=')[1].strip()
     currdir = os.path.basename(os.path.normpath(arch_dir))
-    annotateImage(trackfile, cfg.stationID, int(metcount), currdir[7:15])
-    outf = f'{cfg.stationID}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
+    camid = os.uname()[1]
+    if 'test' not in camid:
+        camid = cfg.stationID
+    annotateImage(trackfile, camid, int(metcount), currdir[7:15])
+    outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
     s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
     return 
 
@@ -389,7 +430,9 @@ def getInterestingFiles(capdir, dt1, dt2):
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    camid = cfg.stationID.lower()
+    camid = os.uname()[1]
+    if 'test' not in camid:
+        camid = cfg.stationID.lower()
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
     ssh_client = paramiko.SSHClient()
@@ -415,7 +458,9 @@ def archiveBz2(config=None, localcfg=None):
         rmscfg = os.path.expanduser('~/source/RMS/.config')
         config = cr.parse(rmscfg)
     sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    camid = config.stationID.lower()
+    camid = os.uname()[1]
+    if 'test' not in camid:
+        camid = config.stationID.lower()
     datadir = config.data_dir
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
@@ -466,20 +511,17 @@ def rmsExternal(cap_dir, arch_dir, config):
     with open(rebootlockfile, 'w') as f:
         f.write('1')
 
-    # clear existing log handlers
-    while len(log.handlers) > 0:
-        log.removeHandler(log.handlers[0])
-        
-    initLogging(config, 'tackley_')
+    setupLogging(os.path.join(config.data_dir, config.log_dir), f'tackley_log_{config.stationID}_')
     log.info('tackley external script started')
 
+    log.info(f'processing {os.path.dirname(cap_dir)}')
     log.info('reading local config')
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     sys.path.append(srcdir)
 
-    hname = os.uname()[1][:6]
+    hname = os.uname()[1][:7]
 
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):

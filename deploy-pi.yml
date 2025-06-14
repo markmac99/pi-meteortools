@@ -1,9 +1,11 @@
 ---
-- hosts: "{{host | default ('uk0006, uk000f, uk001l, uk002f')}}"
+- hosts: "{{host | default ('uk0006,uk000f,uk001l,uk002f')}}"
   vars_files: 
-    - /mnt/e/dev/apikeys/mqvariables.enc
+    #- /mnt/e/dev/apikeys/mqvariables.enc
+    - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
+    # srcdir: /mnt/c/Users/Mark/OneDrive/dev/pi-meteortools/pi
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/pi"
     destdir: ~/source/tackley-tools
   tasks:
   - name: Ensures {{destdir}}/tmp exists
@@ -30,7 +32,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/{{host}}'
+      line: 'IDFILE=~/.ssh/{{ inventory_hostname }}'
   - name: update AWS host
     lineinfile:
       path: '{{destdir}}/config.ini'
