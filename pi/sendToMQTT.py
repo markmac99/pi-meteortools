@@ -30,7 +30,7 @@ try:
 except Exception:
     pass
 
-log = logging.getLogger("logger")
+log = logging.getLogger()
 
 
 # The callback function. It will be triggered when trying to connect to the MQTT broker
@@ -50,9 +50,11 @@ def getLoggedInfo(cfg):
     log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
     logfs = glob.glob(os.path.join(log_dir, 'log*.log*'))
     logfs.sort(key=lambda x: os.path.getmtime(x))
+    if len(logfs) == 0:
+        return 0,0,0,0
     dd=[]
     i=1
-    while len(dd) == 0 and i < 10:
+    while len(dd) == 0 and i < len(logfs):
         last_log = logfs[-i]
         lis = open(last_log,'r').readlines()
         dd = [li for li in lis if 'Data directory' in li]
@@ -80,18 +82,18 @@ def getLoggedInfo(cfg):
     datedir = os.path.basename(last_log)[4:20]
     caps = glob.glob(os.path.join(capdir, f'{datedir}*'))
     caps.sort(key=lambda x: os.path.getmtime(x))
-    capdir = caps[-1]
-    ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
-    ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
-    meteorcount = 0
-    if len(ftpf) > 0:
-        lis = open(ftpf[0],'r').readlines()
-        mc = [li for li in lis if 'Meteor Count' in li]
-        meteorcount = int(mc[0].split('=')[1].strip())
-    # if meteorcount is nonzero but detected count is zero then the logfile was malformed
-    if detectedcount == 0 and meteorcount > 0:
-        detectedcount = meteorcount
-
+    if len(caps)> 0:
+        capdir = caps[-1]
+        ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
+        ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
+        meteorcount = 0
+        if len(ftpf) > 0:
+            lis = open(ftpf[0],'r').readlines()
+            mc = [li for li in lis if 'Meteor Count' in li]
+            meteorcount = int(mc[0].split('=')[1].strip())
+        # if meteorcount is nonzero but detected count is zero then the logfile was malformed
+        if detectedcount == 0 and meteorcount > 0:
+            detectedcount = meteorcount
     datestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     return detectedcount, meteorcount, starcount, datestamp
 
@@ -106,7 +108,9 @@ def sendMatchdataToMqtt(rmscfg=None, localcfg=None):
     cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
-    camname = cfg.stationID.lower()
+    camname = os.uname()[1]
+    if 'test' not in camname:
+        camname = cfg.stationID.lower()
     apiurl = 'https://api.ukmeteors.co.uk/matches'
     dtstr = datetime.datetime.now().strftime('%Y%m%d')
     apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
@@ -148,7 +152,9 @@ def sendToMqtt(rmscfg=None, localcfg=None):
     cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
-    camname = cfg.stationID.lower()
+    camname = os.uname()[1]
+    if 'test' not in camname:
+        camname = cfg.stationID.lower()
 
     detectioncount, metcount, _, datestamp = getLoggedInfo(cfg)
     msgs =[detectioncount, metcount, datestamp]
@@ -180,7 +186,9 @@ def sendStarCountToMqtt(rmscfg=None, localcfg=None):
     cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
-    camname = cfg.stationID.lower()
+    camname = os.uname()[1]
+    if 'test' not in camname:
+        camname = cfg.stationID.lower()
     _, _, starcount, _ = getLoggedInfo(cfg)
     client = mqtt.Client(camname)
     client.on_connect = on_connect
@@ -206,7 +214,9 @@ def sendOtherData(cputemp, diskspace, rmscfg=None, localcfg=None):
         rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
     cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
-    camname = cfg.stationID.lower()
+    camname = os.uname()[1]
+    if 'test' not in camname:
+        camname = cfg.stationID.lower()
 
     client = mqtt.Client(camname)
     client.on_connect = on_connect
@@ -240,7 +250,9 @@ def test_mqtt(rmscfg=None, localcfg=None):
         rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
     cfg = cr.parse(os.path.expanduser(rmscfg))
     broker = localcfg['mqtt']['broker']
-    camname = cfg.stationID.lower()
+    camname = os.uname()[1]
+    if 'test' not in camname:
+        camname = cfg.stationID.lower()
 
     client = mqtt.Client(camname)
     topic = f'testing/{camname}/test'
