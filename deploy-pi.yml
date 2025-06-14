@@ -1,10 +1,8 @@
 ---
 - hosts: "{{host | default ('uk0006,uk000f,uk001l,uk002f')}}"
   vars_files: 
-    #- /mnt/e/dev/apikeys/mqvariables.enc
     - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    # srcdir: /mnt/c/Users/Mark/OneDrive/dev/pi-meteortools/pi
     srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/pi"
     destdir: ~/source/tackley-tools
   tasks:
