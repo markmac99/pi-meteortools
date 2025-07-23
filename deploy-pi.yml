@@ -23,6 +23,7 @@
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/myUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
 
@@ -61,9 +62,9 @@
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
       line: 'PASSWORD={{ rmscampassword }}'
-  - name: install cronjobs and python modules
-    shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
-    args:
-      executable: /bin/bash
+  #- name: install cronjobs and python modules
+  #  shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
+  #  args:
+  #    executable: /bin/bash
 
   

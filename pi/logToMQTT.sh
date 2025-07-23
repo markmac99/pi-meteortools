@@ -6,7 +6,12 @@ here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source ~/vRMS/bin/activate
 
 dt=$(date '+%d/%m/%Y %H:%M:%S')
-tm=$(vcgencmd measure_temp | cut -d= -f2)
+vcgencmd > /dev/null 2>&1
+if [ $? != 0 ] ; then 
+    tm=$(cat /sys/class/thermal/thermal_zone0/temp | awk '{ print ($1 / 1000) "°C" }')
+else
+    tm=$(vcgencmd measure_temp | cut -d= -f2)
+fi
 ds=$(df -h . | tail -1 | awk -F" " '{print $5 }')
 
 #grep BROKER $here/config.ini
@@ -14,5 +19,6 @@ if [ $? -eq 1 ] ; then
     echo $dt $tm  >> /home/pi/RMS_data/logs/temperature-`date +%Y%m%d`.log
 else
     cd $here
-    python -c "from sendToMQTT import sendOtherData ; sendOtherData(\"${tm}\",\"${ds}\") ; "
+    statid=$1
+    python -c "from sendToMQTT import sendOtherData;sendOtherData('${tm}','${ds}', statid='$statid') ; "
 fi 

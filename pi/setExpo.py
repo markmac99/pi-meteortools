@@ -15,6 +15,8 @@ import datetime
 from crontab import CronTab
 from dvrip import DVRIPCam
 
+from dailyPostProc import getRMSConfig
+
 
 def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False, autoExp=False):
     daycmode = '0x00000001'
@@ -70,9 +72,9 @@ def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False, autoExp
 
 def getNextRiseSet(cfg):
     obs = ephem.Observer()
-    obs.lat = float(cfg['System']['latitude']) / 57.3 # convert to radians, close enough for this
-    obs.lon = float(cfg['System']['longitude']) / 57.3
-    obs.elev = float(cfg['System']['elevation'])
+    obs.lat = float(cfg.latitude) / 57.3 # convert to radians, close enough for this
+    obs.lon = float(cfg.longitude) / 57.3
+    obs.elev = float(cfg.elevation)
     obs.horizon = -6.0 / 57.3 # degrees below horizon for darkness
 
     sun = ephem.Sun()
@@ -83,7 +85,8 @@ def getNextRiseSet(cfg):
 
 def addCrontabEntries(ipaddr, cfg):
     local_path =os.path.dirname(os.path.abspath(__file__))
-    rmsdatadir = os.path.expanduser(cfg['Capture']['data_dir'])
+    rmslogdir = os.path.expanduser(os.path.join(cfg.data_dir, cfg.log_dir))
+    camid = cfg.stationID
 
     rise, set = getNextRiseSet(cfg)
     rise = rise + datetime.timedelta(minutes=5)
@@ -91,27 +94,27 @@ def addCrontabEntries(ipaddr, cfg):
 
     cron = CronTab(user=True)
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh DAY {ipaddr}')
+    iter=cron.find_command(f'setIPCamExpo.sh DAY {ipaddr} {camid}')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
             i.minute.on(rise.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {ipaddr} > {rmsdatadir}/logs/setday-{ipaddr}.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {ipaddr} {camid} > {rmslogdir}/setday-{camid}.log 2>&1')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
 
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh NIGHT {ipaddr}')
+    iter=cron.find_command(f'setIPCamExpo.sh NIGHT {ipaddr} {camid}')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {ipaddr} > {rmsdatadir}/logs/setnight-{ipaddr}.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {ipaddr} {camid} > {rmslogdir}/setnight-{camid}.log 2>&1')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()
@@ -120,23 +123,26 @@ def addCrontabEntries(ipaddr, cfg):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print('usage: python SetExpo.py ipaddress DAY/NIGHT')
+    if len(sys.argv) < 4:
+        print('usage: python SetExpo.py ipaddress DAY/NIGHT CAMID optional_NIGHTGAIN optional_docolor')
         exit()
         
     host_ip = sys.argv[1]
     daynight=sys.argv[2]
+    camid = sys.argv[3]
 
-    cfg = configparser.ConfigParser(inline_comment_prefixes=';')
-    rmsdir = os.path.expanduser(os.getenv('RMSDIR', default='~/source/RMS'))
-    cfg.read(os.path.join(rmsdir,'.config'))
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
 
-    if len(sys.argv) > 3:
-        nightgain = float(sys.argv[3])
+    cfg = getRMSConfig(camid, localcfg)
+
+    if len(sys.argv) > 4:
+        nightgain = float(sys.argv[4])
     else:
         nightgain = 60
 
-    if len(sys.argv) > 4:
+    if len(sys.argv) > 5:
         nightColor = True
     else:
         nightColor = False

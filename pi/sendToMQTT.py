@@ -21,14 +21,7 @@ import logging
 import requests
 import configparser
 
-try:
-    import RMS.ConfigReader as cr
-except Exception:
-    pass
-try:
-    import RMS.ConfigReader as cr # noqa: F811
-except Exception:
-    pass
+from myUtils import getRMSConfig
 
 log = logging.getLogger()
 
@@ -98,14 +91,12 @@ def getLoggedInfo(cfg):
     return detectedcount, meteorcount, starcount, datestamp
 
 
-def sendMatchdataToMqtt(rmscfg=None, localcfg=None):
-    if localcfg is None:
-        srcdir = os.path.split(os.path.abspath(__file__))[0]
-        localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
-    if rmscfg is None:
-        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+def sendMatchdataToMqtt(statid):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    cfg = getRMSConfig(statid, localcfg)
+
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = os.uname()[1]
@@ -142,14 +133,12 @@ def sendMatchdataToMqtt(rmscfg=None, localcfg=None):
     return ret
 
 
-def sendToMqtt(rmscfg=None, localcfg=None):
-    if localcfg is None:
-        srcdir = os.path.split(os.path.abspath(__file__))[0]
-        localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
-    if rmscfg is None:
-        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+def sendToMqtt(statid=''):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    cfg = getRMSConfig(statid, localcfg)
+
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = os.uname()[1]
@@ -176,14 +165,11 @@ def sendToMqtt(rmscfg=None, localcfg=None):
     return ret
 
 
-def sendStarCountToMqtt(rmscfg=None, localcfg=None):
-    if localcfg is None:
-        srcdir = os.path.split(os.path.abspath(__file__))[0]
-        localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
-    if rmscfg is None:
-        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+def sendStarCountToMqtt(statid=''):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    cfg = getRMSConfig(statid, localcfg)
     broker = localcfg['mqtt']['broker']
     topicbase = 'meteorcams' 
     camname = os.uname()[1]
@@ -205,14 +191,12 @@ def sendStarCountToMqtt(rmscfg=None, localcfg=None):
     return ret
 
 
-def sendOtherData(cputemp, diskspace, rmscfg=None, localcfg=None):
-    if localcfg is None:
-        srcdir = os.path.split(os.path.abspath(__file__))[0]
-        localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
-    if rmscfg is None:
-        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+def sendOtherData(cputemp, diskspace, statid=''):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    
+    cfg = getRMSConfig(statid, localcfg)
     broker = localcfg['mqtt']['broker']
     camname = os.uname()[1]
     if 'test' not in camname:
@@ -241,14 +225,11 @@ def sendOtherData(cputemp, diskspace, rmscfg=None, localcfg=None):
     return ret
 
 
-def test_mqtt(rmscfg=None, localcfg=None):
-    if localcfg is None:
-        srcdir = os.path.split(os.path.abspath(__file__))[0]
-        localcfg = configparser.ConfigParser()
-        localcfg.read(os.path.join(srcdir, 'config.ini'))
-    if rmscfg is None:
-        rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+def test_mqtt(statid=''):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    cfg = getRMSConfig(statid, localcfg)
     broker = localcfg['mqtt']['broker']
     camname = os.uname()[1]
     if 'test' not in camname:
@@ -268,7 +249,10 @@ def test_mqtt(rmscfg=None, localcfg=None):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        test_mqtt(None, None)
+    if len(sys.argv) < 2:
+        print('usage: python sendToMqtt stationid')
+        exit(0)
+    if len(sys.argv) > 2:
+        test_mqtt(sys.argv[1])
     else:
-        sendToMqtt(None, None)
+        sendToMqtt(sys.argv[1])
