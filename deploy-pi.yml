@@ -23,7 +23,7 @@
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/myUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/tackleyUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
 
@@ -31,7 +31,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/{{ inventory_hostname }}'
+      line: 'IDFILE=~/.ssh/tackley'
   - name: update AWS host
     lineinfile:
       path: '{{destdir}}/config.ini'
