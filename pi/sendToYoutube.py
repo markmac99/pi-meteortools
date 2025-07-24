@@ -26,18 +26,19 @@ from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
 
-try:
-    import RMS.ConfigReader as cr
-except Exception:
-    pass
+from tackleyUtils import getRMSConfig
 
 scopes = ["https://www.googleapis.com/auth/youtube.upload"]
 
 # horrible hack to force ipv4-only lookups and connections
 old_getaddrinfo = socket.getaddrinfo
+
+
 def new_getaddrinfo(*args, **kwargs):
     responses = old_getaddrinfo(*args, **kwargs)
     return [response for response in responses if response[0] == socket.AF_INET]
+
+
 socket.getaddrinfo = new_getaddrinfo
 
 
@@ -119,13 +120,14 @@ def main(title, fname):
 
 if __name__ == "__main__":
     # Parameters: title to use and the file to upload
-    dt=sys.argv[1]
+    dt = sys.argv[1]
+    statid = sys.argv[2]
 
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+    cfg = getRMSConfig(statid, localcfg)
+
     base_dir = os.path.join(cfg.data_dir, "ArchivedFiles")
     arch_dir = glob.glob1(base_dir, f'*{dt}*')
     if len(arch_dir) > 0:

@@ -15,7 +15,7 @@ import datetime
 from crontab import CronTab
 from dvrip import DVRIPCam
 
-from dailyPostProc import getRMSConfig
+from tackleyUtils import getRMSConfig
 
 
 def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False, autoExp=False):

@@ -21,7 +21,7 @@ import logging
 import requests
 import configparser
 
-from myUtils import getRMSConfig
+from tackleyUtils import getRMSConfig
 
 log = logging.getLogger()
 
