@@ -12,7 +12,7 @@ if [ $? != 0 ] ; then
 else
     tm=$(vcgencmd measure_temp | cut -d= -f2)
 fi
-ds=$(df -h . | tail -1 | awk -F" " '{print $5 }')
+ds=$(python -c "from shutil import disk_usage;x=disk_usage('/');print(round(x.used/x.total*100,4));")
 
 #grep BROKER $here/config.ini
 if [ $? -eq 1 ] ; then 
