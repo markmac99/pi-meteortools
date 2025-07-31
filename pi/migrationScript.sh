@@ -1,3 +1,5 @@
+#!/bin/bash
+# Copyright (C) Mark McIntyre
 # migration of a camera
 
 if [ "$1" == "" ] ; then
@@ -31,6 +33,7 @@ sed -i "s/data_dir:.*$/data_dir: ~\/RMS_data\/${station}/g" ~/source/Stations/${
 sed -i "s/\(.*key:\).*/\1 ~\/.ssh\/${station}_id_rsa/g" ~/source/Stations/${station}/.config
 sed -i "s/reboot_after_processing:.*$/reboot_after_processing: false/g" ~/source/Stations/${station}/.config
 sed -i "s/ukmon-pitools/ukmon-pitools-${station}/g" ~/source/Stations/${station}/.config
+sed -i "s/home\/pi/home\/rms/g" ~/source/Stations/${station}/.config
 
 echo "copying ukmon tools"
 cd ~/source
