@@ -41,7 +41,7 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])
     key = ''
-    print(sitecfg)
+    # print(sitecfg)
     try: 
         ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
         ftp_client = ssh_client.open_sftp()
