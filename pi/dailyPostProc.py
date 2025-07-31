@@ -485,7 +485,10 @@ def rmsExternal(cap_dir, arch_dir, config):
     setupLogging(os.path.join(config.data_dir, config.log_dir), f'tackley_log_{config.stationID}_')
     log.info('tackley external script started')
 
-    log.info(f'processing {os.path.dirname(cap_dir)}')
+    cap_dir = os.path.normpath(cap_dir)
+    arch_dir = os.path.normpath(arch_dir)
+    log.info(f'processing {cap_dir}')
+
     log.info('reading local config')
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
@@ -499,15 +502,11 @@ def rmsExternal(cap_dir, arch_dir, config):
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
-        if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
-            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-                f.write('dummy\n')
-        if not os.path.isfile(os.path.join(srcdir, '.ytdone')):
-            with open(os.path.join(srcdir, '.ytdone'), 'w') as f:
-                f.write('dummy\n')
-
-        line = open(os.path.join(srcdir, '.ytdone'), 'r').readline().rstrip()
-        if line != mp4name:
+        already_done = []
+        if os.path.isfile(os.path.join(srcdir, '.ytdone')):
+            already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+    
+        if mp4name not in [x.strip() for x in already_done]:
             tod = mp4name.split('_')[1]
             tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
             msg = '{:s} timelapse for {:s}'.format(hname, tod)
@@ -515,6 +514,8 @@ def rmsExternal(cap_dir, arch_dir, config):
             for retries in range(0,5):
                 try:
                     if stu.main(msg, os.path.join(arch_dir, mp4name)):
+                        already_done.append(mp4name)
+                        already_done = list(set(already_done))
                         break
                 except Exception as e:
                     log.info('problem with youtube upload, retrying in 10s')
@@ -526,7 +527,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         else:
             log.info('already uploaded {:s}'.format(mp4name))
                 
-        open(os.path.join(srcdir, '.ytdone'), 'w').write(mp4name)
+        open(os.path.join(srcdir, '.ytdone'), 'w').writelines(already_done)
     
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
@@ -556,7 +557,7 @@ def rmsExternal(cap_dir, arch_dir, config):
 
         idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
         idserver = localcfg['postprocess']['webserver']
-        print(idfile, idserver)
+        # print(idfile, idserver)
         key, secret = getAWSKey(idserver, hname, hname, idfile)
         s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
             region_name='eu-west-2')
@@ -597,14 +598,16 @@ def rmsExternal(cap_dir, arch_dir, config):
 
 
 if __name__ == '__main__':
-    if len(sys.arg) < 2:
+    if len(sys.argv) < 2:
         print('usage: python dailyPostProc.py /full/path/to/capdir')
         exit(0)
     localcfg = configparser.ConfigParser()
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    lastcap = os.path.normpath(sys.argv[1])
-    camid = os.path.split(lastcap)[1].split('_')[0]
+
+    lastcap = os.path.normpath(os.path.expanduser(sys.argv[1]))
+    lastcap = os.path.split(lastcap)[1]
+    camid  = lastcap.split('_')[0]
     config = getRMSConfig(camid, localcfg)
     datadir = config.data_dir
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
