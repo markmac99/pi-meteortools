@@ -4,70 +4,28 @@
 #
 #
 import sys
-import time
 import os
 import ephem
 import configparser
 import datetime
 
-# if you have RMS and the ukmon-pitools installed, these libs will already be present
-# otherwise, use pip to install python-crontab==2.5.1 and python-dvr"
-from crontab import CronTab
-from dvrip import DVRIPCam
+# make use of RMS functionality
+import Utils.CameraControl as cc
 
+from crontab import CronTab
 from tackleyUtils import getRMSConfig
 
 
-def setCameraExposure(host_ip, daynight, nightgain=70, nightColor=False, autoExp=False):
-    daycmode = '0x00000001'
-    nightcmode = '0x00000002'
-    if nightColor is True:
-        nightcmode = daycmode
-
-    if daynight == 'DAY':
-        expo = 30
-        gain = 30
-        cmode = daycmode
-        minexp = '0x00000064'
-        maxexp = '0x00009C40'
-    else:
-        cmode = nightcmode
-        gain = nightgain
-        if autoExp is True:
-            expo = 30
-            minexp = '0x00000064'
-        else:
-            expo = 100
-            minexp = '0x00009C40'
-        maxexp = '0x00009C40'
-
-    cam = DVRIPCam(host_ip)
-    print('connecting to', host_ip)
-    for i in range(0,5):
-        try: 
-            if cam.login():
-                print("Success! Connected to " + host_ip)
-                break
-        except:
-            print("Failure. Could not connect. retrying in 30 seconds")
-            time.sleep(30)
-    if i == 4:
-        print('unable to connect to camera, aborting')
-        exit(1)
-
-    params = cam.get_info("Camera")
-    print(params['Param'])
-    print(params['Param'][0]['ElecLevel'])
-
-    cam.set_info("Camera.Param.[0]",{"ElecLevel":expo})
-    cam.set_info("Camera.Param.[0]",{"DayNightColor":cmode})
-    cam.set_info("Camera.Param.[0].GainParam",{"Gain":gain})
-    cam.set_info("Camera.Param.[0].ExposureParam",{"LeastTime":minexp})
-    cam.set_info("Camera.Param.[0].ExposureParam",{"MostTime":maxexp})
-    params = cam.get_info("Camera")
-    print(params['Param'][0]['ElecLevel'])
-
-    cam.close()
+def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoExp=False):
+    
+    cc.cameraControlV2(config, "SwitchMode", daynight)
+    if nightgain is not None:
+        cc.cameraControlV2(config, 'SetParam', ['Camera', 'GainParam', 'Gain', f'{nightgain}'])
+    if nightColor:
+        cc.cameraControlV2(config, 'SetParam', ['Camera','DayNightColor','1'])
+    if autoExp:
+        cc.cameraControlV2(config, 'SetParam', ['Camera','ExposureParam','LeastTime','100'])
+        cc.cameraControlV2(config, "SetParam", ["Camera", "BroadTrends", "AutoGain", "1"])
 
 
 def getNextRiseSet(cfg):
@@ -75,7 +33,7 @@ def getNextRiseSet(cfg):
     obs.lat = float(cfg.latitude) / 57.3 # convert to radians, close enough for this
     obs.lon = float(cfg.longitude) / 57.3
     obs.elev = float(cfg.elevation)
-    obs.horizon = -6.0 / 57.3 # degrees below horizon for darkness
+    obs.horizon = -9.0 / 57.3 # degrees below horizon for darkness
 
     sun = ephem.Sun()
     rise = obs.next_rising(sun).datetime()
@@ -83,7 +41,7 @@ def getNextRiseSet(cfg):
     return rise, set
 
 
-def addCrontabEntries(ipaddr, cfg):
+def addCrontabEntries(cfg):
     local_path =os.path.dirname(os.path.abspath(__file__))
     rmslogdir = os.path.expanduser(os.path.join(cfg.data_dir, cfg.log_dir))
     camid = cfg.stationID
@@ -94,27 +52,27 @@ def addCrontabEntries(ipaddr, cfg):
 
     cron = CronTab(user=True)
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh DAY {ipaddr} {camid}')
+    iter=cron.find_command(f'setIPCamExpo.sh DAY {camid}')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
             i.minute.on(rise.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {ipaddr} {camid} > {rmslogdir}/setday-{camid}.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {camid} > {rmslogdir}/setday-{camid}.log 2>&1')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
 
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh NIGHT {ipaddr} {camid}')
+    iter=cron.find_command(f'setIPCamExpo.sh NIGHT {camid}')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {ipaddr} {camid} > {rmslogdir}/setnight-{camid}.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {camid} > {rmslogdir}/setnight-{camid}.log 2>&1')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()
@@ -124,12 +82,11 @@ def addCrontabEntries(ipaddr, cfg):
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
-        print('usage: python SetExpo.py ipaddress DAY/NIGHT CAMID optional_NIGHTGAIN optional_docolor')
+        print('usage: python SetExpo.py day/night camid optional_NIGHTGAIN optional_docolor')
         exit()
         
-    host_ip = sys.argv[1]
-    daynight=sys.argv[2]
-    camid = sys.argv[3]
+    daynight = sys.argv[1].lower()
+    camid = sys.argv[2]
 
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
@@ -137,34 +94,14 @@ if __name__ == '__main__':
 
     cfg = getRMSConfig(camid, localcfg)
 
-    if len(sys.argv) > 4:
+    if len(sys.argv) > 3:
         nightgain = float(sys.argv[4])
     else:
         nightgain = 60
 
-    if len(sys.argv) > 5:
+    if len(sys.argv) > 4:
         nightColor = True
     else:
         nightColor = False
-    setCameraExposure(host_ip, daynight, nightgain, nightColor)
-    addCrontabEntries(host_ip, cfg)
-
-
-# other possible things you could set
-#
-#[{'AeSensitivity': 1, 'ApertureMode': '0x00000000', 'BLCMode': '0x00000001', 
-# 'DayNightColor': '0x00000002', 'Day_nfLevel': 0, 'DncThr': 50, 'ElecLevel': 30, 
-# 'EsShutter': '0x00000006', 
-# 'ExposureParam': {'LeastTime': '0x00000064', 'Level': 0, 'MostTime': '0x00013880'}, 
-# 'GainParam': {'AutoGain': 1, 'Gain': 65}, 
-# 'IRCUTMode': 0, 'IrcutSwap': 0, 'Night_nfLevel': 0, 
-# 'PictureFlip': '0x00000001', 'PictureMirror': '0x00000001', 
-# 'RejectFlicker': '0x00000000', 'WhiteBalance': '0x00000002'}]
-
-# 'DayNightColor': '0x00000002' BW
-# 'DayNightColor': '0x00000001' Colour
-
-# 0.1ms 40ms 80ms
-# '0x00000064'
-# '0x00009C40'
-# '0x00013880'
+    setCameraExposure(cfg, daynight, nightgain, nightColor)
+    addCrontabEntries(cfg)
