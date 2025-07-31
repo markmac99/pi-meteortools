@@ -47,14 +47,15 @@ def getLoggedInfo(cfg):
         return 0,0,0,0
     dd=[]
     i=1
-    while len(dd) == 0 and i < len(logfs):
+    
+    while len(dd) == 0 and i < len(logfs) + 1:
         last_log = logfs[-i]
         lis = open(last_log,'r').readlines()
         dd = [li for li in lis if 'Data directory' in li]
         if len(dd) > 0:
             break
         i = i + 1
-
+    # print('last log', last_log)
     totli = [li for li in lis if 'TOTAL' in li]
     detectedcount = 0
     if len(totli) > 0:
