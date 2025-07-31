@@ -12,13 +12,18 @@ if [ $? != 0 ] ; then
 else
     tm=$(vcgencmd measure_temp | cut -d= -f2)
 fi
-ds=$(python -c "from shutil import disk_usage;x=disk_usage('/');print(round(x.used/x.total*100,4));")
-
-#grep BROKER $here/config.ini
 if [ $? -eq 1 ] ; then 
     echo $dt $tm  >> /home/pi/RMS_data/logs/temperature-`date +%Y%m%d`.log
 else
     cd $here
     statid=$1
+    if [ -d ~/source/Stations/${statid} ] ; then
+        datadir=$(grep data_dir: $HOME/source/Stations/${statid}/.config | awk '{print $2}')
+    else
+        datadir=$(grep data_dir: $HOME/source/RMS/.config | awk '{print $2}')
+    fi 
+    ds=$(python -c "import os;from shutil import disk_usage;x=disk_usage(os.path.expanduser('${datadir}'));print(round(x.used/x.total*100,4));")
+
+    #grep BROKER $here/config.ini
     python -c "from sendToMQTT import sendOtherData;sendOtherData('${tm}','${ds}', statid='$statid') ; "
 fi 
