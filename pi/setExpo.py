@@ -8,6 +8,7 @@ import os
 import ephem
 import configparser
 import datetime
+from time import sleep
 
 # make use of RMS functionality
 import Utils.CameraControl as cc
@@ -19,8 +20,11 @@ from tackleyUtils import getRMSConfig
 def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoExp=False):
     
     cc.cameraControlV2(config, "SwitchMode", daynight)
-    if nightgain is not None:
+    if nightgain is not None and daynight =='night':
         cc.cameraControlV2(config, 'SetParam', ['Camera', 'GainParam', 'Gain', f'{nightgain}'])
+    if nightColor or autoExp:
+        sleep(30)
+
     if nightColor:
         cc.cameraControlV2(config, 'SetParam', ['Camera','DayNightColor','1'])
     if autoExp:
@@ -94,8 +98,8 @@ if __name__ == '__main__':
 
     cfg = getRMSConfig(camid, localcfg)
 
-    if len(sys.argv) > 3:
-        nightgain = float(sys.argv[4])
+    if len(sys.argv) > 2:
+        nightgain = int(sys.argv[3])
     else:
         nightgain = 60
 
