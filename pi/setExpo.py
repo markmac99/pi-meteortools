@@ -18,7 +18,6 @@ from tackleyUtils import getRMSConfig
 
 
 def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoExp=False):
-    
     cc.cameraControlV2(config, "SwitchMode", daynight)
     if nightgain is not None and daynight =='night':
         cc.cameraControlV2(config, 'SetParam', ['Camera', 'GainParam', 'Gain', f'{nightgain}'])
@@ -90,7 +89,7 @@ if __name__ == '__main__':
         exit()
         
     daynight = sys.argv[1].lower()
-    camid = sys.argv[2]
+    camid = sys.argv[2].upper()
 
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
@@ -98,14 +97,15 @@ if __name__ == '__main__':
 
     cfg = getRMSConfig(camid, localcfg)
 
+    nightgain = None
     if len(sys.argv) > 2:
         nightgain = int(sys.argv[3])
-    else:
-        nightgain = 60
+    if nightgain == 70:
+        nightgain = None
 
+    nightColor = False
     if len(sys.argv) > 4:
         nightColor = True
-    else:
-        nightColor = False
+
     setCameraExposure(cfg, daynight, nightgain, nightColor)
     addCrontabEntries(cfg)
