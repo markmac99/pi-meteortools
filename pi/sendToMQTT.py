@@ -39,7 +39,7 @@ def on_publish(client, userdata, result):
     return
 
 
-def getLoggedInfo(cfg):
+def getLoggedInfo(cfg, capdir=None):
     log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
     logfs = glob.glob(os.path.join(log_dir, 'log*.log*'))
     logfs.sort(key=lambda x: os.path.getmtime(x))
@@ -72,22 +72,26 @@ def getLoggedInfo(cfg):
             pass
 
     meteorcount = 0
-    capdir = os.path.join(cfg.data_dir, 'CapturedFiles')
-    datedir = os.path.basename(last_log)[4:20]
-    caps = glob.glob(os.path.join(capdir, f'{datedir}*'))
-    caps.sort(key=lambda x: os.path.getmtime(x))
-    if len(caps)> 0:
-        capdir = caps[-1]
-        ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
-        ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
-        meteorcount = 0
-        if len(ftpf) > 0:
-            lis = open(ftpf[0],'r').readlines()
-            mc = [li for li in lis if 'Meteor Count' in li]
-            meteorcount = int(mc[0].split('=')[1].strip())
-        # if meteorcount is nonzero but detected count is zero then the logfile was malformed
-        if detectedcount == 0 and meteorcount > 0:
-            detectedcount = meteorcount
+    if not capdir:
+        capdir = os.path.join(cfg.data_dir, 'CapturedFiles')
+        yest = datetime.datetime.now() + datetime.timedelta(days=-1)
+        datedir =  glob.glob(f'*{yest.strftime("%Y%m%d")}*')
+        caps = glob.glob(os.path.join(capdir, f'{datedir}*'))
+        caps.sort(key=lambda x: os.path.getmtime(x))
+        if len(caps)> 0:
+            capdir = caps[-1]
+        else:
+            return 0,0,0,0
+    ftpfs = glob.glob(os.path.join(capdir, 'FTPdetectinfo*.txt'))
+    ftpf = [f for f in ftpfs if 'backup' not in f and 'unfiltered' not in f]
+    meteorcount = 0
+    if len(ftpf) > 0:
+        lis = open(ftpf[0],'r').readlines()
+        mc = [li for li in lis if 'Meteor Count' in li]
+        meteorcount = int(mc[0].split('=')[1].strip())
+    # if meteorcount is nonzero but detected count is zero then the logfile was malformed
+    if detectedcount == 0 and meteorcount > 0:
+        detectedcount = meteorcount
     datestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
     return detectedcount, meteorcount, starcount, datestamp
 
@@ -134,7 +138,7 @@ def sendMatchdataToMqtt(statid):
     return ret
 
 
-def sendToMqtt(statid=''):
+def sendToMqtt(statid='', cap_dir=None):
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
@@ -146,7 +150,7 @@ def sendToMqtt(statid=''):
     if 'test' not in camname:
         camname = cfg.stationID.lower()
 
-    detectioncount, metcount, _, datestamp = getLoggedInfo(cfg)
+    detectioncount, metcount, _, datestamp = getLoggedInfo(cfg, cap_dir)
     msgs =[detectioncount, metcount, datestamp]
 
     client = mqtt.Client(camname)

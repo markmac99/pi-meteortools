@@ -505,8 +505,8 @@ def rmsExternal(cap_dir, arch_dir, config):
         already_done = []
         if os.path.isfile(os.path.join(srcdir, '.ytdone')):
             already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
-    
-        if mp4name not in [x.strip() for x in already_done]:
+            already_done = [x.strip() for x in already_done]
+        if mp4name not in already_done:
             tod = mp4name.split('_')[1]
             tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
             msg = '{:s} timelapse for {:s}'.format(hname, tod)
@@ -514,8 +514,13 @@ def rmsExternal(cap_dir, arch_dir, config):
             for retries in range(0,5):
                 try:
                     if stu.main(msg, os.path.join(arch_dir, mp4name)):
+                        # reload the done list in case its been updated by another process
+                        already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+                        already_done = [x.strip() for x in already_done]
                         already_done.append(mp4name)
                         already_done = list(set(already_done))
+                        already_done.sort()
+                        open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
                         break
                 except Exception as e:
                     log.info('problem with youtube upload, retrying in 10s')
@@ -527,12 +532,11 @@ def rmsExternal(cap_dir, arch_dir, config):
         else:
             log.info('already uploaded {:s}'.format(mp4name))
                 
-        open(os.path.join(srcdir, '.ytdone'), 'w').writelines(already_done)
     
     if len(localcfg['mqtt']['broker']) > 1:
         log.info('sending to MQ')
         try:
-            sendToMqtt(config.stationID)
+            sendToMqtt(config.stationID, cap_dir)
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
