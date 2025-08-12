@@ -180,20 +180,51 @@ def sendStarCountToMqtt(statid=''):
     camname = os.uname()[1]
     if 'test' not in camname:
         camname = cfg.stationID.lower()
-    _, _, starcount, _ = getLoggedInfo(cfg)
-    client = mqtt.Client(camname)
-    client.on_connect = on_connect
-    client.on_publish = on_publish
-    if localcfg['mqtt']['username'] != '':
-        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    if localcfg['mqtt']['username'] != '':
-        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    client.connect(broker, 1883, 60)
 
-    topic = f'{topicbase}/{camname}/starcount'
-    print(f'starcount is {starcount}')
-    ret = client.publish(topic, payload=starcount, qos=0, retain=False)
-    return ret
+    log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
+    logfs = glob.glob(os.path.join(log_dir, 'log*.log*'))
+    logfs.sort(key=lambda x: os.path.getmtime(x))
+    starcount = 0
+    tstamp = None
+    if len(logfs) > 0:
+        current_log = logfs[-1]
+        print(f'current log is {current_log}')
+        lis = open(current_log,'r').readlines()
+        sc = [li for li in lis if 'Detected stars' in li]
+        if len(sc) > 0:
+            try:
+                starcount = int(sc[-1].split()[5])
+                tstamp = sc[-1].split('-')[0]
+            except Exception:
+                pass
+        else:
+            current_log = logfs[-2]
+            print(f'current log is {current_log}')
+            lis = open(current_log,'r').readlines()
+            sc = [li for li in lis if 'Detected stars' in li]
+            if len(sc) > 0:
+                try:
+                    starcount = int(sc[-1].split()[5])
+                    tstamp = sc[-1].split('-')[0]
+                except Exception:
+                    pass
+
+    if tstamp is not None: 
+        client = mqtt.Client(camname)
+        client.on_connect = on_connect
+        client.on_publish = on_publish
+        if localcfg['mqtt']['username'] != '':
+            client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+        if localcfg['mqtt']['username'] != '':
+            client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+        client.connect(broker, 1883, 60)
+
+        topic = f'{topicbase}/{camname}/starcount'
+        print(f'{tstamp}: starcount is {starcount}')
+        ret = client.publish(topic, payload=starcount, qos=0, retain=False)
+        return ret
+    else:
+        return 0
 
 
 def sendOtherData(cputemp, diskspace, statid=''):
