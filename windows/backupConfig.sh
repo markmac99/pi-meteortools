@@ -1,52 +1,25 @@
 #!/bin/bash
 # Copyright (C) Mark McIntyre
 
-function backuphost() {
-    echo $1
-    hn=$1
-    hn_u=${hn^^}
-
-    if [ ! -f $hn_u.ini ] ; then
-        echo "ini file for $hn not found"
-        exit 1
-    fi 
-    locf=$(grep LOCALFOLDER ../scripts/$hn_u.ini |sed 's/F:/\/mnt\/f/g'| awk -F= '{print $2}' | tr -d "\r")
-    pushd $locf/../config
-
-    mkdir $hn > /dev/null 2>&1
-
-    rsync -v ${hn}:source/RMS/platepar* $hn/
-    rsync -v ${hn}:source/RMS/mask* $hn/
-    rsync -v ${hn}:source/RMS/.config $hn/
-    rsync -v ${hn}:.rmsautorunflag $hn/ > /dev/null 2>&1
-
-    #ssh keys and config
-    rsync -avz ${hn}:.ssh/* $hn/.ssh/
-
-    # ukmon settings
-    rsync -avz ${hn}:source/ukmon-pitools/ukmon.ini $hn
-    rsync -avz ${hn}:source/ukmon-pitools/.firstrun $hn > /dev/null 2>&1
-    rsync -avz ${hn}:source/ukmon-pitools/domp4s $hn > /dev/null 2>&1
-    rsync -avz ${hn}:source/ukmon-pitools/dotimelapse $hn > /dev/null 2>&1
-    rsync -avz ${hn}:source/ukmon-pitools/extrascript $hn > /dev/null 2>&1
-
-    # mjmm settings
-    scp $hn:mjmm/*.pickle $hn/ > /dev/null 2>&1
-    scp $hn:mjmm/config.ini $hn/ > /dev/null 2>&1
-
-    popd
-}
-
-# backup everything
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 pushd $here
+cd /mnt/c/Users/$USER/OneDrive/dev/meteorcam_config
 
-if [ $# -lt 1 ] ; then 
-    backuphost uk0006
-    backuphost uk000f
-    backuphost uk002f
-    backuphost uk001l
-else
-    backuphost $1
-fi
-popd 
+rsync -avz --include-from ./rms.txt --exclude "*" uk0006:source/Stations/UK0006/ ./uk0006
+rsync -avz --include-from ./rms.txt --exclude "*" uk000f:source/Stations/UK000F/ ./uk000f
+rsync -avz --include-from ./rms.txt --exclude "*" uk001l:source/Stations/UK001L/ ./uk001l
+rsync -avz --include-from ./rms.txt --exclude "*" uk002f:source/Stations/UK002F/ ./uk002f
+rsync -avz  uk0006:.ssh/ ./uk0006/ssh
+rsync -avz  uk000f:.ssh/ ./uk000f/ssh
+rsync -avz  uk001l:.ssh/ ./uk001l/ssh
+rsync -avz  uk002f:.ssh/ ./uk002f/ssh
+rsync -avz --include-from ./ukmon.txt --exclude "*" uk0006:source/ukmon-pitools-UK0006/ ./uk0006/ukmon
+rsync -avz --include-from ./ukmon.txt --exclude "*" uk000f:source/ukmon-pitools-UK0006/ ./uk000f/ukmon
+rsync -avz --include-from ./ukmon.txt --exclude "*" uk001l:source/ukmon-pitools-UK001L/ ./uk001l/ukmon
+rsync -avz --include-from ./ukmon.txt --exclude "*" uk002f:source/ukmon-pitools-UK002F/ ./uk002f/ukmon
+
+rsync -avz --include-from ./tackley.txt --exclude "*" uk0006:source/tackley-tools/ ./uk0006/tackley
+rsync -avz --include-from ./tackley.txt --exclude "*" uk000f:source/tackley-tools/ ./uk000f/tackley
+rsync -avz --include-from ./tackley.txt --exclude "*" uk001l:source/tackley-tools/ ./uk001l/tackley
+rsync -avz --include-from ./tackley.txt --exclude "*" uk002f:source/tackley-tools/ ./uk002f/tackley
+popd
