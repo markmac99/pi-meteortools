@@ -1,0 +1,7 @@
+{
+    "host": "wxsatpi",
+    "port": 1883,
+    "topic": "tuya/",
+    "mqtt_user": "mquser",
+    "mqtt_pass": "mqpass"
+}
