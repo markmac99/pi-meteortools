@@ -51,7 +51,7 @@
     lineinfile:
       path: '{{destdir2}}/config.json'
       regexp: '"mqtt_pass"'
-      line: '    "mqtt_pass": "{{ rmscampassword }}"'
+      line: '    "mqtt_pass": "{{ mqsenspassword }}"'
 
   - name: Update Device keys 
     ansible.builtin.replace:
