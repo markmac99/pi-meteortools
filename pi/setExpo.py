@@ -20,7 +20,7 @@ from tackleyUtils import getRMSConfig
 
 def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoExp=False, testmode=False):
     if testmode:
-        print(f'would have switched to {daynight} with gain {nightgain} color {nightColor} autoexp {autoExp}')
+        print(f'would have switched {config.stationID} to {daynight} with gain {nightgain} color {nightColor} autoexp {autoExp}')
         return 
     cc.cameraControlV2(config, "SwitchMode", daynight)
     if nightgain is not None and daynight =='night':
@@ -50,8 +50,11 @@ def getNextRiseSet(cfg):
 
 def addCrontabEntries(cfg, testmode=False):
     local_path =os.path.dirname(os.path.abspath(__file__))
-    rmslogdir = os.path.expanduser(os.path.join(cfg.data_dir, cfg.log_dir))
-    camid = cfg.stationID
+    if cfg.stationID in cfg.data_dir:
+        root_data_dir = os.path.normpath(os.path.join(cfg.data_dir,'..'))
+    else:
+        root_data_dir = cfg.data_dir
+    rmslogdir = os.path.expanduser(os.path.join(root_data_dir, cfg.log_dir))
 
     rise, set = getNextRiseSet(cfg)
     rise = rise + datetime.timedelta(minutes=5)
@@ -87,6 +90,7 @@ def addCrontabEntries(cfg, testmode=False):
         job.minute.on(set.minute)
         cron.write()
     cron.write()
+    print('cron jobs updated')
     return 
 
 
@@ -136,7 +140,7 @@ if __name__ == '__main__':
     else:
         camids =  [x[1].upper() for x in localcfg.items('stations')]
 
-    testmode = True
+    testmode = False
     for camid in camids: 
         try:
             cfg = getRMSConfig(camid, localcfg)
