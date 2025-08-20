@@ -9,6 +9,7 @@ import ephem
 import configparser
 import datetime
 from time import sleep
+import argparse
 
 # make use of RMS functionality
 import Utils.CameraControl as cc
@@ -17,7 +18,10 @@ from crontab import CronTab
 from tackleyUtils import getRMSConfig
 
 
-def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoExp=False):
+def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoExp=False, testmode=False):
+    if testmode:
+        print(f'would have switched to {daynight} with gain {nightgain} color {nightColor} autoexp {autoExp}')
+        return 
     cc.cameraControlV2(config, "SwitchMode", daynight)
     if nightgain is not None and daynight =='night':
         cc.cameraControlV2(config, 'SetParam', ['Camera', 'GainParam', 'Gain', f'{nightgain}'])
@@ -44,7 +48,7 @@ def getNextRiseSet(cfg):
     return rise, set
 
 
-def addCrontabEntries(cfg):
+def addCrontabEntries(cfg, testmode=False):
     local_path =os.path.dirname(os.path.abspath(__file__))
     rmslogdir = os.path.expanduser(os.path.join(cfg.data_dir, cfg.log_dir))
     camid = cfg.stationID
@@ -53,29 +57,32 @@ def addCrontabEntries(cfg):
     rise = rise + datetime.timedelta(minutes=5)
     set = set + datetime.timedelta(minutes=-5)
 
+    if testmode:
+        print(f'would have set crontabs for {rise} or {set}')
+        return 
     cron = CronTab(user=True)
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh DAY {camid}')
+    iter=cron.find_command(f'setIPCamExpo.sh DAY')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(rise.hour)
             i.minute.on(rise.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY {camid} > {rmslogdir}/setday.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmslogdir}/setday.log 2>&1')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
 
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh NIGHT {camid}')
+    iter=cron.find_command(f'setIPCamExpo.sh NIGHT')
     for i in iter:
         if i.is_enabled():
             found = True
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
-        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT {camid} > {rmslogdir}/setnight.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmslogdir}/setnight.log 2>&1')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()
@@ -84,28 +91,58 @@ def addCrontabEntries(cfg):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 4:
-        print('usage: python SetExpo.py day/night camid optional_NIGHTGAIN optional_docolor')
-        exit()
-        
-    daynight = sys.argv[1].lower()
-    camid = sys.argv[2].upper()
 
     srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg = configparser.ConfigParser()
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    arg_parser = argparse.ArgumentParser(description='Set camera to day or night mode')
 
-    cfg = getRMSConfig(camid, localcfg)
+    arg_parser.add_argument('daynight', nargs=1, metavar='DAYNIGHT', type=str,
+        help='day or night mode')
+
+    arg_parser.add_argument('-c', '--config', nargs=1, metavar='CONFIG_PATH', type=str, 
+        help='Path to a config file which will be used instead of the default one.')
+
+    arg_parser.add_argument('-n', '--nightcolour', action="store_true", help='use colour mode at night')
+    
+    arg_parser.add_argument('-a', '--autoexp', action="store_true", help='use autoexposure mode')
+    
+    arg_parser.add_argument('-g', '--nightgain', metavar='NIGHT_GAIN', help='night gain to use (default 70)')
+
+    arg_parser.add_argument('-s', '--stationid', metavar='STATIONID', help='optional stationid if not in config.ini')
+
+    cml_args = arg_parser.parse_args()
+
+    daynight = cml_args.daynight[0].lower()
+
+    localcfg = configparser.ConfigParser()
+    if cml_args.config:
+        localcfg.read(cml_args.config[0])
+    else:
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
 
     nightgain = None
-    if len(sys.argv) > 2:
-        nightgain = int(sys.argv[3])
-    if nightgain == 70:
-        nightgain = None
+    if cml_args.nightgain and int(cml_args.nightgain) != 70:
+        nightgain = int(cml_args.nightgain)
 
     nightColor = False
-    if len(sys.argv) > 4:
+    if cml_args.nightcolour:
         nightColor = True
 
-    setCameraExposure(cfg, daynight, nightgain, nightColor)
-    addCrontabEntries(cfg)
+    autoexp = False
+    if cml_args.autoexp:
+        autoexp = True
+
+    if cml_args.stationid:
+        camids = [cml_args.stationid]
+    else:
+        camids =  [x[1].upper() for x in localcfg.items('stations')]
+
+    testmode = True
+    for camid in camids: 
+        try:
+            cfg = getRMSConfig(camid, localcfg)
+        except Exception:
+            print(f'cfg file for {camid} not found, skipping')
+            continue
+        setCameraExposure(cfg, daynight, nightgain=nightgain, nightColor=nightColor, autoExp=autoexp, testmode=testmode)
+
+    addCrontabEntries(cfg, testmode=testmode)
