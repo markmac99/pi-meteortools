@@ -96,120 +96,73 @@ def getLoggedInfo(cfg, capdir=None):
     return detectedcount, meteorcount, starcount, datestamp
 
 
-def sendMatchdataToMqtt(statid):
+def sendMatchdataToMqtt(statid=''):
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    cfg = getRMSConfig(statid, localcfg)
 
-    broker = localcfg['mqtt']['broker']
-    topicbase = 'meteorcams' 
-    camname = os.uname()[1]
-    if 'test' not in camname:
-        camname = cfg.stationID.lower()
-    apiurl = 'https://api.ukmeteors.co.uk/matches'
-    dtstr = datetime.datetime.now().strftime('%Y%m%d')
-    apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
-    res = requests.get(apicall)
-    if res.status_code == 200:
-        rawdata=res.text.strip()
-        matchcount = rawdata.count('orbname')
+    if statid == '':
+        statids =  [x[1].upper() for x in localcfg.items('stations')]
     else:
-        matchcount = 0
-    dtstr = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime('%Y%m%d')
-    apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
-    res = requests.get(apicall)
-    if res.status_code == 200:
-        rawdata=res.text.strip()
-        v1 = rawdata.count(f'{dtstr}_1')
-        v2 = rawdata.count(f'{dtstr}_2')
-        matchcount = matchcount + v1 + v2
-    client = mqtt.Client(camname)
-    client.on_connect = on_connect
-    client.on_publish = on_publish
-    if localcfg['mqtt']['username'] != '':
-        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    if localcfg['mqtt']['username'] != '':
-        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    client.connect(broker, 1883, 60)
-    topic = f'{topicbase}/{camname}/matchcount'
-    ret = client.publish(topic, payload=matchcount, qos=0, retain=False)
-    log.info(f'there were {matchcount} matches last night for {camname}')
-    return ret
+        statids = [statid]
+    ret = 0
+    for statid in statids:
+        cfg = getRMSConfig(statid, localcfg)
 
-
-def sendToMqtt(statid='', cap_dir=None):
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg = configparser.ConfigParser()
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
-    cfg = getRMSConfig(statid, localcfg)
-
-    broker = localcfg['mqtt']['broker']
-    topicbase = 'meteorcams' 
-    camname = os.uname()[1]
-    if 'test' not in camname:
-        camname = cfg.stationID.lower()
-
-    detectioncount, metcount, _, datestamp = getLoggedInfo(cfg, cap_dir)
-    msgs =[detectioncount, metcount, datestamp]
-
-    client = mqtt.Client(camname)
-    client.on_connect = on_connect
-    client.on_publish = on_publish
-    if localcfg['mqtt']['username'] != '':
-        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    if localcfg['mqtt']['username'] != '':
-        client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
-    client.connect(broker, 1883, 60)
-
-    subtopics = ['detectioncount','meteorcount','timestamp']
-    for subtopic, msg in zip(subtopics, msgs): 
-        topic = f'{topicbase}/{camname}/{subtopic}'
-        ret = client.publish(topic, payload=msg, qos=0, retain=False)
-        #print("send to {}, result {}".format(topic, ret))
-    return ret
-
-
-def sendStarCountToMqtt(statid=''):
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg = configparser.ConfigParser()
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
-    cfg = getRMSConfig(statid, localcfg)
-    broker = localcfg['mqtt']['broker']
-    topicbase = 'meteorcams' 
-    camname = os.uname()[1]
-    if 'test' not in camname:
-        camname = cfg.stationID.lower()
-
-    log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
-    logfs = glob.glob(os.path.join(log_dir, 'log*.log*'))
-    logfs.sort(key=lambda x: os.path.getmtime(x))
-    starcount = 0
-    tstamp = None
-    if len(logfs) > 0:
-        current_log = logfs[-1]
-        print(f'current log is {current_log}')
-        lis = open(current_log,'r').readlines()
-        sc = [li for li in lis if 'Detected stars' in li]
-        if len(sc) > 0:
-            try:
-                starcount = int(sc[-1].split()[5])
-                tstamp = sc[-1].split('-')[0]
-            except Exception:
-                pass
+        broker = localcfg['mqtt']['broker']
+        topicbase = 'meteorcams' 
+        camname = os.uname()[1]
+        if 'test' not in camname:
+            camname = cfg.stationID.lower()
+        apiurl = 'https://api.ukmeteors.co.uk/matches'
+        dtstr = datetime.datetime.now().strftime('%Y%m%d')
+        apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
+        res = requests.get(apicall)
+        if res.status_code == 200:
+            rawdata=res.text.strip()
+            matchcount = rawdata.count('orbname')
         else:
-            current_log = logfs[-2]
-            print(f'current log is {current_log}')
-            lis = open(current_log,'r').readlines()
-            sc = [li for li in lis if 'Detected stars' in li]
-            if len(sc) > 0:
-                try:
-                    starcount = int(sc[-1].split()[5])
-                    tstamp = sc[-1].split('-')[0]
-                except Exception:
-                    pass
+            matchcount = 0
+        dtstr = (datetime.datetime.now() + datetime.timedelta(days=-1)).strftime('%Y%m%d')
+        apicall = f'{apiurl}?reqtyp=station&reqval={dtstr}&statid={cfg.stationID}'
+        res = requests.get(apicall)
+        if res.status_code == 200:
+            rawdata=res.text.strip()
+            v1 = rawdata.count(f'{dtstr}_1')
+            v2 = rawdata.count(f'{dtstr}_2')
+            matchcount = matchcount + v1 + v2
+        client = mqtt.Client(camname)
+        client.on_connect = on_connect
+        client.on_publish = on_publish
+        if localcfg['mqtt']['username'] != '':
+            client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+        if localcfg['mqtt']['username'] != '':
+            client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+        client.connect(broker, 1883, 60)
+        topic = f'{topicbase}/{camname}/matchcount'
+        ret = client.publish(topic, payload=matchcount, qos=0, retain=False)
+        log.info(f'there were {matchcount} matches last night for {camname}')
+    return ret
 
-    if tstamp is not None: 
+
+def sendLiveMeteorCount(statid=''):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if statid == '':
+        statids =  [x[1].upper() for x in localcfg.items('stations')]
+    else:
+        statids = [statid]
+
+    for statid in statids:
+        cfg = getRMSConfig(statid, localcfg)
+
+        broker = localcfg['mqtt']['broker']
+        topicbase = 'meteorcams' 
+        camname = os.uname()[1]
+        if 'test' not in camname:
+            camname = cfg.stationID.lower()
+
         client = mqtt.Client(camname)
         client.on_connect = on_connect
         client.on_publish = on_publish
@@ -219,12 +172,120 @@ def sendStarCountToMqtt(statid=''):
             client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
         client.connect(broker, 1883, 60)
 
-        topic = f'{topicbase}/{camname}/starcount'
-        print(f'{tstamp}: starcount is {starcount}')
-        ret = client.publish(topic, payload=starcount, qos=0, retain=False)
-        return ret
+        log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
+        logfs = glob.glob(os.path.join(log_dir, 'ukmonlive*.log*'))
+        logfs.sort(key=lambda x: os.path.getmtime(x))
+        if len(logfs) == 0:
+            msg = 0
+        else:
+            lis = open(logfs[-1]).readlines()
+            msg = len([x for x in lis if 'uploading FF' in x])
+
+        subtopic = 'livecmeteorount'
+        topic = f'{topicbase}/{camname}/{subtopic}'
+        ret = client.publish(topic, payload=msg, qos=0, retain=False)
+    return 
+
+
+def sendToMqtt(statid='', cap_dir=None):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if statid == '':
+        statids =  [x[1].upper() for x in localcfg.items('stations')]
     else:
-        return 0
+        statids = [statid]
+
+    for statid in statids:
+        cfg = getRMSConfig(statid, localcfg)
+
+        broker = localcfg['mqtt']['broker']
+        topicbase = 'meteorcams' 
+        camname = os.uname()[1]
+        if 'test' not in camname:
+            camname = cfg.stationID.lower()
+
+        detectioncount, metcount, _, datestamp = getLoggedInfo(cfg, cap_dir)
+        msgs =[detectioncount, metcount, datestamp]
+
+        client = mqtt.Client(camname)
+        client.on_connect = on_connect
+        client.on_publish = on_publish
+        if localcfg['mqtt']['username'] != '':
+            client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+        if localcfg['mqtt']['username'] != '':
+            client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+        client.connect(broker, 1883, 60)
+
+        subtopics = ['detectioncount','meteorcount','timestamp']
+        for subtopic, msg in zip(subtopics, msgs): 
+            topic = f'{topicbase}/{camname}/{subtopic}'
+            ret = client.publish(topic, payload=msg, qos=0, retain=False)
+            #print("send to {}, result {}".format(topic, ret))
+
+    return ret
+
+
+def sendStarCountToMqtt(statid=''):
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    localcfg = configparser.ConfigParser()
+    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    if statid == '':
+        statids =  [x[1].upper() for x in localcfg.items('stations')]
+    else:
+        statids = [statid]
+    ret = 0
+    for statid in statids:
+        cfg = getRMSConfig(statid, localcfg)
+        broker = localcfg['mqtt']['broker']
+        topicbase = 'meteorcams' 
+        camname = os.uname()[1]
+        if 'test' not in camname:
+            camname = cfg.stationID.lower()
+
+        log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
+        logfs = glob.glob(os.path.join(log_dir, 'log*.log*'))
+        logfs.sort(key=lambda x: os.path.getmtime(x))
+        starcount = 0
+        tstamp = None
+        if len(logfs) > 0:
+            current_log = logfs[-1]
+            print(f'current log is {current_log}')
+            lis = open(current_log,'r').readlines()
+            sc = [li for li in lis if 'Detected stars' in li]
+            if len(sc) > 0:
+                try:
+                    starcount = int(sc[-1].split()[5])
+                    tstamp = sc[-1].split('-')[0]
+                except Exception:
+                    pass
+            else:
+                current_log = logfs[-2]
+                print(f'current log is {current_log}')
+                lis = open(current_log,'r').readlines()
+                sc = [li for li in lis if 'Detected stars' in li]
+                if len(sc) > 0:
+                    try:
+                        starcount = int(sc[-1].split()[5])
+                        tstamp = sc[-1].split('-')[0]
+                    except Exception:
+                        pass
+
+            if tstamp is not None: 
+                client = mqtt.Client(camname)
+                client.on_connect = on_connect
+                client.on_publish = on_publish
+                if localcfg['mqtt']['username'] != '':
+                    client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+                if localcfg['mqtt']['username'] != '':
+                    client.username_pw_set(localcfg['mqtt']['username'], localcfg['mqtt']['password'])
+                client.connect(broker, 1883, 60)
+
+                topic = f'{topicbase}/{camname}/starcount'
+                print(f'{tstamp}: starcount for {statid} is {starcount}')
+                ret = client.publish(topic, payload=starcount, qos=0, retain=False)
+
+    return ret
 
 
 def sendOtherData(cputemp, diskspace, statid=''):

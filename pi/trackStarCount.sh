@@ -8,4 +8,8 @@ source $HOME/vRMS/bin/activate
 source $here/config.ini >/dev/null 2>&1
 cd $here
 statid=$1
-python -c "from sendToMQTT import sendStarCountToMqtt; sendStarCountToMqtt(statid='$statid');"
+if [ "$statid" == "" ] ; then
+    python -c "from sendToMQTT import sendStarCountToMqtt; sendStarCountToMqtt();"
+else
+    python -c "from sendToMQTT import sendStarCountToMqtt; sendStarCountToMqtt(statid='$statid');"
+fi

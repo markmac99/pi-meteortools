@@ -7,4 +7,8 @@ here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source ~/vRMS/bin/activate
 cd $here
 statid=$1
-python -c "from sendToMQTT import sendMatchdataToMqtt;sendMatchdataToMqtt('$statid');"
+if [ "$statid" == "" ] ; then 
+    python -c "from sendToMQTT import sendMatchdataToMqtt;sendMatchdataToMqtt();"
+else
+    python -c "from sendToMQTT import sendMatchdataToMqtt;sendMatchdataToMqtt('$statid');"
+fi 
