@@ -25,5 +25,6 @@ else
     ds=$(python -c "import os;from shutil import disk_usage;x=disk_usage(os.path.expanduser('${datadir}'));print(round(x.used/x.total*100,4));")
 
     #grep BROKER $here/config.ini
-    python -c "from sendToMQTT import sendOtherData;sendOtherData('${tm}','${ds}', statid='$statid') ; "
+    python -c "from sendToMQTT import sendOtherData;sendOtherData('${tm}','${ds}', statid='$statid') ; "    
+    python -c "from sendToMQTT import sendLiveMeteorCount;sendLiveMeteorCount() ; "
 fi 
