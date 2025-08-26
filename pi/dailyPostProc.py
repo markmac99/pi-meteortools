@@ -212,6 +212,8 @@ def copyMLRejects(cap_dir, arch_dir, config):
         return 
     detlist = detlist[0]
     uflist = [f for f in ftplist if 'unfiltered' in f]
+    if len(uflist) == 0:
+        return 
     uflist = uflist[0]
     
     dets = [li.strip() for li in open(detlist,'r').readlines() if 'FF_' in li]
