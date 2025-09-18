@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright (C) Mark McIntyre
 
+# backup everything
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 pushd $here
 cd /mnt/c/Users/$USER/OneDrive/dev/meteorcam_config
