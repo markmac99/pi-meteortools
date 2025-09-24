@@ -22,7 +22,7 @@ sudo find . -mtime +35 -exec rm -f {} \;
 mkdir -p $HOME/backups/influx/$(date +%Y%m%d)
 influxd backup -portable $HOME/backups/influx/$(date +%Y%m%d)
 cd $HOME/backups/influx/
-find . -mtime +35 -exec rm -f {} \;
+find . -mtime +35 -exec rm -Rf {} \;
 
 # then push to AWS for safekeeping
 cd $HOME/backups

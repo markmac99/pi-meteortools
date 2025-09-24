@@ -150,7 +150,7 @@ def sendLiveMeteorCount(statid=''):
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     if statid == '':
-        statids =  [x[1].upper() for x in localcfg.items('stations')]
+        statids = [x[1].upper() for x in localcfg.items('stations')]
     else:
         statids = [statid]
 
