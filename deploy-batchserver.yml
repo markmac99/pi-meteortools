@@ -1,7 +1,9 @@
 ---
 - hosts: wordpresssite
+  vars_files: 
+    - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/wpserver
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/wpserver"
     destdir: ~/tools/meteorcampages
   tasks:
   - name: Copy files

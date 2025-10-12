@@ -1,8 +1,10 @@
 ---
 - hosts: astro3
   #gather_facts: no
+  vars_files: 
+    - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/radio_detector
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/radio_detector"
     destdir: c:/spectrum
     
   tasks:

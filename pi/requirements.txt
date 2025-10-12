@@ -10,4 +10,3 @@ python-crontab
 paho-mqtt==1.6.0
 ephem
 pillow
-meteortools

@@ -1,19 +1,26 @@
 ---
 - hosts: "{{host | default ('ohserver')}}"
   vars_files: 
-    - /mnt/e/dev/apikeys/mqvariables.enc
+    - "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/apikeys/mqvariables.enc"
+    - "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/apikeys/tuyakeys.enc"
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/otherservers
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/otherservers"
     destdir: ~/src/tackley-tools
+    destdir2: ~/src/tuya-mqtt
   tasks:
   - name: Copy supporting files
     copy: src={{ item.src }} dest={{ item.dest }} mode={{ item.mode }}
     with_items:
     - {src: '{{srcdir}}/install.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/backupOH.sh', dest: '{{destdir}}/', mode: '754', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+
+    - {src: '{{srcdir}}/config.json', dest: '{{destdir2}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/tuya-mqtt.service', dest: '{{destdir2}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/devices.conf', dest: '{{destdir2}}/', mode: '644', backup: no }
 
   - name: update MQTT broker
     lineinfile:
@@ -30,9 +37,80 @@
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
       line: 'PASSWORD={{ rmscampassword }}'
-  - name: install cronjobs and python modules
-    shell: '{{ destdir }}/install.sh'
-    args:
-      executable: /bin/bash
+  - name: update MQTT broker for tuya
+    lineinfile:
+      path: '{{destdir2}}/config.json'
+      regexp: '"host":'
+      line: '    "host": "wxsatpi",'
+  - name: update MQTT username for tuya
+    lineinfile:
+      path: '{{destdir2}}/config.json'
+      regexp: '"mqtt_user":'
+      line: '    "mqtt_user": "sensors",'
+  - name: update MQTT password for tuya
+    lineinfile:
+      path: '{{destdir2}}/config.json'
+      regexp: '"mqtt_pass"'
+      line: '    "mqtt_pass": "{{ mqsenspassword }}"'
+
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'smartsocketkey'
+      replace: '{{ smartsocketkey }}'
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'smartsocketid'
+      replace: '{{ smartsocketid }}'
+
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'utility1key'
+      replace: '{{ utility1key }}'
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'utility1id'
+      replace: '{{ utility1id }}'
+
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'utility2key'
+      replace: '{{ utility2key }}'
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'utility2id'
+      replace: '{{ utility2id }}'
+
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'chestfreezerkey'
+      replace: '{{ chestfreezerkey }}'
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'chestfreezerid'
+      replace: '{{ chestfreezerid }}'
+
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'fankey'
+      replace: '{{ fankey }}'
+  - name: Update Device keys 
+    ansible.builtin.replace:
+      path: '{{destdir2}}/devices.conf'
+      regexp: 'fanid'
+      replace: '{{ fanid }}'
+
+#  - name: install cronjobs and python modules
+#    shell: '{{ destdir }}/install.sh'
+#    args:
+#      executable: /bin/bash
 
   

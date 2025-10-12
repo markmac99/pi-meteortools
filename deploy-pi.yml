@@ -1,9 +1,9 @@
 ---
-- hosts: "{{host | default ('uk0006, uk000f, uk001l, uk002f')}}"
+- hosts: "{{host | default ('uk0006,uk000f,uk001l,uk002f')}}"
   vars_files: 
-    - /mnt/e/dev/apikeys/mqvariables.enc
+    - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/pi
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/pi"
     destdir: ~/source/tackley-tools
   tasks:
   - name: Ensures {{destdir}}/tmp exists
@@ -22,7 +22,10 @@
     - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/updateRMS.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/restartRMS.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/tackleyUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
 
@@ -30,7 +33,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'IDFILE='
-      line: 'IDFILE=~/.ssh/{{host}}'
+      line: 'IDFILE=~/.ssh/tackley'
   - name: update AWS host
     lineinfile:
       path: '{{destdir}}/config.ini'
@@ -61,9 +64,9 @@
       path: '{{destdir}}/config.ini'
       regexp: 'PASSWORD='
       line: 'PASSWORD={{ rmscampassword }}'
-  - name: install cronjobs and python modules
-    shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
-    args:
-      executable: /bin/bash
+  #- name: install cronjobs and python modules
+  #  shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
+  #  args:
+  #    executable: /bin/bash
 
   

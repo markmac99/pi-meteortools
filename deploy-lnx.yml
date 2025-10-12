@@ -1,7 +1,9 @@
 ---
 - hosts: thelinux
+  vars_files: 
+    - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/lnxserver
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/lnxserver"
     destdir: ~/scripts/radio
   tasks:
   - name: Copy files

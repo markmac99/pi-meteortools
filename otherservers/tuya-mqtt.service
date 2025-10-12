@@ -1,0 +1,16 @@
+[Unit]
+Description=tuya-mqtt
+#After=mosquitto.service
+
+[Service]
+ExecStart=/usr/bin/node /home/ohuser/src/tuya-mqtt/tuya-mqtt.js
+
+Restart=always
+User=ohuser
+Group=ohuser
+Environment=Path=/usr/bin
+Environment=NODE_ENV=Production
+WorkingDirectory=/home/ohuser/src/tuya-mqtt/
+
+[Install]
+WantedBy=multi-user.target

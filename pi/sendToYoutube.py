@@ -15,6 +15,8 @@ import os
 import sys
 import pickle
 import glob
+import socket
+import requests
 import configparser
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
@@ -24,12 +26,20 @@ from googleapiclient.http import MediaFileUpload
 from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
 
-try:
-    import RMS.ConfigReader as cr
-except Exception:
-    pass
+from tackleyUtils import getRMSConfig
 
 scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+
+# horrible hack to force ipv4-only lookups and connections
+old_getaddrinfo = socket.getaddrinfo
+
+
+def new_getaddrinfo(*args, **kwargs):
+    responses = old_getaddrinfo(*args, **kwargs)
+    return [response for response in responses if response[0] == socket.AF_INET]
+
+
+socket.getaddrinfo = new_getaddrinfo
 
 
 def main(title, fname):
@@ -37,6 +47,10 @@ def main(title, fname):
     api_version = "v3"
 
     local_path =os.path.dirname(os.path.abspath(__file__))
+
+    # workaround for slow or failing to resolve ipv6 addresses
+    socket.setdefaulttimeout(60)
+    requests.packages.urllib3.util.connection.HAS_IPV6 = False
 
     # When you authenticate as explained in the API docs, you will be given a 
     # token in JSON form. Store the token in this file in the same folder as
@@ -90,29 +104,30 @@ def main(title, fname):
         print(status, response)
         if response is not None:
             if 'id' in response:
-                print("Video id '%s' was successfully uploaded." % response['id'])
+                print(f"Video id {response['id']} was successfully uploaded.")
                 return True
             else:
-                exit("The upload failed with an unexpected response: %s" % response)
+                exit(f'The upload failed with an unexpected response: {response}')
                 return False
     except HttpError as e:
-        error='HTTP error %d arose with status: \'%s\' ' % (e.resp.status, e.content)
+        error=f'HTTP error {e.resp.status} arose with status: "{e.content} '
         print(error)
         return False
-    except Exception:
-        print('unknown error')
+    except Exception as e:
+        print(f'Unable to send: error {e}')
         return False
 
 
 if __name__ == "__main__":
     # Parameters: title to use and the file to upload
-    dt=sys.argv[1]
+    dt = sys.argv[1]
+    statid = sys.argv[2]
 
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
-    cfg = cr.parse(os.path.expanduser(rmscfg))
+    cfg = getRMSConfig(statid, localcfg)
+
     base_dir = os.path.join(cfg.data_dir, "ArchivedFiles")
     arch_dir = glob.glob1(base_dir, f'*{dt}*')
     if len(arch_dir) > 0:
