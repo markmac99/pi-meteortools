@@ -20,7 +20,6 @@ from dateutil.relativedelta import relativedelta
 import paramiko
 from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
-from crontab import CronTab
 import boto3
 
 from Utils.StackFFs import stackFFs
@@ -35,7 +34,6 @@ from tackleyUtils import getAWSKey
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
-from sendToMQTT import sendToMqtt # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
 log = logging.getLogger()
@@ -118,23 +116,6 @@ def annotateImage(img_path, statid, metcount, rundate=None):
 
 
 def addCrontabs(statid=''):
-    local_path =os.path.dirname(os.path.abspath(__file__))
-    cron = CronTab(user=True)
-    for job in cron:
-        if 'postMatchStats' in job.command or 'trackStarCount' in job.command \
-                or 'logTemperature' in job.command or 'setIPCamExpo' in job.command or 'logToMQTT' in job.command:
-            cron.remove(job)
-            cron.write()
-    job = cron.new(f'{local_path}/postMatchStats.sh {statid} >> /dev/null 2>&1')
-    job.setall('*/15', '9,10,11,12', '*', '*', '*')
-    cron.write()
-    job = cron.new(f'{local_path}/trackStarCount.sh {statid} >> /dev/null 2>&1')
-    job.setall('*/10', '*', '*', '*', '*')
-    cron.write()
-    job = cron.new(f'{local_path}/logToMQTT.sh {statid} >> /dev/null 2>&1')
-    job.setall('*/5', '*', '*', '*', '*')
-    cron.write()
-
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
@@ -535,10 +516,12 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info('already uploaded {:s}'.format(mp4name))
                 
     
-    if len(localcfg['mqtt']['broker']) > 1:
+    if localcfg['mqtt']['domq'] == '1':
         log.info('sending to MQ')
         try:
-            sendToMqtt(config.stationID, cap_dir)
+            sys.path.append('../rms_mqtt')
+            from sendToMQTT import sendToMqtt # noqa:E402
+            sendToMqtt(config.stationID)
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
@@ -613,7 +596,7 @@ if __name__ == '__main__':
 
     lastcap = os.path.normpath(os.path.expanduser(sys.argv[1]))
     lastcap = os.path.split(lastcap)[1]
-    camid  = lastcap.split('_')[0]
+    camid = lastcap.split('_')[0]
     config = getRMSConfig(camid, localcfg)
     datadir = config.data_dir
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
