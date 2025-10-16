@@ -15,3 +15,4 @@ infrastructure/lambdas/saveACApi/__pycache__
 auroracam/__pycache__
 disused/*
 .env
+pi/config.ini
