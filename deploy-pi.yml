@@ -20,9 +20,14 @@
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/tackleyUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/config.ini.sample', dest: '{{destdir}}/config.ini', mode: '644', backup: no }
 
+  - name: update id server
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'IDSERVER='
+      line: 'IDSERVER=wordpresssite'
   - name: update id file
     lineinfile:
       path: '{{destdir}}/config.ini'
@@ -38,6 +43,11 @@
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
       line: 'WEBSERVER=wordpresssite'
+  - name: update station1
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID1='
+      line: 'ID1=UK001L'
   #- name: install cronjobs and python modules
   #  shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
   #  args:

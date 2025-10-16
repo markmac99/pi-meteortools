@@ -1,0 +1,20 @@
+# config file
+[postprocess]
+UPLOAD=1
+IDSERVER=
+IDFILE=
+HOST=
+WEBSERVER=
+RMSDIR=~/source/RMS
+
+[mqtt]
+domq=1
+
+[backup]
+TARGET=
+REMOTEPATH=
+
+[stations]
+# used by setExpo to change day/night mode on the named cameras
+ID1=UKxxxxx
+ID2=UKyyyyy
