@@ -22,9 +22,14 @@
     - {src: '{{srcdir}}/restartRMS.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/tackleyUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/config.ini.sample', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
 
+  - name: update id server
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'IDSERVER='
+      line: 'IDSERVER=wordpresssite'
   - name: update id file
     lineinfile:
       path: '{{destdir}}/config.ini'
@@ -40,12 +45,33 @@
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
       line: 'WEBSERVER=wordpresssite'
-  - name: update idserver
+  - name: update backup target
     lineinfile:
       path: '{{destdir}}/config.ini'
-      regexp: 'IDSERVER='
-      line: 'IDSERVER=wordpresssite'
-  #- name: install cronjobs and python modules
+      regexp: 'TARGET='
+      line: 'TARGET=thelinux'
+  - name: update backup location
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'REMOTEPATH='
+      line: 'REMOTEPATH=/data3/astrodata/meteorcam'
+  - name: update station 1
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID1='
+      line: 'ID1=UK0006'
+  - name: update station 2
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID2='
+      line: 'ID2=UK000F'
+  - name: update station 3
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID3='
+      line: 'ID3=UK002F'
+
+    #- name: install cronjobs and python modules
   #  shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
   #  args:
   #    executable: /bin/bash

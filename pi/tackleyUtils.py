@@ -15,9 +15,13 @@ log = logging.getLogger()
 
 
 def getRMSConfig(statid, localcfg):
+    if 'xx' in statid.lower():
+        return None
     rmscfg = os.path.expanduser(f'~/source/Stations/{statid}/.config')
     if not os.path.isfile(rmscfg):
         rmscfg = os.path.join(localcfg['postprocess']['rmsdir'], '.config')
+    if not os.path.isfile(rmscfg):
+        return None
     cfg = cr.parse(os.path.expanduser(rmscfg))
     return cfg
 

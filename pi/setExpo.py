@@ -3,7 +3,6 @@
 # Copyright (C) Mark McIntyre
 #
 #
-import sys
 import os
 import ephem
 import configparser
@@ -65,7 +64,7 @@ def addCrontabEntries(cfg, testmode=False):
         return 
     cron = CronTab(user=True)
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh DAY')
+    iter=cron.find_command('setIPCamExpo.sh DAY')
     for i in iter:
         if i.is_enabled():
             found = True
@@ -78,7 +77,7 @@ def addCrontabEntries(cfg, testmode=False):
         cron.write()
 
     found = False
-    iter=cron.find_command(f'setIPCamExpo.sh NIGHT')
+    iter=cron.find_command('setIPCamExpo.sh NIGHT')
     for i in iter:
         if i.is_enabled():
             found = True
@@ -138,7 +137,7 @@ if __name__ == '__main__':
     if cml_args.stationid:
         camids = [cml_args.stationid]
     else:
-        camids =  [x[1].upper() for x in localcfg.items('stations')]
+        camids = [x[1].upper() for x in localcfg.items('stations')]
 
     testmode = False
     for camid in camids: 
@@ -146,7 +145,7 @@ if __name__ == '__main__':
             cfg = getRMSConfig(camid, localcfg)
         except Exception:
             print(f'cfg file for {camid} not found, skipping')
-            continue
-        setCameraExposure(cfg, daynight, nightgain=nightgain, nightColor=nightColor, autoExp=autoexp, testmode=testmode)
-
-    addCrontabEntries(cfg, testmode=testmode)
+            cfg = None
+        if cfg is not None:
+            setCameraExposure(cfg, daynight, nightgain=nightgain, nightColor=nightColor, autoExp=autoexp, testmode=testmode)
+            addCrontabEntries(cfg, testmode=testmode)

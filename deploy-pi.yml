@@ -43,6 +43,16 @@
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
       line: 'WEBSERVER=wordpresssite'
+  - name: update backup target
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'TARGET='
+      line: 'TARGET=thelinux'
+  - name: update backup location
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'REMOTEPATH='
+      line: 'REMOTEPATH=/data3/astrodata/meteorcam'
   - name: update station1
     lineinfile:
       path: '{{destdir}}/config.ini'
