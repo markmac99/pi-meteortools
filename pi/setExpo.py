@@ -43,9 +43,11 @@ def getRequiredMode(cfg):
     rise, set = getNextRiseSet(cfg)
     rise = rise + datetime.timedelta(minutes=5)
     set = set + datetime.timedelta(minutes=-5)
+    mode = 'day'
     if now > set or now < rise:
-        return 'night'
-    return 'day'
+        mode = 'night'
+    print(f'day-night mode is {mode}')
+    return mode
 
 
 def getNextRiseSet(cfg):
