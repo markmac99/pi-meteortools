@@ -21,6 +21,10 @@ def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoEx
     if testmode:
         print(f'would have switched {config.stationID} to {daynight} with gain {nightgain} color {nightColor} autoexp {autoExp}')
         return 
+    if daynight == 'reboot':
+        # determine what time it is and whether to switch to day or night mode
+        daynight = getRequiredMode(config)
+        
     cc.cameraControlV2(config, "SwitchMode", daynight)
     if nightgain is not None and daynight =='night':
         cc.cameraControlV2(config, 'SetParam', ['Camera', 'GainParam', 'Gain', f'{nightgain}'])
@@ -32,6 +36,16 @@ def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoEx
     if autoExp:
         cc.cameraControlV2(config, 'SetParam', ['Camera','ExposureParam','LeastTime','100'])
         cc.cameraControlV2(config, "SetParam", ["Camera", "BroadTrends", "AutoGain", "1"])
+
+
+def getRequiredMode(cfg):
+    now = datetime.datetime.now()
+    rise, set = getNextRiseSet(cfg)
+    rise = rise + datetime.timedelta(minutes=5)
+    set = set + datetime.timedelta(minutes=-5)
+    if now > set or now < rise:
+        return 'night'
+    return 'day'
 
 
 def getNextRiseSet(cfg):
@@ -88,6 +102,17 @@ def addCrontabEntries(cfg, testmode=False):
         job.hour.on(set.hour)
         job.minute.on(set.minute)
         cron.write()
+
+    found = False
+    iter=cron.find_command('setIPCamExpo.sh REBOOT')
+    for i in iter:
+        if i.is_enabled():
+            found = True
+    if found is False:
+        job = cron.new(f'sleep 10 && {local_path}/setIPCamExpo.sh REBOOT > {rmslogdir}/setreboot.log 2>&1')
+        job.every_reboot()
+        cron.write()
+
     cron.write()
     print('cron jobs updated')
     return 
