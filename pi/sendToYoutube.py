@@ -120,6 +120,10 @@ def main(title, fname):
 
 if __name__ == "__main__":
     # Parameters: title to use and the file to upload
+    if len(sys.argv) < 3:
+        print('usage: python sendToYoutube.py dtstr stationid')
+        print('eg:    python sendToYoutube.py 20241010 UK1234')
+        exit(0)
     dt = sys.argv[1]
     statid = sys.argv[2]
 
@@ -138,6 +142,6 @@ if __name__ == "__main__":
         else:
             fname = glob.glob(os.path.join(base_dir, arch_dir[0], '*timelapse.mp4'))[0]
             hname = os.uname()[1]
-            title = f'{hname} timelapse for {dt[:4]}-{dt[4:6]}-{dt[6:8]}'
+            title = f'{statid} timelapse for {dt[:4]}-{dt[4:6]}-{dt[6:8]}'
             print(f'sending {title}, {fname}')
             main(title, fname)
