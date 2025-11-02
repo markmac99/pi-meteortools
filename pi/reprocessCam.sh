@@ -1,6 +1,8 @@
 #!/bin/bash
 source ~/vRMS/bin/activate
 
+cd ~/source/RMS
+
 camid=$1
 dtval=$2
 if [[ "$camid" == "" || "$dtval" == "" ]] ; then 
