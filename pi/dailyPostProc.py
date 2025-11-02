@@ -519,7 +519,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     if localcfg['mqtt']['domq'] == '1':
         log.info('sending to MQ')
         try:
-            sys.path.append('../rms_mqtt')
+            sys.path.append(os.path.expanduser('~/source/rms_mqtt'))
             from sendToMQTT import sendToMqtt # noqa:E402
             sendToMqtt(config.stationID)
         except Exception as e:
