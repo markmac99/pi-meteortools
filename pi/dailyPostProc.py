@@ -139,6 +139,10 @@ def pushLatestMonthlyStack(targetname, imgname):
         ftp_client = ssh_client.open_sftp()
         _, fname = os.path.split(imgname)
         camid = fname[:6]
+        hname = os.uname()[1]
+        if 'test' in hname:
+            camid = hname
+
         if os.path.isfile(imgname):
             ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
             log.info(f'uploaded {fname} to {targetname}')
@@ -165,7 +169,10 @@ def pushLatestDailyStack(config, arch_dir, localcfg, s3):
         metcount = 0
     else:
         metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
+    hname = os.uname()[1]
     camid = config.stationID
+    if 'test' in hname:
+        camid = hname
 
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
     hn = localcfg['postprocess']['host']
@@ -274,7 +281,10 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
     stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask) 
     jpgfile = glob.glob(os.path.join(tmpdir, '*.jpg'))
     if len(jpgfile) > 0:
-        stn = cfg.stationID
+        hname = os.uname()[1]
+        stn = config.stationID
+        if 'test' in hname:
+            stn = hname
         flist = glob.glob(os.path.join(tmpdir, '*.fits'))
         annotateImage(jpgfile[0], stn, metcount=len(flist), rundate=currdir[7:13])
         targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
@@ -305,7 +315,11 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         lis = open(os.path.join(arch_dir, 'FTPdetectinfo_'+currdir+'.txt'), 'r').readlines()
         metcount = lis[0].split('=')[1].strip()
         currdir = os.path.basename(os.path.normpath(arch_dir))
-        camid = cfg.stationID
+        hname = os.uname()[1]
+        camid = config.stationID
+        if 'test' in hname:
+            camid = hname
+
         annotateImage(trackfile, camid, int(metcount), currdir[7:15])
     else:
         log.info('no trackstack available today')
@@ -333,7 +347,10 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
-        camid = cfg.stationID
+        hname = os.uname()[1]
+        camid = config.stationID
+        if 'test' in hname:
+            camid = hname
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
         target=hn[5:]
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
@@ -352,7 +369,10 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
 def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
-    hname = cfg.stationID
+    hname = os.uname()[1]
+    camid = config.stationID
+    if 'test' not in hname:
+        hname = camid 
     localcfg = configparser.ConfigParser()
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
@@ -369,6 +389,8 @@ def resendTrackStack(arch_dir, cfg):
     metcount = lis[0].split('=')[1].strip()
     currdir = os.path.basename(os.path.normpath(arch_dir))
     camid = cfg.stationID
+    if 'test' in hname:
+        camid = hname
     annotateImage(trackfile, camid, int(metcount), currdir[7:15])
     outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
     s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
@@ -415,6 +437,9 @@ def getInterestingFiles_(capdir, dt1, dt2):
 def archiveBz2(config, localcfg):
     sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
     camid = config.stationID.lower()
+    hname = os.uname()[1]
+    if 'test' in hname:
+        camid = hname
     datadir = config.data_dir
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
