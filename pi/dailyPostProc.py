@@ -1,8 +1,5 @@
 # 
-# python script thats called when the nightly run completes
-# requires
-# ~/.ssh/gmailpass - plaintext file containing gmail password
-# ~/.ssh/keyfile - plaintext file containing S3 keys or SSH private key for 
+# python script thats called when the nightly run completes to 
 # upload to S3 or website. filename configurable in config file
 #
 # Copyright (C) Mark McIntyre
@@ -65,9 +62,9 @@ def setupLogging(logpath, prefix='tackley_'):
     return 
 
 
-def purgeOldLogs(config, logpref, days=30):
+def purgeOldLogs(cfg, logpref, days=30):
     reftime = time.time() - 86400*days
-    log_dir = os.path.join(config.data_dir, config.log_dir)
+    log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
     for logf in glob.glob(os.path.join(log_dir, logpref + '*.log*')):
         if os.path.getmtime(logf) < reftime:
             os.remove(logf)
@@ -126,8 +123,8 @@ def addCrontabs(statid=''):
 
 
 def pushLatestMonthlyStack(targetname, imgname):
-    config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    sitecfg = config.lookup(targetname)
+    sshconfig = SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    sitecfg = sshconfig.lookup(targetname)
     if 'user' not in sitecfg.keys():
         log.warning(f'unable to connect to {targetname} - no entry in ssh config file')
         return 
@@ -154,7 +151,7 @@ def pushLatestMonthlyStack(targetname, imgname):
     return 
 
 
-def pushLatestDailyStack(config, arch_dir, localcfg, s3):
+def pushLatestDailyStack(cfg, arch_dir, localcfg, s3):
     stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack*_meteors.jpg'))]
     if len(stacklist) == 0:
         log.info('no daily stack today')
@@ -170,7 +167,7 @@ def pushLatestDailyStack(config, arch_dir, localcfg, s3):
     else:
         metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
     hname = os.uname()[1]
-    camid = config.stationID
+    camid = cfg.stationID
     if 'test' in hname:
         camid = hname
 
@@ -191,7 +188,7 @@ def pushLatestDailyStack(config, arch_dir, localcfg, s3):
     return 
 
 
-def copyMLRejects(cap_dir, arch_dir, config):
+def copyMLRejects(cap_dir, arch_dir, cfg):
     rej_dir = arch_dir.replace('ArchivedFiles','RejectedFiles')
     os.makedirs(rej_dir, exist_ok=True)
     ftplist = [f for f in glob.glob(os.path.join(arch_dir,'FTPdetectinfo*.txt')) if 'backup' not in f and 'uncalibrated' not in f]
@@ -228,19 +225,19 @@ def copyMLRejects(cap_dir, arch_dir, config):
     orig_count = 0
     final_count = 0
     base_dir, _ = os.path.split(rej_dir)
-    if config.arch_dirs_to_keep > 0:
-        archdir_list = getNightDirs(base_dir, config.stationID)
+    if cfg.arch_dirs_to_keep > 0:
+        archdir_list = getNightDirs(base_dir, cfg.stationID)
         orig_count = len(archdir_list)
-        while len(archdir_list) > config.arch_dirs_to_keep:
-            archdir_list = deleteNightFolders(base_dir, config)
+        while len(archdir_list) > cfg.arch_dirs_to_keep:
+            archdir_list = deleteNightFolders(base_dir, cfg)
         final_count = len(archdir_list)
     log.info('Purged {} older folders from RejectedFiles'.format(orig_count - final_count))
     orig_count = 0
     final_count = 0
-    if config.bz2_files_to_keep > 0:
+    if cfg.bz2_files_to_keep > 0:
         bz2_list = glob.glob(f'{base_dir}/*.zip')
         orig_count = len(bz2_list)
-        while len(bz2_list) > config.bz2_files_to_keep:
+        while len(bz2_list) > cfg.bz2_files_to_keep:
             os.remove(os.path.join(base_dir, bz2_list[0]))
             bz2_list.pop(0)
         final_count = len(bz2_list)
@@ -263,7 +260,6 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
         os.remove(oldjpg)
     # copy most recent fits files
     log.info(f'looking in {arch_dir}')
-    log.info(f'looking in {arch_dir}')
     flist = glob.glob(f'{arch_dir}/*.fits')
     for ff in flist:
         targ = os.path.join(tmpdir, os.path.basename(ff))
@@ -278,24 +274,27 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
             shutil.copyfile(currmaskf, maskfile)
     mask = MaskImage.loadMask(maskfile)
     # stack files. Flat is not used if subavg is true
-    stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask) 
-    jpgfile = glob.glob(os.path.join(tmpdir, '*.jpg'))
-    if len(jpgfile) > 0:
+    stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask)
+    log.info('stack created')
+    jpgfiles = glob.glob(os.path.join(tmpdir, '*.jpg'))
+    if len(jpgfiles) > 0:
         hname = os.uname()[1]
-        stn = config.stationID
+        stn = cfg.stationID
+        print(f'{hname} {stn}')
         if 'test' in hname:
             stn = hname
         flist = glob.glob(os.path.join(tmpdir, '*.fits'))
-        annotateImage(jpgfile[0], stn, metcount=len(flist), rundate=currdir[7:13])
+        annotateImage(jpgfiles[0], stn, metcount=len(flist), rundate=currdir[7:13])
         targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
-        shutil.copyfile(jpgfile[0], targ)
+        log.info(f'copying{jpgfiles[0]} to {targ}')
+        shutil.copyfile(jpgfiles[0], targ)
         hn = localcfg['postprocess']['host']
         if hn[:3] == 's3:':
             log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
             target=hn[5:]
             outf = '{:s}/stacks/{:s}'.format(stn, currdir[:13]+'.jpg')
             try: 
-                s3.meta.client.upload_file(jpgfile[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+                s3.meta.client.upload_file(jpgfiles[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
             except Exception as e:
                 log.warning('upload to S3 failed')
                 log.info(e, exc_info=True)
@@ -303,6 +302,8 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
             log.info('target is not s3, not uploading monthly stack')
         webserver = localcfg['postprocess']['webserver']
         pushLatestMonthlyStack(webserver, targ)
+    else:
+        log.warning('no stack created')
     return     
 
 
@@ -316,7 +317,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         metcount = lis[0].split('=')[1].strip()
         currdir = os.path.basename(os.path.normpath(arch_dir))
         hname = os.uname()[1]
-        camid = config.stationID
+        camid = cfg.stationID
         if 'test' in hname:
             camid = hname
 
@@ -348,7 +349,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
         hname = os.uname()[1]
-        camid = config.stationID
+        camid = cfg.stationID
         if 'test' in hname:
             camid = hname
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
@@ -370,7 +371,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
     hname = os.uname()[1]
-    camid = config.stationID
+    camid = cfg.stationID
     if 'test' not in hname:
         hname = camid 
     localcfg = configparser.ConfigParser()
@@ -416,7 +417,7 @@ def getInterestingFiles_(capdir, dt1, dt2):
     localcfg = configparser.ConfigParser()
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    sshconfig = SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
     ssh_client = paramiko.SSHClient()
@@ -434,13 +435,13 @@ def getInterestingFiles_(capdir, dt1, dt2):
     return 
 
 
-def archiveBz2(config, localcfg):
+def archiveBz2(cfg, localcfg):
     sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    camid = config.stationID.lower()
+    camid = cfg.stationID.lower()
     hname = os.uname()[1]
     if 'test' in hname:
         camid = hname
-    datadir = config.data_dir
+    datadir = cfg.data_dir
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
     ssh_client = paramiko.SSHClient()
@@ -485,12 +486,12 @@ def archiveBz2(config, localcfg):
         log.warning(e, exc_info=True)
 
 
-def rmsExternal(cap_dir, arch_dir, config):
-    rebootlockfile = os.path.join(config.data_dir, config.reboot_lock_file)
+def rmsExternal(cap_dir, arch_dir, cfg):
+    rebootlockfile = os.path.join(cfg.data_dir, cfg.reboot_lock_file)
     with open(rebootlockfile, 'w') as f:
         f.write('1')
 
-    setupLogging(os.path.join(config.data_dir, config.log_dir), f'tackley_log_{config.stationID}_')
+    setupLogging(os.path.join(cfg.data_dir, cfg.log_dir), f'tackley_log_{cfg.stationID}_')
     log.info('tackley external script started')
 
     cap_dir = os.path.normpath(cap_dir)
@@ -505,7 +506,7 @@ def rmsExternal(cap_dir, arch_dir, config):
     sys.path.append(srcdir)
     hname = os.uname()[1]
     if 'test' not in hname:
-        hname = config.stationID
+        hname = cfg.stationID
 
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
@@ -546,19 +547,19 @@ def rmsExternal(cap_dir, arch_dir, config):
         try:
             sys.path.append(os.path.expanduser('~/source/rms_mqtt'))
             from sendToMQTT import sendToMqtt # noqa:E402
-            sendToMqtt(config.stationID)
+            sendToMqtt(cfg.stationID)
         except Exception as e:
             log.warning('problem sending to MQTT')
             log.info(e, exc_info=True)
 
     # clear out older logfiles
-    purgeOldLogs(config, 'tackley_', days=30)
+    purgeOldLogs(cfg, 'tackley_', days=30)
     
     s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
         # copy the ML rejected files
         log.info('copying ML rejects')
-        copyMLRejects(cap_dir, arch_dir, config)
+        copyMLRejects(cap_dir, arch_dir, cfg)
 
         # upload the MP4 to S3 or a website
         hn = localcfg['postprocess']['host']
@@ -585,18 +586,18 @@ def rmsExternal(cap_dir, arch_dir, config):
 
         # upload daily stack
         log.info('uploading daily stack')
-        pushLatestDailyStack(config, arch_dir, localcfg, s3)
+        pushLatestDailyStack(cfg, arch_dir, localcfg, s3)
 
         # create monthly stack
         log.info('creating monthly stack')
-        monthlyStack(config, arch_dir, localcfg, s3)
+        monthlyStack(cfg, arch_dir, localcfg, s3)
         # archive data to my server
         log.info('backing up the ArchivedFiles data')
-        archiveBz2(config, localcfg)
+        archiveBz2(cfg, localcfg)
         # create trackstack
         log.info('creating trackstack')
         try: 
-            doTrackStack(arch_dir, config, localcfg, s3)
+            doTrackStack(arch_dir, cfg, localcfg, s3)
         except Exception as e:
             log.warning('trackstack failed, probably too many detections')
             log.info(e, exc_info=True)
@@ -622,12 +623,12 @@ if __name__ == '__main__':
     lastcap = os.path.normpath(os.path.expanduser(sys.argv[1]))
     lastcap = os.path.split(lastcap)[1]
     camid = lastcap.split('_')[0]
-    config = getRMSConfig(camid, localcfg)
-    datadir = config.data_dir
+    cfg = getRMSConfig(camid, localcfg)
+    datadir = cfg.data_dir
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
     arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
     print('processing {}'.format(lastcap))
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    rmsExternal(cap_dir, arch_dir, config)
+    rmsExternal(cap_dir, arch_dir, cfg)
