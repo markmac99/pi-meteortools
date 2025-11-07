@@ -28,19 +28,30 @@ import Utils.BatchFFtoImage as bff2i
 from tackleyUtils import getRMSConfig
 from tackleyUtils import getAWSKey
 
+try:
+    sys.path.append(os.path.expanduser('~/source/rms_mqtt'))
+    from sendToMQTT import sendToMqtt # noqa:E402 # type: ignore
+    gotSTMQ = True
+except Exception:
+    gotSTMQ = False
+
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
-log = logging.getLogger()
+log = logging.getLogger('tackleyloger')
 log.setLevel(logging.INFO)
 
 
 def setupLogging(logpath, prefix='tackley_'):
     print('about to initialise logger')
+
     logdir = os.path.expanduser(logpath)
     os.makedirs(logdir, exist_ok=True)
+    log.info('removing any existing log handlers')
+    for handler in log.handlers[:]:
+        log.removeHandler(handler)
 
     logfilename = os.path.join(logdir, prefix + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f') + '.log')
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
@@ -542,15 +553,9 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             log.info('already uploaded {:s}'.format(mp4name))
                 
     
-    if localcfg['mqtt']['domq'] == '1':
+    if localcfg['mqtt']['domq'] == '1' and gotSTMQ:
         log.info('sending to MQ')
-        try:
-            sys.path.append(os.path.expanduser('~/source/rms_mqtt'))
-            from sendToMQTT import sendToMqtt # noqa:E402
-            sendToMqtt(cfg.stationID)
-        except Exception as e:
-            log.warning('problem sending to MQTT')
-            log.info(e, exc_info=True)
+        sendToMqtt(cfg.stationID)
 
     # clear out older logfiles
     purgeOldLogs(cfg, 'tackley_', days=30)

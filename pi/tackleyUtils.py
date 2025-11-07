@@ -11,7 +11,7 @@ import RMS.ConfigReader as cr
 import os
 
 
-log = logging.getLogger()
+log = logging.getLogger('tackleyloger')
 
 
 def getRMSConfig(statid, localcfg):
