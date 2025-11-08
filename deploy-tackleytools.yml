@@ -1,5 +1,5 @@
 ---
-- hosts: ubunturms
+- hosts: "{{host | default ('ubunturms')}}"
   vars_files: 
     - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
@@ -56,17 +56,32 @@
       path: '{{destdir}}/config.ini'
       regexp: 'REMOTEPATH='
       line: 'REMOTEPATH=/data3/astrodata/meteorcam'
-  - name: update station 1
+  - name: update station 1 on uk001l
+    when: ('uk001l' in ansible_hostname)
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID1='
+      line: 'ID1=UK001L'
+  - name: update station 1 on testpi4
+    when: ('testpi4' in ansible_hostname)
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID1='
+      line: 'ID1=TESTPI4A'
+  - name: update station 1 
+    when: ('ubunturms' in ansible_hostname)
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'ID1='
       line: 'ID1=UK0006'
   - name: update station 2
+    when: ('ubunturms' in ansible_hostname)
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'ID2='
       line: 'ID2=UK000F'
   - name: update station 3
+    when: ('ubunturms' in ansible_hostname)
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'ID3='

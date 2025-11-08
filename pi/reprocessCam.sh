@@ -22,5 +22,10 @@ if [[ "$capdir" == "" || "$arcdir" == "" ]] ; then
 	echo data not found for $camid and $dtval
 	exit
 fi 
-python -m RMS.Reprocess -c ~/source/Stations/${camid}/.config  ${capdir}
-python -m RMS.RunExternalScript -c ~/source/Stations/${camid}/.config  ${capdir} ${arcdir}
+grep extl_script ~/source/RMS/RMS/Reprocess.py > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
+	python -m RMS.Reprocess -e -c ~/source/Stations/${camid}/.config   ${capdir}
+else
+	python -m RMS.Reprocess -c ~/source/Stations/${camid}/.config   ${capdir}
+	python -m RMS.RunExternalScript -c ~/source/Stations/${camid}/.config  ${capdir} ${arcdir}
+fi
