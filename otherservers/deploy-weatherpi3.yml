@@ -1,9 +1,9 @@
 ---
 - hosts: "{{host | default ('weatherpi3')}}"
   vars_files: 
-    - /mnt/e/dev/apikeys/mqvariables.enc
+    - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: /mnt/e/dev/meteorhunting/pi-meteortools/otherservers
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/meteorhunting/pi-meteortools/otherservers"
     destdir: ~/source/tackley-tools
   tasks:
   - name: Copy supporting files
@@ -19,7 +19,7 @@
     lineinfile:
       path: '{{destdir}}/config.ini'
       regexp: 'BROKER='
-      line: 'BROKER=wxsatpi'
+      line: 'BROKER=metsatpi'
   - name: update MQTT username
     lineinfile:
       path: '{{destdir}}/config.ini'
