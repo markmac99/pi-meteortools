@@ -16,7 +16,6 @@
     - {src: '{{srcdir}}/UK001L.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/UK002F.ini', dest: '{{destdir}}/', mode: '644', backup: no, directory_mode: no }
 
-    - {src: '{{srcdir}}/backupAllData.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/grabInterestingFiles.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/syncFireballData.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/helperfunctions.ps1', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
@@ -24,6 +23,4 @@
     - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/restoreConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/getLogs.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
-    - {src: '{{srcdir}}/getJitter.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
     - {src: '{{srcdir}}/refreshLocalCodeCopy.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
-    - {src: '{{srcdir}}/upgradeAll.sh', dest: '{{destdir}}/', mode: '755', backup: no, directory_mode: no }
