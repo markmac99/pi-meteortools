@@ -7,4 +7,5 @@ cd $here
 source $HOME/vMeteorRadio/bin/activate
 source $here/config.ini
 logfile=$LOGDIR/meteor_radar-$(date +%Y%m%d-%H%M%S).log 
-$HOME/vMeteorRadio/bin/python $SRCDIR/meteor_radar.py -c $VERBOSE -s $SNR -g $GAIN > $logfile
+[ $VERBOSE == 1 ] && VERBFLG=-v
+$HOME/vMeteorRadio/bin/python $SRCDIR/meteor_radar.py -c $VERBFLG -s $SNR -g $GAIN > $logfile
