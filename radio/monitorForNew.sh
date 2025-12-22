@@ -28,8 +28,8 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
 done 
 cd ../Captures
 latestdir=$(ls -1trd 20* | tail -1)
+donelist=$LOGDIR/uploaded.txt
 ls -1tr $latestdir/SMP*.npz | tail -1 | while read i ; do 
-    donelist=$LOGDIR/uploaded.txt
     if [ -f $donelist ] ; then
         grep $i $donelist > /dev/null
         if [ $? == 1 ] ; then 
@@ -41,6 +41,12 @@ ls -1tr $latestdir/SMP*.npz | tail -1 | while read i ; do
         echo $i    
     fi 
 done 
+# truncate the done list to avoid it getting large
+if [ -f $donelist ] ; then
+    cat $donelist | tail -10 > /tmp/uploaded.txt
+    mv -f /tmp/uploaded.txt $donelist
+fi
+
 source ~/source/tackley-tools/config.ini > /dev/null 2>&1
 
 currdt=$(date +%Y-%m-%d,)
