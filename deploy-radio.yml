@@ -12,7 +12,7 @@
     #delegate_to: localhost
     with_items:
     - {src: '{{srcdir}}/meteorradio.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
-    - {src: '{{srcdir}}/monitorforNew.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/monitorForNew.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
     - {src: '{{srcdir}}/meteorradio.service', dest: '{{destdir}}/', 'mode': '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', 'mode': '644', backup: no }
     - {src: '{{srcdir}}/installservice.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
