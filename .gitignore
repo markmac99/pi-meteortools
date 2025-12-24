@@ -1,6 +1,6 @@
 unused
 rbassom
-pi/__pycache__/*
+**/__pycache__/*
 **/.aws-sam
 infrastructure/terraform/.terraform.lock.hcl
 infrastructure/terraform/terraform.tfstate
@@ -11,8 +11,6 @@ windows/userdets/allsky.txt
 windows/jsonkeys/allsky.json
 windows/creds/credentials.allsky
 infrastructure/terraform/.terraform.tfstate.lock.info
-infrastructure/lambdas/saveACApi/__pycache__
-auroracam/__pycache__
 disused/*
 .env
 pi/config.ini
