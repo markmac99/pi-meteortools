@@ -5,9 +5,10 @@ source $here/config.ini
 if [ ! -f /tmp/getLatestRadioJpgs.running ] ; then 
 	echo "1" > /tmp/getLatestRadioJpgs.running
 	cd $DATADIR/Radio
-	aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "sc*.png"
-	aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "*.jpg"
-	rm -f /tmp/getLatestRadioJpgs.running
+        aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "sc*.png"
+        aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "*.jpg"
+        aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "me*.wav"
+		rm -f /tmp/getLatestRadioJpgs.running
 else
 	echo "already running"
 fi 
