@@ -12,25 +12,17 @@ bash -c "rsync -avz --delete radiopi:radar_data/Logs/ ./radar_data/Logs/"
 
 conda activate vMeteorRadio
 $env:mrdatadir="$radarloc/radar_data"
+$processed = get-content "${env:mrdatadir}/../processed.txt"
 $flist=(Get-ChildItem .\radar_data\Captures\ -r )
 foreach ($i in $flist) {
     $fullname = $i.fullname
-    if (test-path $i -pathtype leaf)
+    if (test-path $fullname -pathtype leaf) # only process files
     {
         $name = $i.name 
-        $imgname=$name.replace('Captures','Images').replace('SMP','PSD').replace('npz','png')
-        $imgname=".\radar_data\Images\" + $imgname
-        if (test-path $imgname -pathtype leaf){
-            Write-Output "skipping creation of $i"
-        }else {
-            python C:\dev\meteorhunting\MeteorRadio\src\analyse_detection.py -s -n -3 --colour PuBu -a $fullname
+        if ( -not ($processed -imatch "$name" )) 
+        {
+            python C:\dev\meteorhunting\pi-meteortools\radio\getStats.py $fullname
         }
     }
-}
-$flist=(Get-ChildItem .\radar_data\Captures\)
-foreach ($i in $flist) {
-    $fullname = $i.fullname
-    Write-Output $fullname
-    python C:\dev\meteorhunting\pi-meteortools\radio\getStats.py $fullname
 }
 set-location $here

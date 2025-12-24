@@ -1,10 +1,13 @@
 import os
 import sys
 import shutil
+import glob
 import numpy as np
 
 from scipy.signal import ShortTimeFFT
 from scipy.signal.windows import hamming
+
+from analyse_detection import createImages
 
 SPECGRAM_BAND = 500     # Band for displaying specgram plots is +/-500
 OVERLAP = 0.75
@@ -53,12 +56,21 @@ def processFolder(foldername, min_snr):
     imgdir = os.path.join(datadir, 'Images')
     auddir = os.path.join(datadir, 'Audio')
     arcdir = os.path.join(datadir, 'Archive')
-    files = os.listdir(foldername)
+    
+    if os.path.isfile(foldername):
+        files = [os.path.split(foldername)[1]]
+        foldername = os.path.split(foldername)[0]
+    else:
+        files = os.listdir(foldername)
     files = [x for x in files if 'SMP' in x and 'npz' in x]
+    if len(files) == 0:
+        print(f'nothing to do for x{foldername}x')
+        return 
     donefiles = open('processed.txt', 'r').readlines()
     donefiles = [d.strip() for d in donefiles]
     for fil in files:
         if fil in donefiles:
+            print(f'skipping {fil}')
             continue
         fullname = os.path.join(foldername, fil)
         snr = getSNR(fullname)[0]
@@ -66,12 +78,14 @@ def processFolder(foldername, min_snr):
             print(f'interesting {fil}')
             shutil.copyfile(fullname, os.path.join(arcdir, fil))
             spls = fil.split('_')
-            imgs = os.listdir(imgdir)
-            imgs = [x for x in imgs if f'{spls[2]}_{spls[3]}' in x]
+            imgs = glob.glob(f'{imgdir}/*{spls[2]}_{spls[3]}*')
+            wavs = glob.glob(f'{auddir}/*{spls[2]}_{spls[3]}*')
+            if len(imgs) == 0 or len(wavs) == 0:
+                imgs, wavs = createImages(fullname, imgdir=imgdir, auddir=auddir)
+            imgs = [os.path.split(im)[1] for im in imgs]
+            wavs = [os.path.split(wa)[1] for wa in wavs]
             for img in imgs:
                 shutil.copyfile(os.path.join(imgdir, img), os.path.join(arcdir, img))
-            wavs = os.listdir(auddir)
-            wavs = [x for x in wavs if f'{spls[2]}_{spls[3]}' in x and '.wav' in x]
             for wav in wavs:
                 shutil.copyfile(os.path.join(auddir, wav), os.path.join(arcdir, wav))
         else:
