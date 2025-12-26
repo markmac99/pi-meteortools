@@ -39,12 +39,12 @@ def setCameraExposure(config, daynight, nightgain=None, nightColor=False, autoEx
 
 
 def getRequiredMode(cfg):
-    now = datetime.datetime.now()
     rise, set = getNextRiseSet(cfg)
-    rise = rise + datetime.timedelta(minutes=5)
-    set = set + datetime.timedelta(minutes=-5)
-    mode = 'day'
-    if now > set or now < rise:
+    # between sunrise and sunset, next set will be today but next rise will be tomorrow
+    # between sunset and sunrise, next rise and set will both be tomorrow
+    if (rise.day > set.day):  
+        mode = 'day'
+    else:
         mode = 'night'
     print(f'day-night mode is {mode}')
     return mode
@@ -56,7 +56,6 @@ def getNextRiseSet(cfg):
     obs.lon = float(cfg.longitude) / 57.3
     obs.elev = float(cfg.elevation)
     obs.horizon = -9.0 / 57.3 # degrees below horizon for darkness
-
     sun = ephem.Sun()
     rise = obs.next_rising(sun).datetime()
     set = obs.next_setting(sun).datetime()
