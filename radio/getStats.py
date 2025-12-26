@@ -89,7 +89,7 @@ def processFolder(foldername, min_snr):
             for wav in wavs:
                 shutil.copyfile(os.path.join(auddir, wav), os.path.join(arcdir, wav))
         else:
-            print(f'dull {fil}')
+            print(f'dull {fil} {snr}')
         donefiles.append(fil)
     open('processed.txt', 'w').writelines("\n".join(donefiles))
     return 
