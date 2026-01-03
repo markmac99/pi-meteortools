@@ -7,7 +7,7 @@ if [ ! -f /tmp/getLatestRadioJpgs.running ] ; then
 	cd $DATADIR/Radio
         aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "sc*.png"
         aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "*.jpg"
-        aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "me*.wav"
+        aws s3 sync s3://mjmm-data/Radio/ . --exclude "*" --include "me*.wav" --exact-timestamps
 		rm -f /tmp/getLatestRadioJpgs.running
 else
 	echo "already running"
