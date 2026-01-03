@@ -12,6 +12,8 @@
     #delegate_to: localhost
     with_items:
     - {src: '{{srcdir}}/meteorradio.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/postStatsToMQ.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/updateRmobFiles.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
     - {src: '{{srcdir}}/monitorForNew.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
     - {src: '{{srcdir}}/meteorradio.service', dest: '{{destdir}}/', 'mode': '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', 'mode': '644', backup: no }

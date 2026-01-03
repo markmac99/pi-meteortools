@@ -6,53 +6,27 @@ here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 source $here/config.ini
 
+# kill any existing instances of the script
+pgrep -f "/bin/bash $0" | egrep -v $$ | while read i ; do kill -9 $i ; done > /dev/null 2>&1
+
 cd $LOGDIR
 mkdir -p done
-ls -1tr 20*.csv | tail -2 | while read i ; do 
-    if [[ -f done/$i ]] ; then
-        diff $i done/$i > /dev/null
-        if [ $? == 1 ] ; then
-            yr=${i:0:4}
-            mth=${i:5:8}
-            targname="s3://mjmm-rawradiodata/raw/event_log_${yr}${mth}"
-            /usr/local/bin/aws s3 cp $i $targname
-            cp $i done/
-        fi
-    else
-        yr=${i:0:4}
-        mth=${i:5:8}
-        targname="s3://mjmm-rawradiodata/raw/event_log_${yr}${mth}"
-        /usr/local/bin/aws s3 cp $i $targname
-        cp $i done/
-    fi 
-done 
-cd ../Captures
-latestdir=$(ls -1trd 20* | tail -1)
+
+logfile=$(ls -1tr meteor_radar*.log | tail -1)
 donelist=$LOGDIR/uploaded.txt
-ls -1tr $latestdir/SMP*.npz | tail -1 | while read i ; do 
-    if [ -f $donelist ] ; then
-        grep $i $donelist > /dev/null
+
+tail -fn0 $logfile  | while read line ; do 
+    if [[ "$line" =~ "Saving /home" ]] ; then  
+        sleep 10
+        datafile=${line:7:100}
+        basedatafile=$(basename $datafile)
+        grep $basedatafile $donelist > /dev/null
         if [ $? == 1 ] ; then 
-            targname="s3://mjmm-rawradiodata/tmp/$(basename $i)"
-            /usr/local/bin/aws s3 cp $i $targname
-            echo $i >> $donelist
+            /usr/local/bin/aws s3 cp $datafile "s3://mjmm-rawradiodata/tmp/$basedatafile"
+            echo $basedatafile >> $donelist
+            cat $donelist | tail -10 > /tmp/uploaded.txt
+            mv -f /tmp/uploaded.txt $donelist
         fi 
-    else
-        echo $i    
     fi 
-done 
-# truncate the done list to avoid it getting large
-if [ -f $donelist ] ; then
-    cat $donelist | tail -10 > /tmp/uploaded.txt
-    mv -f /tmp/uploaded.txt $donelist
-fi
+done
 
-source ~/source/tackley-tools/config.ini > /dev/null 2>&1
-
-currdt=$(date +%Y-%m-%d,)
-currhr=$(date +%Y-%m-%d,%H)
-lastcsv=$(ls -1 $LOGDIR/20*.csv | tail -1)
-dailyct=$(egrep "$currdt" $lastcsv | wc -l)
-hourlyct=$(egrep "$currhr" $lastcsv | wc -l)
-/usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/hourly -m $hourlyct
-/usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/daily -m $dailyct
