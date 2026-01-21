@@ -69,6 +69,8 @@ if __name__ == '__main__':
     mthdata = getMatchingUkmonEvents(yr, smth, emth)
 
     for _, rw in tbldata.iterrows():
+        if rw.evtdate == 'evtdate':
+            continue
         testdt = datetime.datetime.strptime(rw.evtdate, '%Y-%m-%d %H:%M:%S')
         fl1 = mthdata[mthdata.ts > testdt-datetime.timedelta(minutes=TIMERANGE)]
         fl2 = fl1[fl1.ts < testdt+datetime.timedelta(minutes=TIMERANGE)]
