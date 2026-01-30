@@ -10,6 +10,7 @@ import sys
 import glob
 import configparser
 import logging
+import logging.handlers
 import time
 import shutil
 import datetime 
@@ -633,7 +634,4 @@ if __name__ == '__main__':
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
     arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
     print('processing {}'.format(lastcap))
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg = configparser.ConfigParser()
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
     rmsExternal(cap_dir, arch_dir, cfg)
