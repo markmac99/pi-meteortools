@@ -15,4 +15,5 @@ hourlyct=$(egrep "$currhr" $lastcsv | wc -l)
 now=$(date +%Y-%m-%dT%H:%M:%SZ)
 /usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/hourly -m $hourlyct
 /usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/daily -m $dailyct
-/usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/lastupdate -m $now
+# last update must be persistent so that the monitor doesnt stall
+/usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/lastupdate -r -m $now
