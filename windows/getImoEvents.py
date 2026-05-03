@@ -63,9 +63,8 @@ if __name__ == '__main__':
         print('reading data from IMO')
         tbldata = getTableData(yr, smth, emth)
         tbldata.to_csv(fname)
-    else:
-        print('reading data from file')
-        tbldata =pd.read_csv('c:/temp/events-2025-10-11.csv', index_col=0)
+    print('reading data from file')
+    tbldata =pd.read_csv('c:/temp/events-2025-10-11.csv', index_col=0)
     mthdata = getMatchingUkmonEvents(yr, smth, emth)
 
     for _, rw in tbldata.iterrows():
