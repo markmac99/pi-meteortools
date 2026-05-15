@@ -50,7 +50,7 @@ def setupLogging(logpath, prefix='tackley_'):
 
     logdir = os.path.expanduser(logpath)
     os.makedirs(logdir, exist_ok=True)
-    log.info('removing any existing log handlers')
+    print('removing any existing log handlers')
     for handler in log.handlers[:]:
         log.removeHandler(handler)
 
