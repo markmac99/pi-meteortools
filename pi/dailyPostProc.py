@@ -607,9 +607,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
         except Exception as e:
             log.warning('trackstack failed, probably too many detections')
             log.info(e, exc_info=True)
-#            sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
-#                        'Warning',f'{hname}@themcintyres.ddns.net')
-            os.remove(rebootlockfile)
+
     os.remove(rebootlockfile)
     log.info('done')
     # clear log handlers again
