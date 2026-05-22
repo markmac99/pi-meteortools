@@ -50,19 +50,19 @@ def getRequiredMode(cfg):
     return mode
 
 
-def getNextRiseSet(cfg):
+def getNextRiseSet(cfg, sunalt=-9):
     obs = ephem.Observer()
     obs.lat = float(cfg.latitude) / 57.3 # convert to radians, close enough for this
     obs.lon = float(cfg.longitude) / 57.3
     obs.elev = float(cfg.elevation)
-    obs.horizon = -9.0 / 57.3 # degrees below horizon for darkness
+    obs.horizon = sunalt / 57.3 # degrees below horizon for darkness
     sun = ephem.Sun()
     rise = obs.next_rising(sun).datetime()
     set = obs.next_setting(sun).datetime()
     return rise, set
 
 
-def addCrontabEntries(cfg, testmode=False):
+def addCrontabEntries(cfg, sunalt=-9, testmode=False):
     local_path =os.path.dirname(os.path.abspath(__file__))
     if cfg.stationID in cfg.data_dir:
         root_data_dir = os.path.normpath(os.path.join(cfg.data_dir,'..'))
@@ -70,7 +70,7 @@ def addCrontabEntries(cfg, testmode=False):
         root_data_dir = cfg.data_dir
     rmslogdir = os.path.expanduser(os.path.join(root_data_dir, cfg.log_dir))
 
-    rise, set = getNextRiseSet(cfg)
+    rise, set = getNextRiseSet(cfg, sunalt)
     rise = rise + datetime.timedelta(minutes=5)
     set = set + datetime.timedelta(minutes=-5)
 
@@ -165,6 +165,8 @@ if __name__ == '__main__':
     else:
         camids = [x[1].upper() for x in localcfg.items('stations')]
 
+    sunalt = float(localcfg['postprocess']['sunangle'])
+
     testmode = False
     for camid in camids: 
         try:
@@ -174,4 +176,4 @@ if __name__ == '__main__':
             cfg = None
         if cfg is not None:
             setCameraExposure(cfg, daynight, nightgain=nightgain, nightColor=nightColor, autoExp=autoexp, testmode=testmode)
-            addCrontabEntries(cfg, testmode=testmode)
+            addCrontabEntries(cfg, sunalt=sunalt, testmode=testmode)
