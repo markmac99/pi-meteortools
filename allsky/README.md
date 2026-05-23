@@ -1,0 +1,1 @@
+I'm now using the Allsky Project's software out-of-the-box, though I'm running some scripts of my own to manaqge uploads to my website and youtube. The support scripts have moved to [https://github.com/markmac99/allsky](https://github.com/markmac99/allsky)
