@@ -12,8 +12,14 @@ import argparse
 
 # make use of RMS functionality
 import Utils.CameraControl as cc
+from time import sleep
+import argparse
+
+# make use of RMS functionality
+import Utils.CameraControl as cc
 
 from crontab import CronTab
+from tackleyUtils import getRMSConfig
 from tackleyUtils import getRMSConfig
 
 
@@ -69,11 +75,19 @@ def addCrontabEntries(cfg, sunalt=-9, testmode=False):
     else:
         root_data_dir = cfg.data_dir
     rmslogdir = os.path.expanduser(os.path.join(root_data_dir, cfg.log_dir))
+    if cfg.stationID in cfg.data_dir:
+        root_data_dir = os.path.normpath(os.path.join(cfg.data_dir,'..'))
+    else:
+        root_data_dir = cfg.data_dir
+    rmslogdir = os.path.expanduser(os.path.join(root_data_dir, cfg.log_dir))
 
     rise, set = getNextRiseSet(cfg, sunalt)
     rise = rise + datetime.timedelta(minutes=5)
     set = set + datetime.timedelta(minutes=-5)
 
+    if testmode:
+        print(f'would have set crontabs for {rise} or {set}')
+        return 
     if testmode:
         print(f'would have set crontabs for {rise} or {set}')
         return 
@@ -87,6 +101,7 @@ def addCrontabEntries(cfg, sunalt=-9, testmode=False):
             i.minute.on(rise.minute)
     if found is False:
         job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmslogdir}/setday.log 2>&1')
+        job = cron.new(f'{local_path}/setIPCamExpo.sh DAY > {rmslogdir}/setday.log 2>&1')
         job.hour.on(rise.hour)
         job.minute.on(rise.minute)
         cron.write()
@@ -99,6 +114,7 @@ def addCrontabEntries(cfg, sunalt=-9, testmode=False):
             i.hour.on(set.hour)
             i.minute.on(set.minute)
     if found is False:
+        job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmslogdir}/setnight.log 2>&1')
         job = cron.new(f'{local_path}/setIPCamExpo.sh NIGHT > {rmslogdir}/setnight.log 2>&1')
         job.hour.on(set.hour)
         job.minute.on(set.minute)
@@ -116,10 +132,36 @@ def addCrontabEntries(cfg, sunalt=-9, testmode=False):
 
     cron.write()
     print('cron jobs updated')
+    print('cron jobs updated')
     return 
 
 
 if __name__ == '__main__':
+
+    srcdir = os.path.split(os.path.abspath(__file__))[0]
+    arg_parser = argparse.ArgumentParser(description='Set camera to day or night mode')
+
+    arg_parser.add_argument('daynight', nargs=1, metavar='DAYNIGHT', type=str,
+        help='day or night mode')
+
+    arg_parser.add_argument('-c', '--config', nargs=1, metavar='CONFIG_PATH', type=str, 
+        help='Path to a config file which will be used instead of the default one.')
+
+    arg_parser.add_argument('-n', '--nightcolour', action="store_true", help='use colour mode at night')
+    
+    arg_parser.add_argument('-a', '--autoexp', action="store_true", help='use autoexposure mode')
+    
+    arg_parser.add_argument('-g', '--nightgain', metavar='NIGHT_GAIN', help='night gain to use (default 70)')
+
+    arg_parser.add_argument('-s', '--stationid', metavar='STATIONID', help='optional stationid if not in config.ini')
+
+    cml_args = arg_parser.parse_args()
+
+    daynight = cml_args.daynight[0].lower()
+
+    localcfg = configparser.ConfigParser()
+    if cml_args.config:
+        localcfg.read(cml_args.config[0])
 
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     arg_parser = argparse.ArgumentParser(description='Set camera to day or night mode')
@@ -154,7 +196,22 @@ if __name__ == '__main__':
 
     nightColor = False
     if cml_args.nightcolour:
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+
+    nightgain = None
+    if cml_args.nightgain and int(cml_args.nightgain) != 70:
+        nightgain = int(cml_args.nightgain)
+
+    nightColor = False
+    if cml_args.nightcolour:
         nightColor = True
+
+    autoexp = False
+    if cml_args.autoexp:
+        autoexp = True
+
+    if cml_args.stationid:
+        camids = [cml_args.stationid]
 
     autoexp = False
     if cml_args.autoexp:

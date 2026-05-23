@@ -211,8 +211,12 @@ def copyMLRejects(cap_dir, arch_dir, cfg):
     detlist = [f for f in ftplist if 'unfiltered' not in f]
     if len(detlist)==0: 
         return 
+    if len(detlist)==0: 
+        return 
     detlist = detlist[0]
     uflist = [f for f in ftplist if 'unfiltered' in f]
+    if len(uflist) == 0:
+        return 
     if len(uflist) == 0:
         return 
     uflist = uflist[0]
@@ -371,6 +375,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
         target=hn[5:]
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
+        outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         try: 
             s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
         except Exception as e:
@@ -384,6 +389,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
     return 
 
 
+def resendTrackStack(arch_dir, cfg):
 def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
     hname = os.uname()[1]
@@ -415,7 +421,9 @@ def resendTrackStack(arch_dir, cfg):
 
 
 def getInterestingFiles_(capdir, dt1, dt2):
+def getInterestingFiles_(capdir, dt1, dt2):
     # a function to get all fits files between two date/time ranges
+ 
  
     t1 = datetime.datetime.strptime(dt1, '%Y%m%d_%H%M%S').timestamp()
     t2 = datetime.datetime.strptime(dt2, '%Y%m%d_%H%M%S').timestamp()
@@ -430,6 +438,7 @@ def getInterestingFiles_(capdir, dt1, dt2):
     bff2i.batchFFtoImage(tmp_folder, 'jpg', True)
     zipf = shutil.make_archive(tmp_folder, 'zip', root_dir = tmp_folder, base_dir=tmp_folder)
 
+
     localcfg = configparser.ConfigParser()
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
@@ -441,6 +450,8 @@ def getInterestingFiles_(capdir, dt1, dt2):
     ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
     ftp = ssh_client.open_sftp()
    
+    camid = os.path.split(capdir)[1].split('_')[0]
+    rempath = f'{localcfg["backup"]["remotepath"]}/{camid.lower()}/{currdir[7:11]}/{currdir}_saved.zip'
     camid = os.path.split(capdir)[1].split('_')[0]
     rempath = f'{localcfg["backup"]["remotepath"]}/{camid.lower()}/{currdir[7:11]}/{currdir}_saved.zip'
     ftp.put(zipf, rempath)
@@ -514,10 +525,15 @@ def rmsExternal(cap_dir, arch_dir, cfg):
     arch_dir = os.path.normpath(arch_dir)
     log.info(f'processing {cap_dir}')
 
+    cap_dir = os.path.normpath(cap_dir)
+    arch_dir = os.path.normpath(arch_dir)
+    log.info(f'processing {cap_dir}')
+
     log.info('reading local config')
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
+
 
     sys.path.append(srcdir)
     hname = os.uname()[1]
@@ -532,6 +548,11 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
             already_done = [x.strip() for x in already_done]
         if mp4name not in already_done:
+        already_done = []
+        if os.path.isfile(os.path.join(srcdir, '.ytdone')):
+            already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+            already_done = [x.strip() for x in already_done]
+        if mp4name not in already_done:
             tod = mp4name.split('_')[1]
             tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
             msg = '{:s} timelapse for {:s}'.format(hname, tod)
@@ -539,6 +560,13 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             for retries in range(0,5):
                 try:
                     if stu.main(msg, os.path.join(arch_dir, mp4name)):
+                        # reload the done list in case its been updated by another process
+                        already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+                        already_done = [x.strip() for x in already_done]
+                        already_done.append(mp4name)
+                        already_done = list(set(already_done))
+                        already_done.sort()
+                        open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
                         # reload the done list in case its been updated by another process
                         already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
                         already_done = [x.strip() for x in already_done]

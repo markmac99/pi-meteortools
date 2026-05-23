@@ -6,6 +6,7 @@
 
 srcdir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
+
 source ~/vRMS/bin/activate
 source $srcdir/config.ini > /dev/null 2>&1
 
@@ -28,9 +29,11 @@ cp -p $HOME/.ssh/*id_rsa* /tmp/rms_config
 if [ -f $HOME/.ssh/authorized_keys ] ; then cp -p $HOME/.ssh/authorized_keys /tmp/rms_config ; fi
 
 cp $UKMONDIR/ukmon.ini /tmp/rms_config
+cp $UKMONDIR/ukmon.ini /tmp/rms_config
 cp -pr $HOME/.ssh/ukmon* /tmp/rms_config
 
 cd /tmp
+tar -czf $tarfname ./rms_config/*
 tar -czf $tarfname ./rms_config/*
 
 echo "now copy $tarfname to a safe place"

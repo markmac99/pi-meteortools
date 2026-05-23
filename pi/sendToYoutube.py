@@ -27,8 +27,20 @@ from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
 
 from tackleyUtils import getRMSConfig
+from tackleyUtils import getRMSConfig
 
 scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+
+# horrible hack to force ipv4-only lookups and connections
+old_getaddrinfo = socket.getaddrinfo
+
+
+def new_getaddrinfo(*args, **kwargs):
+    responses = old_getaddrinfo(*args, **kwargs)
+    return [response for response in responses if response[0] == socket.AF_INET]
+
+
+socket.getaddrinfo = new_getaddrinfo
 
 # horrible hack to force ipv4-only lookups and connections
 old_getaddrinfo = socket.getaddrinfo
@@ -47,6 +59,10 @@ def main(title, fname):
     api_version = "v3"
 
     local_path =os.path.dirname(os.path.abspath(__file__))
+
+    # workaround for slow or failing to resolve ipv6 addresses
+    socket.setdefaulttimeout(60)
+    requests.packages.urllib3.util.connection.HAS_IPV6 = False
 
     # workaround for slow or failing to resolve ipv6 addresses
     socket.setdefaulttimeout(60)
@@ -105,14 +121,19 @@ def main(title, fname):
         if response is not None:
             if 'id' in response:
                 print(f"Video id {response['id']} was successfully uploaded.")
+                print(f"Video id {response['id']} was successfully uploaded.")
                 return True
             else:
+                exit(f'The upload failed with an unexpected response: {response}')
                 exit(f'The upload failed with an unexpected response: {response}')
                 return False
     except HttpError as e:
         error=f'HTTP error {e.resp.status} arose with status: "{e.content} '
+        error=f'HTTP error {e.resp.status} arose with status: "{e.content} '
         print(error)
         return False
+    except Exception as e:
+        print(f'Unable to send: error {e}')
     except Exception as e:
         print(f'Unable to send: error {e}')
         return False
@@ -130,6 +151,8 @@ if __name__ == "__main__":
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
+    cfg = getRMSConfig(statid, localcfg)
+
     cfg = getRMSConfig(statid, localcfg)
 
     base_dir = os.path.join(cfg.data_dir, "ArchivedFiles")
