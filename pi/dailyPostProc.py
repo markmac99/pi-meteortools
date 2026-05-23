@@ -49,7 +49,7 @@ log = logging.getLogger('tackleyloger')
 log.setLevel(logging.INFO)
 
 
-def setupLogging(logpath, prefix='tackley_'):
+def setupLogging(logpath, logprefix='tackley_'):
     print('about to initialise logger')
 
     logdir = os.path.expanduser(logpath)
@@ -58,7 +58,7 @@ def setupLogging(logpath, prefix='tackley_'):
     for handler in log.handlers[:]:
         log.removeHandler(handler)
 
-    logfilename = os.path.join(logdir, prefix + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f') + '.log')
+    logfilename = os.path.join(logdir, f"{logprefix}{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f')}.log")
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter(fmt='%(asctime)s-%(levelname)s-%(module)s-line:%(lineno)d - %(message)s', 
