@@ -19,12 +19,16 @@ import paramiko
 from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
 import boto3
+import argparse
+
 
 from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
 from RMS.DeleteOldObservations import getNightDirs, deleteNightFolders
 from Utils.TrackStack import trackStack
 import Utils.BatchFFtoImage as bff2i
+import RMS.ConfigReader as cr
+
 
 from tackleyUtils import getRMSConfig
 from tackleyUtils import getAWSKey
@@ -617,19 +621,56 @@ def rmsExternal(cap_dir, arch_dir, cfg):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('usage: python dailyPostProc.py /full/path/to/capdir')
-        exit(0)
-    localcfg = configparser.ConfigParser()
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    arg_parser = argparse.ArgumentParser(description="Run tackley postprocessing script.")
+    arg_parser.add_argument('-d', '--dir_path', nargs=1, metavar='DIR_PATH', type=str,
+        help='Path to CapturedFiles folder to process. Defaults to latest.')
 
-    lastcap = os.path.normpath(os.path.expanduser(sys.argv[1]))
+    arg_parser.add_argument( '-c', '--config', nargs=1, metavar='CONFIG_PATH', type=str,
+        help="Path to the RMS config file. Defaults to working it out from dir_path")
+    
+    arg_parser.add_argument( '-t', '--toolcfg', nargs=1, metavar='TOOL_CFG_PATH', type=str,
+        help="Path to the tackley config file. Defaults to current directory.")
+    
+    cml_args = arg_parser.parse_args()
+
+    if not cml_args.config and not cml_args.dir_path:
+        print('Must supply either --dir_path or --config parameters or both')
+        exit(1)
+
+    if cml_args.config:
+        cfg = cr.loadConfigFromDirectory(cml_args.config, 'notused')
+    else:
+        cfg = None # we will try to load it later
+
+    localcfg = configparser.ConfigParser()
+    if cml_args.toolcfg:
+        localcfg.read(cml_args.toolcfg[0])
+    else:
+        # read from code source folder
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+
+    if cml_args.dir_path:
+        lastcap = os.path.normpath(os.path.expanduser(cml_args.dir_path[0]))
+        if not os.path.isdir(lastcap):
+            print(f'Capture folder {cml_args.dir_path[0]} not found')
+            exit(1)
+    else:
+        capdir = os.path.expanduser(os.path.join(cfg.data_dir, 'CapturedFiles'))
+        recentcaps = os.listdir(capdir)
+        recentcaps.sort()
+        if len(recentcaps) >0:
+            lastcap = recentcaps[-1]
+        else:
+            print(f'no captured data in {capdir}')
+            exit(0)
     lastcap = os.path.split(lastcap)[1]
-    camid = lastcap.split('_')[0]
-    cfg = getRMSConfig(camid, localcfg)
+    if not cfg:
+        camid = lastcap.split('_')[0]
+        cfg = getRMSConfig(camid, localcfg)
+
     datadir = cfg.data_dir
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
     arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
-    print('processing {}'.format(lastcap))
+    print(f'processing {lastcap}')
     rmsExternal(cap_dir, arch_dir, cfg)
