@@ -1,0 +1,11 @@
+[Unit]
+Description=Run RBassoms MeteorRadio software
+After=network.target
+
+[Service]
+ExecStart=%h/source/radiometeor_tackley/meteorradio.sh 
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

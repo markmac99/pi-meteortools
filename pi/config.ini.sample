@@ -6,14 +6,15 @@ IDFILE=
 HOST=
 WEBSERVER=
 RMSDIR=~/source/RMS
+
 [mqtt]
-BROKER=
-USERNAME=
-PASSWORD=
+domq=1
+
 [backup]
-TARGET=thelinux
-REMOTEPATH=/data3/astrodata/meteorcam
+TARGET=
+REMOTEPATH=
+
 [stations]
-ID1=UK0006
-ID2=UK000F
-ID3=UK002F
+# used by setExpo to change day/night mode on the named cameras
+ID1=UKxxxx
+ID2=UKyyyy

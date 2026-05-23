@@ -1,8 +1,5 @@
 # 
-# python script thats called when the nightly run completes
-# requires
-# ~/.ssh/gmailpass - plaintext file containing gmail password
-# ~/.ssh/keyfile - plaintext file containing S3 keys or SSH private key for 
+# python script thats called when the nightly run completes to 
 # upload to S3 or website. filename configurable in config file
 #
 # Copyright (C) Mark McIntyre
@@ -13,6 +10,7 @@ import sys
 import glob
 import configparser
 import logging
+import logging.handlers
 import time
 import shutil
 import datetime 
@@ -20,34 +18,47 @@ from dateutil.relativedelta import relativedelta
 import paramiko
 from paramiko.config import SSHConfig
 from PIL import Image, ImageFont, ImageDraw
-from crontab import CronTab
 import boto3
+import argparse
+
 
 from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
 from RMS.DeleteOldObservations import getNightDirs, deleteNightFolders
 from Utils.TrackStack import trackStack
 import Utils.BatchFFtoImage as bff2i
+import RMS.ConfigReader as cr
+
 
 from tackleyUtils import getRMSConfig
 from tackleyUtils import getAWSKey
 
+try:
+    sys.path.append(os.path.expanduser('~/source/rms_mqtt'))
+    from sendToMQTT import sendToMqtt # noqa:E402 # type: ignore
+    gotSTMQ = True
+except Exception:
+    gotSTMQ = False
+
 
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
-from sendToMQTT import sendToMqtt # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
-log = logging.getLogger()
+log = logging.getLogger('tackleyloger')
 log.setLevel(logging.INFO)
 
 
-def setupLogging(logpath, prefix='tackley_'):
+def setupLogging(logpath, logprefix='tackley_'):
     print('about to initialise logger')
+
     logdir = os.path.expanduser(logpath)
     os.makedirs(logdir, exist_ok=True)
+    print('removing any existing log handlers')
+    for handler in log.handlers[:]:
+        log.removeHandler(handler)
 
-    logfilename = os.path.join(logdir, prefix + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f') + '.log')
+    logfilename = os.path.join(logdir, f"{logprefix}{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f')}.log")
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter(fmt='%(asctime)s-%(levelname)s-%(module)s-line:%(lineno)d - %(message)s', 
@@ -67,9 +78,9 @@ def setupLogging(logpath, prefix='tackley_'):
     return 
 
 
-def purgeOldLogs(config, logpref, days=30):
+def purgeOldLogs(cfg, logpref, days=30):
     reftime = time.time() - 86400*days
-    log_dir = os.path.join(config.data_dir, config.log_dir)
+    log_dir = os.path.join(cfg.data_dir, cfg.log_dir)
     for logf in glob.glob(os.path.join(log_dir, logpref + '*.log*')):
         if os.path.getmtime(logf) < reftime:
             os.remove(logf)
@@ -118,23 +129,6 @@ def annotateImage(img_path, statid, metcount, rundate=None):
 
 
 def addCrontabs(statid=''):
-    local_path =os.path.dirname(os.path.abspath(__file__))
-    cron = CronTab(user=True)
-    for job in cron:
-        if 'postMatchStats' in job.command or 'trackStarCount' in job.command \
-                or 'logTemperature' in job.command or 'setIPCamExpo' in job.command or 'logToMQTT' in job.command:
-            cron.remove(job)
-            cron.write()
-    job = cron.new(f'{local_path}/postMatchStats.sh {statid} >> /dev/null 2>&1')
-    job.setall('*/15', '9,10,11,12', '*', '*', '*')
-    cron.write()
-    job = cron.new(f'{local_path}/trackStarCount.sh {statid} >> /dev/null 2>&1')
-    job.setall('*/10', '*', '*', '*', '*')
-    cron.write()
-    job = cron.new(f'{local_path}/logToMQTT.sh {statid} >> /dev/null 2>&1')
-    job.setall('*/5', '*', '*', '*', '*')
-    cron.write()
-
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
@@ -145,8 +139,8 @@ def addCrontabs(statid=''):
 
 
 def pushLatestMonthlyStack(targetname, imgname):
-    config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    sitecfg = config.lookup(targetname)
+    sshconfig = SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    sitecfg = sshconfig.lookup(targetname)
     if 'user' not in sitecfg.keys():
         log.warning(f'unable to connect to {targetname} - no entry in ssh config file')
         return 
@@ -158,6 +152,10 @@ def pushLatestMonthlyStack(targetname, imgname):
         ftp_client = ssh_client.open_sftp()
         _, fname = os.path.split(imgname)
         camid = fname[:6]
+        hname = os.uname()[1]
+        if 'test' in hname:
+            camid = hname
+
         if os.path.isfile(imgname):
             ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
             log.info(f'uploaded {fname} to {targetname}')
@@ -169,7 +167,7 @@ def pushLatestMonthlyStack(targetname, imgname):
     return 
 
 
-def pushLatestDailyStack(config, arch_dir, localcfg, s3):
+def pushLatestDailyStack(cfg, arch_dir, localcfg, s3):
     stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack*_meteors.jpg'))]
     if len(stacklist) == 0:
         log.info('no daily stack today')
@@ -184,7 +182,10 @@ def pushLatestDailyStack(config, arch_dir, localcfg, s3):
         metcount = 0
     else:
         metcount = int(fname[fname.find('stack')+6:].split('_')[0]) - 1
-    camid = config.stationID
+    hname = os.uname()[1]
+    camid = cfg.stationID
+    if 'test' in hname:
+        camid = hname
 
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
     hn = localcfg['postprocess']['host']
@@ -203,15 +204,19 @@ def pushLatestDailyStack(config, arch_dir, localcfg, s3):
     return 
 
 
-def copyMLRejects(cap_dir, arch_dir, config):
+def copyMLRejects(cap_dir, arch_dir, cfg):
     rej_dir = arch_dir.replace('ArchivedFiles','RejectedFiles')
     os.makedirs(rej_dir, exist_ok=True)
     ftplist = [f for f in glob.glob(os.path.join(arch_dir,'FTPdetectinfo*.txt')) if 'backup' not in f and 'uncalibrated' not in f]
     detlist = [f for f in ftplist if 'unfiltered' not in f]
     if len(detlist)==0: 
         return 
+    if len(detlist)==0: 
+        return 
     detlist = detlist[0]
     uflist = [f for f in ftplist if 'unfiltered' in f]
+    if len(uflist) == 0:
+        return 
     if len(uflist) == 0:
         return 
     uflist = uflist[0]
@@ -240,19 +245,19 @@ def copyMLRejects(cap_dir, arch_dir, config):
     orig_count = 0
     final_count = 0
     base_dir, _ = os.path.split(rej_dir)
-    if config.arch_dirs_to_keep > 0:
-        archdir_list = getNightDirs(base_dir, config.stationID)
+    if cfg.arch_dirs_to_keep > 0:
+        archdir_list = getNightDirs(base_dir, cfg.stationID)
         orig_count = len(archdir_list)
-        while len(archdir_list) > config.arch_dirs_to_keep:
-            archdir_list = deleteNightFolders(base_dir, config)
+        while len(archdir_list) > cfg.arch_dirs_to_keep:
+            archdir_list = deleteNightFolders(base_dir, cfg)
         final_count = len(archdir_list)
     log.info('Purged {} older folders from RejectedFiles'.format(orig_count - final_count))
     orig_count = 0
     final_count = 0
-    if config.bz2_files_to_keep > 0:
+    if cfg.bz2_files_to_keep > 0:
         bz2_list = glob.glob(f'{base_dir}/*.zip')
         orig_count = len(bz2_list)
-        while len(bz2_list) > config.bz2_files_to_keep:
+        while len(bz2_list) > cfg.bz2_files_to_keep:
             os.remove(os.path.join(base_dir, bz2_list[0]))
             bz2_list.pop(0)
         final_count = len(bz2_list)
@@ -275,7 +280,6 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
         os.remove(oldjpg)
     # copy most recent fits files
     log.info(f'looking in {arch_dir}')
-    log.info(f'looking in {arch_dir}')
     flist = glob.glob(f'{arch_dir}/*.fits')
     for ff in flist:
         targ = os.path.join(tmpdir, os.path.basename(ff))
@@ -290,21 +294,27 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
             shutil.copyfile(currmaskf, maskfile)
     mask = MaskImage.loadMask(maskfile)
     # stack files. Flat is not used if subavg is true
-    stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask) 
-    jpgfile = glob.glob(os.path.join(tmpdir, '*.jpg'))
-    if len(jpgfile) > 0:
+    stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask)
+    log.info('stack created')
+    jpgfiles = glob.glob(os.path.join(tmpdir, '*.jpg'))
+    if len(jpgfiles) > 0:
+        hname = os.uname()[1]
         stn = cfg.stationID
+        print(f'{hname} {stn}')
+        if 'test' in hname:
+            stn = hname
         flist = glob.glob(os.path.join(tmpdir, '*.fits'))
-        annotateImage(jpgfile[0], stn, metcount=len(flist), rundate=currdir[7:13])
+        annotateImage(jpgfiles[0], stn, metcount=len(flist), rundate=currdir[7:13])
         targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
-        shutil.copyfile(jpgfile[0], targ)
+        log.info(f'copying{jpgfiles[0]} to {targ}')
+        shutil.copyfile(jpgfiles[0], targ)
         hn = localcfg['postprocess']['host']
         if hn[:3] == 's3:':
             log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
             target=hn[5:]
             outf = '{:s}/stacks/{:s}'.format(stn, currdir[:13]+'.jpg')
             try: 
-                s3.meta.client.upload_file(jpgfile[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
+                s3.meta.client.upload_file(jpgfiles[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
             except Exception as e:
                 log.warning('upload to S3 failed')
                 log.info(e, exc_info=True)
@@ -312,6 +322,8 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
             log.info('target is not s3, not uploading monthly stack')
         webserver = localcfg['postprocess']['webserver']
         pushLatestMonthlyStack(webserver, targ)
+    else:
+        log.warning('no stack created')
     return     
 
 
@@ -324,7 +336,11 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         lis = open(os.path.join(arch_dir, 'FTPdetectinfo_'+currdir+'.txt'), 'r').readlines()
         metcount = lis[0].split('=')[1].strip()
         currdir = os.path.basename(os.path.normpath(arch_dir))
+        hname = os.uname()[1]
         camid = cfg.stationID
+        if 'test' in hname:
+            camid = hname
+
         annotateImage(trackfile, camid, int(metcount), currdir[7:15])
     else:
         log.info('no trackstack available today')
@@ -352,9 +368,13 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
+        hname = os.uname()[1]
         camid = cfg.stationID
+        if 'test' in hname:
+            camid = hname
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
         target=hn[5:]
+        outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         try: 
             s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
@@ -370,14 +390,18 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
 
 def resendTrackStack(arch_dir, cfg):
+def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
-    hname = cfg.stationID
+    hname = os.uname()[1]
+    camid = cfg.stationID
+    if 'test' not in hname:
+        hname = camid 
     localcfg = configparser.ConfigParser()
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     hn = localcfg['postprocess']['host']
     idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
-    idserver = localcfg['postprocess']['webserver']
+    idserver = localcfg['postprocess']['idserver']
     key, secret = getAWSKey(idserver, hname, hname, idfile)
     s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
     target=hn[5:]
@@ -388,6 +412,8 @@ def resendTrackStack(arch_dir, cfg):
     metcount = lis[0].split('=')[1].strip()
     currdir = os.path.basename(os.path.normpath(arch_dir))
     camid = cfg.stationID
+    if 'test' in hname:
+        camid = hname
     annotateImage(trackfile, camid, int(metcount), currdir[7:15])
     outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
     s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
@@ -395,7 +421,9 @@ def resendTrackStack(arch_dir, cfg):
 
 
 def getInterestingFiles_(capdir, dt1, dt2):
+def getInterestingFiles_(capdir, dt1, dt2):
     # a function to get all fits files between two date/time ranges
+ 
  
     t1 = datetime.datetime.strptime(dt1, '%Y%m%d_%H%M%S').timestamp()
     t2 = datetime.datetime.strptime(dt2, '%Y%m%d_%H%M%S').timestamp()
@@ -410,10 +438,11 @@ def getInterestingFiles_(capdir, dt1, dt2):
     bff2i.batchFFtoImage(tmp_folder, 'jpg', True)
     zipf = shutil.make_archive(tmp_folder, 'zip', root_dir = tmp_folder, base_dir=tmp_folder)
 
+
     localcfg = configparser.ConfigParser()
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-    sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
+    sshconfig = SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
     ssh_client = paramiko.SSHClient()
@@ -421,6 +450,8 @@ def getInterestingFiles_(capdir, dt1, dt2):
     ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
     ftp = ssh_client.open_sftp()
    
+    camid = os.path.split(capdir)[1].split('_')[0]
+    rempath = f'{localcfg["backup"]["remotepath"]}/{camid.lower()}/{currdir[7:11]}/{currdir}_saved.zip'
     camid = os.path.split(capdir)[1].split('_')[0]
     rempath = f'{localcfg["backup"]["remotepath"]}/{camid.lower()}/{currdir[7:11]}/{currdir}_saved.zip'
     ftp.put(zipf, rempath)
@@ -431,10 +462,13 @@ def getInterestingFiles_(capdir, dt1, dt2):
     return 
 
 
-def archiveBz2(config, localcfg):
+def archiveBz2(cfg, localcfg):
     sshconfig=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
-    camid = config.stationID.lower()
-    datadir = config.data_dir
+    camid = cfg.stationID.lower()
+    hname = os.uname()[1]
+    if 'test' in hname:
+        camid = hname
+    datadir = cfg.data_dir
     sitecfg = sshconfig.lookup(localcfg['backup']['target'])  
     pkey = paramiko.RSAKey.from_private_key_file(sitecfg['identityfile'][0])  
     ssh_client = paramiko.SSHClient()
@@ -479,13 +513,17 @@ def archiveBz2(config, localcfg):
         log.warning(e, exc_info=True)
 
 
-def rmsExternal(cap_dir, arch_dir, config):
-    rebootlockfile = os.path.join(config.data_dir, config.reboot_lock_file)
+def rmsExternal(cap_dir, arch_dir, cfg):
+    rebootlockfile = os.path.join(cfg.data_dir, cfg.reboot_lock_file)
     with open(rebootlockfile, 'w') as f:
         f.write('1')
 
-    setupLogging(os.path.join(config.data_dir, config.log_dir), f'tackley_log_{config.stationID}_')
+    setupLogging(os.path.join(cfg.data_dir, cfg.log_dir), f'tackley_log_{cfg.stationID}_')
     log.info('tackley external script started')
+
+    cap_dir = os.path.normpath(cap_dir)
+    arch_dir = os.path.normpath(arch_dir)
+    log.info(f'processing {cap_dir}')
 
     cap_dir = os.path.normpath(cap_dir)
     arch_dir = os.path.normpath(arch_dir)
@@ -496,14 +534,20 @@ def rmsExternal(cap_dir, arch_dir, config):
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
 
+
     sys.path.append(srcdir)
     hname = os.uname()[1]
     if 'test' not in hname:
-        hname = config.stationID
+        hname = cfg.stationID
 
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
     if os.path.exists(os.path.join(srcdir, 'token.pickle')):
         # upload mp4 to youtube
+        already_done = []
+        if os.path.isfile(os.path.join(srcdir, '.ytdone')):
+            already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+            already_done = [x.strip() for x in already_done]
+        if mp4name not in already_done:
         already_done = []
         if os.path.isfile(os.path.join(srcdir, '.ytdone')):
             already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
@@ -523,6 +567,13 @@ def rmsExternal(cap_dir, arch_dir, config):
                         already_done = list(set(already_done))
                         already_done.sort()
                         open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
+                        # reload the done list in case its been updated by another process
+                        already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+                        already_done = [x.strip() for x in already_done]
+                        already_done.append(mp4name)
+                        already_done = list(set(already_done))
+                        already_done.sort()
+                        open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
                         break
                 except Exception as e:
                     log.info('problem with youtube upload, retrying in 10s')
@@ -535,22 +586,18 @@ def rmsExternal(cap_dir, arch_dir, config):
             log.info('already uploaded {:s}'.format(mp4name))
                 
     
-    if len(localcfg['mqtt']['broker']) > 1:
+    if localcfg['mqtt']['domq'] == '1' and gotSTMQ:
         log.info('sending to MQ')
-        try:
-            sendToMqtt(config.stationID, cap_dir)
-        except Exception as e:
-            log.warning('problem sending to MQTT')
-            log.info(e, exc_info=True)
+        sendToMqtt(cfg.stationID)
 
     # clear out older logfiles
-    purgeOldLogs(config, 'tackley_', days=30)
+    purgeOldLogs(cfg, 'tackley_', days=30)
     
     s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
         # copy the ML rejected files
         log.info('copying ML rejects')
-        copyMLRejects(cap_dir, arch_dir, config)
+        copyMLRejects(cap_dir, arch_dir, cfg)
 
         # upload the MP4 to S3 or a website
         hn = localcfg['postprocess']['host']
@@ -562,7 +609,7 @@ def rmsExternal(cap_dir, arch_dir, config):
         log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
 
         idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
-        idserver = localcfg['postprocess']['webserver']
+        idserver = localcfg['postprocess']['idserver']
         # print(idfile, idserver)
         key, secret = getAWSKey(idserver, hname, hname, idfile)
         s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
@@ -577,24 +624,22 @@ def rmsExternal(cap_dir, arch_dir, config):
 
         # upload daily stack
         log.info('uploading daily stack')
-        pushLatestDailyStack(config, arch_dir, localcfg, s3)
+        pushLatestDailyStack(cfg, arch_dir, localcfg, s3)
 
         # create monthly stack
         log.info('creating monthly stack')
-        monthlyStack(config, arch_dir, localcfg, s3)
+        monthlyStack(cfg, arch_dir, localcfg, s3)
         # archive data to my server
         log.info('backing up the ArchivedFiles data')
-        archiveBz2(config, localcfg)
+        archiveBz2(cfg, localcfg)
         # create trackstack
         log.info('creating trackstack')
         try: 
-            doTrackStack(arch_dir, config, localcfg, s3)
+            doTrackStack(arch_dir, cfg, localcfg, s3)
         except Exception as e:
             log.warning('trackstack failed, probably too many detections')
             log.info(e, exc_info=True)
-#            sendAnEmail('markmcintyre99@googlemail.com',f'trackstack on {hname} failed',
-#                        'Warning',f'{hname}@themcintyres.ddns.net')
-            os.remove(rebootlockfile)
+
     os.remove(rebootlockfile)
     log.info('done')
     # clear log handlers again
@@ -604,22 +649,56 @@ def rmsExternal(cap_dir, arch_dir, config):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print('usage: python dailyPostProc.py /full/path/to/capdir')
-        exit(0)
-    localcfg = configparser.ConfigParser()
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
+    arg_parser = argparse.ArgumentParser(description="Run tackley postprocessing script.")
+    arg_parser.add_argument('-d', '--dir_path', nargs=1, metavar='DIR_PATH', type=str,
+        help='Path to CapturedFiles folder to process. Defaults to latest.')
 
-    lastcap = os.path.normpath(os.path.expanduser(sys.argv[1]))
+    arg_parser.add_argument( '-c', '--config', nargs=1, metavar='CONFIG_PATH', type=str,
+        help="Path to the RMS config file. Defaults to working it out from dir_path")
+    
+    arg_parser.add_argument( '-t', '--toolcfg', nargs=1, metavar='TOOL_CFG_PATH', type=str,
+        help="Path to the tackley config file. Defaults to current directory.")
+    
+    cml_args = arg_parser.parse_args()
+
+    if not cml_args.config and not cml_args.dir_path:
+        print('Must supply either --dir_path or --config parameters or both')
+        exit(1)
+
+    if cml_args.config:
+        cfg = cr.loadConfigFromDirectory(cml_args.config, 'notused')
+    else:
+        cfg = None # we will try to load it later
+
+    localcfg = configparser.ConfigParser()
+    if cml_args.toolcfg:
+        localcfg.read(cml_args.toolcfg[0])
+    else:
+        # read from code source folder
+        srcdir = os.path.split(os.path.abspath(__file__))[0]
+        localcfg.read(os.path.join(srcdir, 'config.ini'))
+
+    if cml_args.dir_path:
+        lastcap = os.path.normpath(os.path.expanduser(cml_args.dir_path[0]))
+        if not os.path.isdir(lastcap):
+            print(f'Capture folder {cml_args.dir_path[0]} not found')
+            exit(1)
+    else:
+        capdir = os.path.expanduser(os.path.join(cfg.data_dir, 'CapturedFiles'))
+        recentcaps = os.listdir(capdir)
+        recentcaps.sort()
+        if len(recentcaps) >0:
+            lastcap = recentcaps[-1]
+        else:
+            print(f'no captured data in {capdir}')
+            exit(0)
     lastcap = os.path.split(lastcap)[1]
-    camid  = lastcap.split('_')[0]
-    config = getRMSConfig(camid, localcfg)
-    datadir = config.data_dir
+    if not cfg:
+        camid = lastcap.split('_')[0]
+        cfg = getRMSConfig(camid, localcfg)
+
+    datadir = cfg.data_dir
     cap_dir = os.path.join(datadir, 'CapturedFiles', lastcap)
     arch_dir = os.path.join(datadir, 'ArchivedFiles', lastcap)
-    print('processing {}'.format(lastcap))
-    srcdir = os.path.split(os.path.abspath(__file__))[0]
-    localcfg = configparser.ConfigParser()
-    localcfg.read(os.path.join(srcdir, 'config.ini'))
-    rmsExternal(cap_dir, arch_dir, config)
+    print(f'processing {lastcap}')
+    rmsExternal(cap_dir, arch_dir, cfg)

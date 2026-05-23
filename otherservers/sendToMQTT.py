@@ -12,7 +12,7 @@ import logging
 from crontab import CronTab
 import configparser
 
-log = logging.getLogger("logger")
+log = logging.getLogger("mqttlogger")
 
 
 def addCrontabs():

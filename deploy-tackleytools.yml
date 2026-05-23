@@ -1,9 +1,9 @@
 ---
-- hosts: "{{host | default ('uk0006,uk000f,uk001l,uk002f')}}"
+- hosts: "{{host | default ('ubunturms')}}"
   vars_files: 
     - /mnt/c/Users/{{ lookup('env','USER' )}}/apikeys/mqvariables.enc
   vars:
-    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/pi-meteortools/pi"
+    srcdir: "/mnt/c/Users/{{ lookup('env','USER' )}}/OneDrive/dev/meteorhunting/pi-meteortools/pi"
     destdir: ~/source/tackley-tools
   tasks:
   - name: Ensures {{destdir}}/tmp exists
@@ -14,21 +14,23 @@
     - {src: '{{srcdir}}/install.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/backupConfig.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/recalibrateAndUpload.sh', dest: '{{destdir}}/', mode: '755', backup: no }
+    - {src: '{{srcdir}}/reprocessCam.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/resendLive.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/trackStarCount.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/sendToMQTT.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/postMatchStats.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/sendToYoutube.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/dailyPostProc.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/setIPCamExpo.sh', dest: '{{destdir}}/', mode: '755', backup: no }
-    - {src: '{{srcdir}}/logToMQTT.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/updateRMS.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/restartRMS.sh', dest: '{{destdir}}/', mode: '755', backup: no }
     - {src: '{{srcdir}}/setExpo.py', dest: '{{destdir}}/', mode: '644', backup: no }
     - {src: '{{srcdir}}/tackleyUtils.py', dest: '{{destdir}}/', mode: '644', backup: no }
-    - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', mode: '644', backup: no }
+    - {src: '{{srcdir}}/config.ini.sample', dest: '{{destdir}}/config.ini', mode: '644', backup: no }
     - {src: '{{srcdir}}/requirements.txt', dest: '{{destdir}}/', mode: '644', backup: no }
 
+  - name: update id server
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'IDSERVER='
+      line: 'IDSERVER=wordpresssite'
   - name: update id file
     lineinfile:
       path: '{{destdir}}/config.ini'
@@ -44,29 +46,48 @@
       path: '{{destdir}}/config.ini'
       regexp: 'WEBSERVER='
       line: 'WEBSERVER=wordpresssite'
-  - name: update idserver
+  - name: update backup target
     lineinfile:
       path: '{{destdir}}/config.ini'
-      regexp: 'IDSERVER='
-      line: 'IDSERVER=wordpresssite'
-  - name: update MQTT broker
+      regexp: 'TARGET='
+      line: 'TARGET=thelinux'
+  - name: update backup location
     lineinfile:
       path: '{{destdir}}/config.ini'
-      regexp: 'BROKER='
-      line: 'BROKER=wxsatpi'
-  - name: update MQTT username
+      regexp: 'REMOTEPATH='
+      line: 'REMOTEPATH=/data3/astrodata/meteorcam'
+  - name: update station 1 on uk001l
+    when: ('uk001l' in ansible_hostname)
     lineinfile:
       path: '{{destdir}}/config.ini'
-      regexp: 'USERNAME='
-      line: 'USERNAME=rmscams'
-  - name: update MQTT password
+      regexp: 'ID1='
+      line: 'ID1=UK001L'
+  - name: update station 1 on testpi4
+    when: ('testpi4' in ansible_hostname)
     lineinfile:
       path: '{{destdir}}/config.ini'
-      regexp: 'PASSWORD='
-      line: 'PASSWORD={{ rmscampassword }}'
-  #- name: install cronjobs and python modules
+      regexp: 'ID1='
+      line: 'ID1=TESTPI4A'
+  - name: update station 1 
+    when: ('ubunturms' in ansible_hostname)
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID1='
+      line: 'ID1=UK0006'
+  - name: update station 2
+    when: ('ubunturms' in ansible_hostname)
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID2='
+      line: 'ID2=UK000F'
+  - name: update station 3
+    when: ('ubunturms' in ansible_hostname)
+    lineinfile:
+      path: '{{destdir}}/config.ini'
+      regexp: 'ID3='
+      line: 'ID3=UK002F'
+
+    #- name: install cronjobs and python modules
   #  shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
   #  args:
   #    executable: /bin/bash
-
-  
