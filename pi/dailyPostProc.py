@@ -390,6 +390,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
 
 def resendTrackStack(arch_dir, cfg):
+def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
     hname = os.uname()[1]
     camid = cfg.stationID
@@ -419,6 +420,7 @@ def resendTrackStack(arch_dir, cfg):
     return 
 
 
+def getInterestingFiles_(capdir, dt1, dt2):
 def getInterestingFiles_(capdir, dt1, dt2):
     # a function to get all fits files between two date/time ranges
  
