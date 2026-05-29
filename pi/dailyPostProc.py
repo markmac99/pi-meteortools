@@ -26,7 +26,7 @@ from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
 from RMS.DeleteOldObservations import getNightDirs, deleteNightFolders
 from Utils.TrackStack import trackStack
-import Utils.BatchFFtoImage as bff2i
+from Utils.BatchFFtoImage import batchFFtoImage
 import RMS.ConfigReader as cr
 
 
@@ -45,8 +45,8 @@ sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
 
-log = logging.getLogger('tackleyloger')
-log.setLevel(logging.INFO)
+tackleylog = logging.getLogger('tackleyloger')
+tackleylog.setLevel(logging.INFO)
 
 
 def setupLogging(logpath, logprefix='tackley_'):
@@ -55,8 +55,8 @@ def setupLogging(logpath, logprefix='tackley_'):
     logdir = os.path.expanduser(logpath)
     os.makedirs(logdir, exist_ok=True)
     print('removing any existing log handlers')
-    for handler in log.handlers[:]:
-        log.removeHandler(handler)
+    for handler in tackleylog.handlers[:]:
+        tackleylog.removeHandler(handler)
 
     logfilename = os.path.join(logdir, f"{logprefix}{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f')}.log")
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
@@ -64,17 +64,17 @@ def setupLogging(logpath, logprefix='tackley_'):
     formatter = logging.Formatter(fmt='%(asctime)s-%(levelname)s-%(module)s-line:%(lineno)d - %(message)s', 
         datefmt='%Y/%m/%d %H:%M:%S')
     handler.setFormatter(formatter)
-    log.addHandler(handler)
+    tackleylog.addHandler(handler)
 
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.WARNING)
     formatter = logging.Formatter(fmt='%(asctime)s-%(levelname)s-%(module)s-line:%(lineno)d - %(message)s', 
         datefmt='%Y/%m/%d %H:%M:%S')
     ch.setFormatter(formatter)
-    log.addHandler(ch)
+    tackleylog.addHandler(ch)
 
-    log.setLevel(logging.INFO)
-    log.info('logging initialised')
+    tackleylog.setLevel(logging.INFO)
+    tackleylog.info('logging initialised')
     return 
 
 
@@ -142,7 +142,7 @@ def pushLatestMonthlyStack(targetname, imgname):
     sshconfig = SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
     sitecfg = sshconfig.lookup(targetname)
     if 'user' not in sitecfg.keys():
-        log.warning(f'unable to connect to {targetname} - no entry in ssh config file')
+        tackleylog.warning(f'unable to connect to {targetname} - no entry in ssh config file')
         return 
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -158,19 +158,19 @@ def pushLatestMonthlyStack(targetname, imgname):
 
         if os.path.isfile(imgname):
             ftp_client.put(imgname, f'data/meteors/{camid}_latest.jpg')
-            log.info(f'uploaded {fname} to {targetname}')
+            tackleylog.info(f'uploaded {fname} to {targetname}')
         else:
-            log.warning(f'file {imgname} not found')
+            tackleylog.warning(f'file {imgname} not found')
     except Exception as e:
-        log.warning(f'upload to {sitecfg["hostname"]}')
-        log.info(e, exc_info=True)
+        tackleylog.warning(f'upload to {sitecfg["hostname"]}')
+        tackleylog.info(e, exc_info=True)
     return 
 
 
 def pushLatestDailyStack(cfg, arch_dir, localcfg, s3):
     stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_stack*_meteors.jpg'))]
     if len(stacklist) == 0:
-        log.info('no daily stack today')
+        tackleylog.info('no daily stack today')
         stacklist = [f for f in glob.glob(os.path.join(arch_dir,'*_captured_stack.jpg'))]
     imgname = stacklist[0]
     _, fname = os.path.split(imgname)
@@ -190,17 +190,17 @@ def pushLatestDailyStack(cfg, arch_dir, localcfg, s3):
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
-        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'dailystacks'))
+        tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'dailystacks'))
         target=hn[5:]
         outf = '{:s}/dailystacks/{:s}'.format(camid, fname[:15]+'.jpg')
         try: 
             s3.meta.client.upload_file(tmpfname, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
         except Exception as e:
-            log.warning('upload to S3 failed')
-            log.info(e, exc_info=True)
+            tackleylog.warning('upload to S3 failed')
+            tackleylog.info(e, exc_info=True)
         os.remove(tmpfname)
     else:
-        log.info('target is not s3, not uploading daily stack')
+        tackleylog.info('target is not s3, not uploading daily stack')
     return 
 
 
@@ -229,19 +229,19 @@ def copyMLRejects(cap_dir, arch_dir, cfg):
             srcfile = os.path.join(cap_dir, ff_file)
             trgfile = os.path.join(rej_dir, ff_file)
             if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
-                log.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
+                tackleylog.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
                 shutil.copyfile(srcfile, trgfile)
         shutil.make_archive(rej_dir + '_rejected', 'zip', root_dir = rej_dir, base_dir=rej_dir)
-    log.info('housekeeping rejects')
+    tackleylog.info('housekeeping rejects')
     if len(rejs) > 0:
         for ff_file in rejs:
             srcfile = os.path.join(cap_dir, ff_file)
             trgfile = os.path.join(rej_dir, ff_file)
             if os.path.isfile(srcfile) and not os.path.isfile(trgfile):
-                log.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
+                tackleylog.info(f'copying reject {os.path.basename(srcfile)} to {rej_dir}')
                 shutil.copyfile(srcfile, trgfile)
         shutil.make_archive(rej_dir + '_rejected', 'zip', root_dir = rej_dir, base_dir=rej_dir)
-    log.info('housekeeping rejects')
+    tackleylog.info('housekeeping rejects')
     orig_count = 0
     final_count = 0
     base_dir, _ = os.path.split(rej_dir)
@@ -251,7 +251,7 @@ def copyMLRejects(cap_dir, arch_dir, cfg):
         while len(archdir_list) > cfg.arch_dirs_to_keep:
             archdir_list = deleteNightFolders(base_dir, cfg)
         final_count = len(archdir_list)
-    log.info('Purged {} older folders from RejectedFiles'.format(orig_count - final_count))
+    tackleylog.info('Purged {} older folders from RejectedFiles'.format(orig_count - final_count))
     orig_count = 0
     final_count = 0
     if cfg.bz2_files_to_keep > 0:
@@ -261,7 +261,7 @@ def copyMLRejects(cap_dir, arch_dir, cfg):
             os.remove(os.path.join(base_dir, bz2_list[0]))
             bz2_list.pop(0)
         final_count = len(bz2_list)
-    log.info('Purged {} older zip files from RejectedFiles'.format(orig_count - final_count))
+    tackleylog.info('Purged {} older zip files from RejectedFiles'.format(orig_count - final_count))
     return 
 
 
@@ -279,12 +279,12 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
     for oldjpg in oldjpgs:
         os.remove(oldjpg)
     # copy most recent fits files
-    log.info(f'looking in {arch_dir}')
+    tackleylog.info(f'looking in {arch_dir}')
     flist = glob.glob(f'{arch_dir}/*.fits')
     for ff in flist:
         targ = os.path.join(tmpdir, os.path.basename(ff))
         if not os.path.isfile(targ):
-            log.info(f'copying {os.path.basename(ff)} for stacking')
+            tackleylog.info(f'copying {os.path.basename(ff)} for stacking')
             shutil.copyfile(ff, targ)
     # copy the mask if not already there
     maskfile = os.path.join(tmpdir, 'mask.bmp')
@@ -295,7 +295,7 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
     mask = MaskImage.loadMask(maskfile)
     # stack files. Flat is not used if subavg is true
     stackFFs(tmpdir, file_format='jpg', subavg=True, filter_bright=True, mask=mask)
-    log.info('stack created')
+    tackleylog.info('stack created')
     jpgfiles = glob.glob(os.path.join(tmpdir, '*.jpg'))
     if len(jpgfiles) > 0:
         hname = os.uname()[1]
@@ -306,24 +306,24 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
         flist = glob.glob(os.path.join(tmpdir, '*.fits'))
         annotateImage(jpgfiles[0], stn, metcount=len(flist), rundate=currdir[7:13])
         targ = os.path.join(arch_dir, currdir[:13]+'.jpg')
-        log.info(f'copying{jpgfiles[0]} to {targ}')
+        tackleylog.info(f'copying{jpgfiles[0]} to {targ}')
         shutil.copyfile(jpgfiles[0], targ)
         hn = localcfg['postprocess']['host']
         if hn[:3] == 's3:':
-            log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
+            tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
             target=hn[5:]
             outf = '{:s}/stacks/{:s}'.format(stn, currdir[:13]+'.jpg')
             try: 
                 s3.meta.client.upload_file(jpgfiles[0], target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
             except Exception as e:
-                log.warning('upload to S3 failed')
-                log.info(e, exc_info=True)
+                tackleylog.warning('upload to S3 failed')
+                tackleylog.info(e, exc_info=True)
         else:
-            log.info('target is not s3, not uploading monthly stack')
+            tackleylog.info('target is not s3, not uploading monthly stack')
         webserver = localcfg['postprocess']['webserver']
         pushLatestMonthlyStack(webserver, targ)
     else:
-        log.warning('no stack created')
+        tackleylog.warning('no stack created')
     return     
 
 
@@ -343,11 +343,11 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
         annotateImage(trackfile, camid, int(metcount), currdir[7:15])
     else:
-        log.info('no trackstack available today')
+        tackleylog.info('no trackstack available today')
         stackfile = os.path.join(arch_dir, '*_stack.jpg')
         sflist = glob.glob(stackfile)
         if len(sflist) == 0: 
-            log.info('no stack file available either, using thumbs')
+            tackleylog.info('no stack file available either, using thumbs')
             sflist = glob.glob(os.path.join(arch_dir, '*_thumbs.jpg'))
         sfil = sflist[0]
         trackfile = os.path.split(sfil.replace('_stack.jpg','_track_stack.jpg'))[1]
@@ -364,7 +364,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         #fnt = ImageFont.load_default()
         image_editable.text((20,height/2), "NO TRACKSTACK TODAY", font=fnt, fill=(255))
         my_image.save(trackfile)
-    #log.info(f'trackstack is {trackfile}')
+    #tackleylog.info(f'trackstack is {trackfile}')
 
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
@@ -372,24 +372,23 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         camid = cfg.stationID
         if 'test' in hname:
             camid = hname
-        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
+        tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
         target=hn[5:]
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         try: 
             s3.meta.client.upload_file(trackfile, target, outf, ExtraArgs ={'ContentType': 'image/jpg'})
         except Exception as e:
-            log.warning('upload to S3 failed')
-            log.info(e, exc_info=True)
+            tackleylog.warning('upload to S3 failed')
+            tackleylog.info(e, exc_info=True)
     else:
-        log.info('target is not s3, not uploading monthly stack')
+        tackleylog.info('target is not s3, not uploading monthly stack')
     if len(tflist) == 0 and '/tmp' in trackfile:
         if os.path.isfile(trackfile):
             os.remove(trackfile)
     return 
 
 
-def resendTrackStack(arch_dir, cfg):
 def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
     hname = os.uname()[1]
@@ -421,7 +420,6 @@ def resendTrackStack(arch_dir, cfg):
 
 
 def getInterestingFiles_(capdir, dt1, dt2):
-def getInterestingFiles_(capdir, dt1, dt2):
     # a function to get all fits files between two date/time ranges
  
  
@@ -435,7 +433,7 @@ def getInterestingFiles_(capdir, dt1, dt2):
         if fftime > t1 and fftime <=t2:
             shutil.copyfile(ff, os.path.join(tmp_folder, os.path.basename(ff)))
             
-    bff2i.batchFFtoImage(tmp_folder, 'jpg', True)
+    batchFFtoImage(tmp_folder, 'jpg', True)
     zipf = shutil.make_archive(tmp_folder, 'zip', root_dir = tmp_folder, base_dir=tmp_folder)
 
 
@@ -490,7 +488,7 @@ def archiveBz2(cfg, localcfg):
                     rembzs = []
             if locbzfn not in rembzs:
                 remfnam = os.path.join(rempath, locbzfn)
-                log.info(f'archiving {locbzfn}')
+                tackleylog.info(f'archiving {locbzfn}')
                 ftp.put(locbz, remfnam)
         localbzs = glob.glob(f'{datadir}/RejectedFiles/*.zip')
         for locbz in localbzs:
@@ -505,31 +503,31 @@ def archiveBz2(cfg, localcfg):
                     rembzs = []
             if locbzfn not in rembzs:
                 remfnam = os.path.join(rempath, locbzfn)
-                log.info(f'archiving {locbzfn}')
+                tackleylog.info(f'archiving {locbzfn}')
                 ftp.put(locbz, remfnam)
         ftp.close()
     except Exception as e:
-        log.warning(f"unable to archive the bz2 file to {sitecfg['hostname']}")
-        log.warning(e, exc_info=True)
+        tackleylog.warning(f"unable to archive the bz2 file to {sitecfg['hostname']}")
+        tackleylog.warning(e, exc_info=True)
 
 
 def rmsExternal(cap_dir, arch_dir, cfg):
+    setupLogging(os.path.join(cfg.data_dir, cfg.log_dir), f'tackley_log_{cfg.stationID}_')
+    tackleylog.info('tackley external script started')
+
     rebootlockfile = os.path.join(cfg.data_dir, cfg.reboot_lock_file)
     with open(rebootlockfile, 'w') as f:
         f.write('1')
 
-    setupLogging(os.path.join(cfg.data_dir, cfg.log_dir), f'tackley_log_{cfg.stationID}_')
-    log.info('tackley external script started')
+    cap_dir = os.path.normpath(cap_dir)
+    arch_dir = os.path.normpath(arch_dir)
+    tackleylog.info(f'processing {cap_dir}')
 
     cap_dir = os.path.normpath(cap_dir)
     arch_dir = os.path.normpath(arch_dir)
-    log.info(f'processing {cap_dir}')
+    tackleylog.info(f'processing {cap_dir}')
 
-    cap_dir = os.path.normpath(cap_dir)
-    arch_dir = os.path.normpath(arch_dir)
-    log.info(f'processing {cap_dir}')
-
-    log.info('reading local config')
+    tackleylog.info('reading local config')
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
@@ -548,7 +546,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
             already_done = [x.strip() for x in already_done]
         if mp4name not in already_done:
-        already_done = []
+            already_done = []
         if os.path.isfile(os.path.join(srcdir, '.ytdone')):
             already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
             already_done = [x.strip() for x in already_done]
@@ -556,7 +554,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             tod = mp4name.split('_')[1]
             tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
             msg = '{:s} timelapse for {:s}'.format(hname, tod)
-            log.info('uploading {:s} to youtube'.format(mp4name))
+            tackleylog.info('uploading {:s} to youtube'.format(mp4name))
             for retries in range(0,5):
                 try:
                     if stu.main(msg, os.path.join(arch_dir, mp4name)):
@@ -576,18 +574,18 @@ def rmsExternal(cap_dir, arch_dir, cfg):
                         open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
                         break
                 except Exception as e:
-                    log.info('problem with youtube upload, retrying in 10s')
+                    tackleylog.info('problem with youtube upload, retrying in 10s')
                     if retries == 4:
-                        log.debug(e, exc_info=True)
+                        tackleylog.debug(e, exc_info=True)
                     time.sleep(10)
             if retries == 5:
-                log.info('unable to upload timelapse after five retries')
+                tackleylog.info('unable to upload timelapse after five retries')
         else:
-            log.info('already uploaded {:s}'.format(mp4name))
+            tackleylog.info('already uploaded {:s}'.format(mp4name))
                 
     
     if localcfg['mqtt']['domq'] == '1' and gotSTMQ:
-        log.info('sending to MQ')
+        tackleylog.info('sending to MQ')
         sendToMqtt(cfg.stationID)
 
     # clear out older logfiles
@@ -596,7 +594,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
     s3 = None
     if int(localcfg['postprocess']['upload']) == 1:
         # copy the ML rejected files
-        log.info('copying ML rejects')
+        tackleylog.info('copying ML rejects')
         copyMLRejects(cap_dir, arch_dir, cfg)
 
         # upload the MP4 to S3 or a website
@@ -606,7 +604,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
         stn = splits[0]
         yymm = splits[1]
         yymm = yymm[:6]
-        log.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
+        tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
 
         idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
         idserver = localcfg['postprocess']['idserver']
@@ -619,32 +617,32 @@ def rmsExternal(cap_dir, arch_dir, cfg):
         try: 
             s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
         except Exception as e:
-            log.warning('upload to S3 failed')
-            log.info(e, exc_info=True)
+            tackleylog.warning('upload to S3 failed')
+            tackleylog.info(e, exc_info=True)
 
         # upload daily stack
-        log.info('uploading daily stack')
+        tackleylog.info('uploading daily stack')
         pushLatestDailyStack(cfg, arch_dir, localcfg, s3)
 
         # create monthly stack
-        log.info('creating monthly stack')
+        tackleylog.info('creating monthly stack')
         monthlyStack(cfg, arch_dir, localcfg, s3)
         # archive data to my server
-        log.info('backing up the ArchivedFiles data')
+        tackleylog.info('backing up the ArchivedFiles data')
         archiveBz2(cfg, localcfg)
         # create trackstack
-        log.info('creating trackstack')
+        tackleylog.info('creating trackstack')
         try: 
             doTrackStack(arch_dir, cfg, localcfg, s3)
         except Exception as e:
-            log.warning('trackstack failed, probably too many detections')
-            log.info(e, exc_info=True)
+            tackleylog.warning('trackstack failed, probably too many detections')
+            tackleylog.info(e, exc_info=True)
 
     os.remove(rebootlockfile)
-    log.info('done')
+    tackleylog.info('tackley tools done')
     # clear log handlers again
-    while len(log.handlers) > 0:
-        log.removeHandler(log.handlers[0])
+    for handler in tackleylog.handlers[:]:
+        tackleylog.removeHandler(handler)
     return
 
 
