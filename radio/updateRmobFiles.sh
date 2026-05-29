@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# shell script to monitor for new detections
+# shell script to update the RMOB-style csv files
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
@@ -29,3 +29,11 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
         /usr/local/bin/aws s3 sync . s3://mjmm-data/Radio/${yr}/${yr}${mth}/  --exclude "*" --include "R${yr}${mth}*.csv"
     fi 
 done 
+
+# interesting data is already being pushed to AWS
+cd $HOME/radar_data/Captures
+find . -mtime +45 -exec rm -Rf {} \;
+
+# keep two months' of logs as we need at least that for the above processig
+cd $HOME/radar_data/Logs
+find . -mtime +62 -exec rm -Rf {} \;
