@@ -17,4 +17,4 @@ REMOTEPATH=
 [stations]
 # used by setExpo to change day/night mode on the named cameras
 ID1=UKxxxx
-ID2=UKyyyy
+
