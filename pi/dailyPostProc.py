@@ -397,7 +397,7 @@ def resendTrackStack(arch_dir, cfg):
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg.read(os.path.join(srcdir, 'config.ini'))
     hn = localcfg['postprocess']['host']
-    idfile = os.path.expanduser(localcfg['postprocess']['idfile'])
+    idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
     idserver = localcfg['postprocess']['idserver']
     key, secret = getAWSKey(idserver, hname, hname, idfile)
     s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, region_name='eu-west-2')
