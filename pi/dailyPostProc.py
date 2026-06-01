@@ -10,7 +10,6 @@ import sys
 import glob
 import configparser
 import logging
-import logging.handlers
 import time
 import shutil
 import datetime 
@@ -390,7 +389,6 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
 
 
 def resendTrackStack(arch_dir, cfg):
-def resendTrackStack(arch_dir, cfg):
     # to reannotate and resend the trackstack if the automated process fails
     hname = os.uname()[1]
     camid = cfg.stationID
@@ -421,7 +419,6 @@ def resendTrackStack(arch_dir, cfg):
 
 
 def getInterestingFiles_(capdir, dt1, dt2):
-def getInterestingFiles_(capdir, dt1, dt2):
     # a function to get all fits files between two date/time ranges
  
  
@@ -450,8 +447,6 @@ def getInterestingFiles_(capdir, dt1, dt2):
     ssh_client.connect(sitecfg['hostname'], username=sitecfg['user'], pkey=pkey, look_for_keys=False)
     ftp = ssh_client.open_sftp()
    
-    camid = os.path.split(capdir)[1].split('_')[0]
-    rempath = f'{localcfg["backup"]["remotepath"]}/{camid.lower()}/{currdir[7:11]}/{currdir}_saved.zip'
     camid = os.path.split(capdir)[1].split('_')[0]
     rempath = f'{localcfg["backup"]["remotepath"]}/{camid.lower()}/{currdir[7:11]}/{currdir}_saved.zip'
     ftp.put(zipf, rempath)
@@ -525,10 +520,6 @@ def rmsExternal(cap_dir, arch_dir, cfg):
     arch_dir = os.path.normpath(arch_dir)
     tackleylog.info(f'processing {cap_dir}')
 
-    cap_dir = os.path.normpath(cap_dir)
-    arch_dir = os.path.normpath(arch_dir)
-    tackleylog.info(f'processing {cap_dir}')
-
     tackleylog.info('reading local config')
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
@@ -548,11 +539,6 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
             already_done = [x.strip() for x in already_done]
         if mp4name not in already_done:
-            already_done = []
-        if os.path.isfile(os.path.join(srcdir, '.ytdone')):
-            already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
-            already_done = [x.strip() for x in already_done]
-        if mp4name not in already_done:
             tod = mp4name.split('_')[1]
             tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
             msg = '{:s} timelapse for {:s}'.format(hname, tod)
@@ -560,13 +546,6 @@ def rmsExternal(cap_dir, arch_dir, cfg):
             for retries in range(0,5):
                 try:
                     if stu.main(msg, os.path.join(arch_dir, mp4name)):
-                        # reload the done list in case its been updated by another process
-                        already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
-                        already_done = [x.strip() for x in already_done]
-                        already_done.append(mp4name)
-                        already_done = list(set(already_done))
-                        already_done.sort()
-                        open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
                         # reload the done list in case its been updated by another process
                         already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
                         already_done = [x.strip() for x in already_done]
