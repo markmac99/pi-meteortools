@@ -20,6 +20,8 @@ from PIL import Image, ImageFont, ImageDraw
 import boto3
 import argparse
 
+tackleylog = logging.getLogger('tackleyloger')
+tackleylog.setLevel(logging.INFO)
 
 from Utils.StackFFs import stackFFs
 from RMS.Routines import MaskImage
@@ -28,11 +30,11 @@ from Utils.TrackStack import trackStack
 from Utils.BatchFFtoImage import batchFFtoImage
 import RMS.ConfigReader as cr
 
-
 from tackleyUtils import getRMSConfig
 from tackleyUtils import getAWSKey
 
 try:
+    print('importing sendToMqtt')
     sys.path.append(os.path.expanduser('~/source/rms_mqtt'))
     from sendToMQTT import sendToMqtt # noqa:E402 # type: ignore
     gotSTMQ = True
@@ -40,22 +42,19 @@ except Exception:
     gotSTMQ = False
 
 
+print('importing sendToYoutube')
 sys.path.append(os.path.split(os.path.abspath(__file__))[0])
 import sendToYoutube as stu # noqa:E402
 from setExpo import addCrontabEntries as setExpoAddCron # noqa:E402
-
-tackleylog = logging.getLogger('tackleyloger')
-tackleylog.setLevel(logging.INFO)
-
 
 def setupLogging(logpath, logprefix='tackley_'):
     print('about to initialise logger')
 
     logdir = os.path.expanduser(logpath)
     os.makedirs(logdir, exist_ok=True)
-    print('removing any existing log handlers')
-    for handler in tackleylog.handlers[:]:
-        tackleylog.removeHandler(handler)
+    #print('removing any existing log handlers')
+    #for handler in tackleylog.handlers[:]:
+    #    tackleylog.removeHandler(handler)
 
     logfilename = os.path.join(logdir, f"{logprefix}{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S.%f')}.log")
     handler = logging.handlers.TimedRotatingFileHandler(logfilename, when='D', interval=1) 
@@ -622,8 +621,8 @@ def rmsExternal(cap_dir, arch_dir, cfg):
     os.remove(rebootlockfile)
     tackleylog.info('tackley tools done')
     # clear log handlers again
-    for handler in tackleylog.handlers[:]:
-        tackleylog.removeHandler(handler)
+    #for handler in tackleylog.handlers[:]:
+    #    tackleylog.removeHandler(handler)
     return
 
 

@@ -6,6 +6,7 @@ IDFILE=
 HOST=
 WEBSERVER=
 RMSDIR=~/source/RMS
+SUNANGLE=-6
 
 [mqtt]
 domq=1
