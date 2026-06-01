@@ -39,8 +39,8 @@ socket.getaddrinfo = new_getaddrinfo
 
 
 def main(title, fname):
-    api_service_name = "youtube"
-    api_version = "v3"
+    svc_name = "youtube"
+    svc_ver = "v3"
 
     local_path =os.path.dirname(os.path.abspath(__file__))
 
@@ -77,10 +77,9 @@ def main(title, fname):
         with open(pickle_file, 'wb') as token:
             pickle.dump(credentials, token)
 
-    youtube = googleapiclient.discovery.build(
-        api_service_name, api_version, credentials=credentials)
+    cli = googleapiclient.discovery.build(svc_name, svc_ver, credentials=credentials)
 
-    request = youtube.videos().insert(
+    request = cli.videos().insert(
         part="snippet,status",
         body={
             "snippet": {
