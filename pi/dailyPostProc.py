@@ -188,7 +188,7 @@ def pushLatestDailyStack(cfg, arch_dir, localcfg, s3):
     annotateImage(tmpfname, camid, metcount=metcount, rundate=fname[7:15])
     hn = localcfg['postprocess']['host']
     if hn[:3] == 's3:':
-        tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'dailystacks'))
+        tackleylog.info('uploading to {:s}/{:s}'.format(camid, 'dailystacks'))
         target=hn[5:]
         outf = '{:s}/dailystacks/{:s}'.format(camid, fname[:15]+'.jpg')
         try: 
@@ -308,7 +308,7 @@ def monthlyStack(cfg, arch_dir, localcfg, s3):
         shutil.copyfile(jpgfiles[0], targ)
         hn = localcfg['postprocess']['host']
         if hn[:3] == 's3:':
-            tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, 'stacks'))
+            tackleylog.info('uploading to {:s}/{:s}'.format(stn, 'stacks'))
             target=hn[5:]
             outf = '{:s}/stacks/{:s}'.format(stn, currdir[:13]+'.jpg')
             try: 
@@ -370,7 +370,7 @@ def doTrackStack(arch_dir, cfg, localcfg, s3):
         camid = cfg.stationID
         if 'test' in hname:
             camid = hname
-        tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, camid, 'trackstacks'))
+        tackleylog.info('uploading to {:s}/{:s}'.format(camid, 'trackstacks'))
         target=hn[5:]
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
         outf = f'{camid}/trackstacks/{os.path.basename(trackfile)[:15]}.jpg'
@@ -523,7 +523,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
     srcdir = os.path.split(os.path.abspath(__file__))[0]
     localcfg = configparser.ConfigParser()
     localcfg.read(os.path.join(srcdir, 'config.ini'))
-
+    #tackleylog.info(f"target is {localcfg['postprocess']['host']}")
 
     sys.path.append(srcdir)
     hname = os.uname()[1]
@@ -584,7 +584,7 @@ def rmsExternal(cap_dir, arch_dir, cfg):
         stn = splits[0]
         yymm = splits[1]
         yymm = yymm[:6]
-        tackleylog.info('uploading to {:s}/{:s}/{:s}'.format(hn, stn, yymm))
+        tackleylog.info('uploading to {:s}/{:s}'.format(stn, yymm))
 
         idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
         idserver = localcfg['postprocess']['idserver']

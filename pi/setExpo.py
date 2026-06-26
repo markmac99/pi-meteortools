@@ -149,6 +149,8 @@ if __name__ == '__main__':
 
     testmode = False
     for camid in camids: 
+        if camid == '':
+            continue
         try:
             cfg = getRMSConfig(camid, localcfg)
         except Exception:

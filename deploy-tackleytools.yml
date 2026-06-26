@@ -89,8 +89,3 @@
       path: '{{destdir}}/config.ini'
       regexp: 'ID3='
       line: 'ID3=UK002F'
-
-    #- name: install cronjobs and python modules
-  #  shell: source ~/vRMS/bin/activate && {{destdir}}/install.sh
-  #  args:
-  #    executable: /bin/bash
