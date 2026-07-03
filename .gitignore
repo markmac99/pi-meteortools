@@ -14,3 +14,6 @@ infrastructure/terraform/.terraform.tfstate.lock.info
 disused/*
 .env
 pi/config.ini
+radio/*.csv
+radio/radiopi_daily.txt
+radio/radiopi_hourly.txt

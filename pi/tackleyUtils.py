@@ -11,7 +11,7 @@ import RMS.ConfigReader as cr
 import os
 
 
-log = logging.getLogger('tackleyloger')
+tackleylog = logging.getLogger('tackleyloger')
 
 
 def getRMSConfig(statid, localcfg):
@@ -34,7 +34,7 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
         config=SSHConfig.from_path(os.path.expanduser('~/.ssh/config'))
         sitecfg = config.lookup(servername)
         if 'user' not in sitecfg.keys():
-            log.warning(f'unable to connect to {servername} - no entry in ssh config file')
+            tackleylog.warning(f'unable to connect to {servername} - no entry in ssh config file')
             return 
     else:
         sitecfg={}
@@ -53,8 +53,8 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
             handle, tmpfnam = tempfile.mkstemp()
             ftp_client.get(remotekeyname.lower() + '.csv', tmpfnam)
         except Exception as e:
-            log.error('unable to find AWS key')
-            log.info(e, exc_info=True)
+            tackleylog.error('unable to find AWS key')
+            tackleylog.info(e, exc_info=True)
         ftp_client.close()
         try:
             lis = open(tmpfnam, 'r').readlines()
@@ -62,14 +62,14 @@ def getAWSKey(servername, remotekeyname, uid=None, sshkeyfile=None):
             os.remove(tmpfnam)
             key, sec = lis[1].split(',')
         except Exception as e:
-            log.error('malformed AWS key')
-            log.info(e, exc_info=True)
+            tackleylog.error('malformed AWS key')
+            tackleylog.info(e, exc_info=True)
     except Exception as e:
-        log.error('unable to retrieve AWS key')
-        log.info(e, exc_info=True)
+        tackleylog.error('unable to retrieve AWS key')
+        tackleylog.info(e, exc_info=True)
     ssh_client.close()
     if key:
-        log.info('retrieved key details')
+        tackleylog.info('retrieved key details')
         return key.strip(), sec.strip() 
     else: 
         return False, False

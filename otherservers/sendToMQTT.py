@@ -8,11 +8,8 @@ import paho.mqtt.client as mqtt
 import os
 import sys
 import platform 
-import logging
 from crontab import CronTab
 import configparser
-
-log = logging.getLogger("mqttlogger")
 
 
 def addCrontabs():
