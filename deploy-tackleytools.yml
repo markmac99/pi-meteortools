@@ -89,3 +89,9 @@
       path: '{{destdir}}/config.ini'
       regexp: 'ID3='
       line: 'ID3=UK002F'
+  - name: update youtube streaming key
+    when: ('uk001l' in ansible_hostname)
+    lineinfile:
+      path: '{{destdir}}/stream.sh'
+      regexp: 'ytkey='
+      line: 'ytkey={{youtubekey}}'
