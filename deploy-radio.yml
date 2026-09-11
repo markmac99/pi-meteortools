@@ -18,3 +18,4 @@
     - {src: '{{srcdir}}/meteorradio.service', dest: '{{destdir}}/', 'mode': '644', backup: no }
     - {src: '{{srcdir}}/config.ini', dest: '{{destdir}}/', 'mode': '644', backup: no }
     - {src: '{{srcdir}}/installservice.sh', dest: '{{destdir}}/', 'mode': '755', backup: no }
+    - {src: '{{srcdir}}/reloadMissed.py', dest: '{{destdir}}/', 'mode': '644', backup: no }
