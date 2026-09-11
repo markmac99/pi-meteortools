@@ -2,5 +2,7 @@
     "python.linting.enabled": true,
     "python.pythonPath": "C:\\users\\mark\\anaconda3\\envs\\RMS\\python.exe",
     "cmake.configureOnOpen": false,
-    "restructuredtext.confPath": ""
+    "restructuredtext.confPath": "",
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda"
 }

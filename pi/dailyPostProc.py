@@ -531,38 +531,40 @@ def rmsExternal(cap_dir, arch_dir, cfg):
         hname = cfg.stationID
 
     mp4name = os.path.basename(cap_dir) + '_timelapse.mp4'
-    if os.path.exists(os.path.join(srcdir, 'token.pickle')):
-        # upload mp4 to youtube
-        already_done = []
-        if os.path.isfile(os.path.join(srcdir, '.ytdone')):
-            already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
-            already_done = [x.strip() for x in already_done]
-        if mp4name not in already_done:
-            tod = mp4name.split('_')[1]
-            tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
-            msg = '{:s} timelapse for {:s}'.format(hname, tod)
-            tackleylog.info('uploading {:s} to youtube'.format(mp4name))
-            for retries in range(0,5):
-                try:
-                    if stu.main(msg, os.path.join(arch_dir, mp4name)):
-                        # reload the done list in case its been updated by another process
-                        already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
-                        already_done = [x.strip() for x in already_done]
-                        already_done.append(mp4name)
-                        already_done = list(set(already_done))
-                        already_done.sort()
-                        open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
-                        break
-                except Exception as e:
-                    tackleylog.info('problem with youtube upload, retrying in 10s')
-                    if retries == 4:
-                        tackleylog.debug(e, exc_info=True)
-                    time.sleep(10)
-            if retries == 5:
-                tackleylog.info('unable to upload timelapse after five retries')
-        else:
-            tackleylog.info('already uploaded {:s}'.format(mp4name))
-                
+    if os.path.isfile(os.path.join(arch_dir, mp4name)):
+        if os.path.exists(os.path.join(srcdir, 'token.pickle')):
+            # upload mp4 to youtube
+            already_done = []
+            if os.path.isfile(os.path.join(srcdir, '.ytdone')):
+                already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+                already_done = [x.strip() for x in already_done]
+            if mp4name not in already_done:
+                tod = mp4name.split('_')[1]
+                tod = tod[:4] +'-'+ tod[4:6] + '-' + tod[6:8]
+                msg = '{:s} timelapse for {:s}'.format(hname, tod)
+                tackleylog.info('uploading {:s} to youtube'.format(mp4name))
+                for retries in range(0,5):
+                    try:
+                        if stu.main(msg, os.path.join(arch_dir, mp4name)):
+                            # reload the done list in case its been updated by another process
+                            already_done = open(os.path.join(srcdir, '.ytdone')).readlines()
+                            already_done = [x.strip() for x in already_done]
+                            already_done.append(mp4name)
+                            already_done = list(set(already_done))
+                            already_done.sort()
+                            open(os.path.join(srcdir, '.ytdone'), 'w').writelines([x + '\n' for x in already_done])
+                            break
+                    except Exception as e:
+                        tackleylog.info('problem with youtube upload, retrying in 10s')
+                        if retries == 4:
+                            tackleylog.debug(e, exc_info=True)
+                        time.sleep(10)
+                if retries == 5:
+                    tackleylog.info('unable to upload timelapse after five retries')
+            else:
+                tackleylog.info('already uploaded {:s}'.format(mp4name))
+    else:
+        tackleylog.info(f'{mp4name} not found')
     
     if localcfg['mqtt']['domq'] == '1' and gotSTMQ:
         tackleylog.info('sending to MQ')
@@ -580,26 +582,28 @@ def rmsExternal(cap_dir, arch_dir, cfg):
         # upload the MP4 to S3 or a website
         hn = localcfg['postprocess']['host']
         fn = os.path.join(arch_dir, mp4name)
-        splits = mp4name.split('_')
-        stn = splits[0]
-        yymm = splits[1]
-        yymm = yymm[:6]
-        tackleylog.info('uploading to {:s}/{:s}'.format(stn, yymm))
+        if os.path.isfile(fn):
+            splits = mp4name.split('_')
+            stn = splits[0]
+            yymm = splits[1]
+            yymm = yymm[:6]
+            tackleylog.info('uploading to {:s}/{:s}'.format(stn, yymm))
 
-        idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
-        idserver = localcfg['postprocess']['idserver']
-        # print(idfile, idserver)
-        key, secret = getAWSKey(idserver, hname, hname, idfile)
-        s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
-            region_name='eu-west-2')
-        target=hn[5:]
-        outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name[:15]+'_timelapse.mp4')
-        try: 
-            s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
-        except Exception as e:
-            tackleylog.warning('upload to S3 failed')
-            tackleylog.info(e, exc_info=True)
-
+            idfile = os.path.expanduser(localcfg['postprocess']['idfile']) + f'_{hname}'
+            idserver = localcfg['postprocess']['idserver']
+            # print(idfile, idserver)
+            key, secret = getAWSKey(idserver, hname, hname, idfile)
+            s3 = boto3.resource('s3', aws_access_key_id = key, aws_secret_access_key = secret, 
+                region_name='eu-west-2')
+            target=hn[5:]
+            outf = '{:s}/{:s}/{:s}'.format(stn, yymm, mp4name[:15]+'_timelapse.mp4')
+            try: 
+                s3.meta.client.upload_file(fn, target, outf, ExtraArgs ={'ContentType': 'video/mp4'})
+            except Exception as e:
+                tackleylog.warning('upload to S3 failed')
+                tackleylog.info(e, exc_info=True)
+        else:
+            tackleylog.info(f'{fn} not found')
         # upload daily stack
         tackleylog.info('uploading daily stack')
         pushLatestDailyStack(cfg, arch_dir, localcfg, s3)
